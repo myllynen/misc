@@ -199,7 +199,7 @@
    - name: Create Windows mount point fstab entry
      lineinfile:
        dest: /etc/fstab
-       line: "#/dev/sda5 /mnt/c ntfs noauto,ro,uid=1000,nls=utf8,comment=systemd.automount 1 2"
+       line: "#/dev/sda5 /mnt/c ntfs noauto,ro,uid={{ user_uid }},nls=utf8,comment=systemd.automount 1 2"
 
    - name: Block unwanted user monitoring
      lineinfile:

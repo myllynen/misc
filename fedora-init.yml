@@ -1,0 +1,219 @@
+---
+- hosts: localhost
+  become: true
+  vars:
+    - root_shell: /bin/zsh
+    - user_uid: 1000
+    - user_name: mm
+    - user_group: users
+    - user_shell: /bin/zsh
+  tasks:
+   - name: Check target system
+     raw: rpm -q libselinux-python python python2-dnf
+     check_mode: no
+     register: basics
+     changed_when: false
+     ignore_errors: true
+
+   - name: Prepare target system
+     raw: dnf -y install libselinux-python python python2-dnf
+     when: basics | failed
+
+   - name: Detect boot parameters
+     command: grep -q rhgb /etc/default/grub
+     register: adjust_boot_parameters
+     failed_when: false
+     changed_when: false
+
+   - name: Adjust boot parameters
+     command: grubby --remove-args "rhgb LANG" --args="quiet systemd.show_status=yes" --update-kernel=ALL
+     when: adjust_boot_parameters.rc == 0
+
+   - name: Finalize boot parameters
+     replace: dest=/etc/default/grub regexp='GRUB_CMDLINE_LINUX=.*' replace='GRUB_CMDLINE_LINUX="quiet systemd.show_status=yes"'
+     when: adjust_boot_parameters.rc == 0
+
+   - name: Remove rescue images
+     file: path={{ item }} state=absent
+     with_fileglob: /boot/*rescue*
+
+   - name: Configure console
+     copy:
+       dest: /etc/vconsole.conf
+       content: |
+         KEYMAP="fi"
+         FONT="eurlatgr"
+
+   - name: Configure locale
+     copy:
+       dest: /etc/locale.conf
+       content: |
+         LANG="en_US.UTF-8"
+
+   - name: Set timezone
+     timezone: name=Europe/Helsinki
+
+   - name: Enable Adobe repository
+     copy:
+       dest: /etc/yum.repos.d/adobe-linux-x86_64.repo
+       content: |
+         [adobe-linux-x86_64]
+         name=Adobe Systems Incorporated
+         baseurl=http://linuxdownload.adobe.com/linux/x86_64/
+         enabled=1
+         gpgcheck=0
+
+   - name: Enable RPM Fusion Free repository
+     package: name={{ item }} state=installed
+     with_items:
+      - https://download1.rpmfusion.org/free/fedora/rpmfusion-free-release-{{ ansible_distribution_version }}.noarch.rpm
+      - https://download1.rpmfusion.org/nonfree/fedora/rpmfusion-nonfree-release-{{ ansible_distribution_version }}.noarch.rpm
+
+   - name: Remove unhelpful packages
+     package: name={{ item }} state=absent
+     with_items:
+      - NetworkManager-adsl
+      - NetworkManager-openconnect
+      - NetworkManager-openvpn
+      - NetworkManager-pptp
+      - NetworkManager-team
+      - NetworkManager-vpnc
+      - NetworkManager-wwan
+      - 'PackageKit*'
+      - 'abrt*'
+      - anaconda
+      - 'b43*'
+      - dracut-config-rescue
+      - dracut-live
+      - evolution
+      - '*firmware'
+      - 'foomatic*'
+      - gnome-getting-started-docs
+      - gnome-user-docs
+      - 'gutenprint*'
+      - '*hangul*'
+      - hplip
+      - kernel-modules-extra
+      - '*kkc*'
+      - '*libreoffice*'
+      - open-vm-tools
+      - orca
+      - ostree
+      - pam_krb5
+      - perl-Mozilla-CA
+      - '*pinyin*'
+      - spice-vdagentd
+      - teamd
+      - '*zhuyin*'
+
+   - name: Install helpful packages
+     package: name={{ item }} state=installed
+     with_items:
+      - adobe-release
+      - akmod-wl
+      - bash-completion
+      - bind-utils
+      - bzip2
+      - dconf-editor
+      - deltarpm
+      - ffmpeg
+      - flash-plugin
+      - fuse-sshfs
+      - gconf-editor
+      - git
+      - gnome-tweak-tool
+      - gpm
+      - iotop
+      - keychain
+      - libselinux-python
+      - libvirt-client
+      - ltrace
+      - lynx
+      - man-pages
+      - mlocate
+      - nano
+      - net-tools
+      - ntfsprogs
+      - patch
+      - pcp-doc
+      - pcp-gui
+      - pcp-pmda-libvirt
+      - pcp-system-tools
+      - policycoreutils-python
+      - powertop
+      - psmisc
+      - screen
+      - strace
+      - tcpdump
+      - telnet
+      - unzip
+      - vlc
+      - wget
+      - wodim
+      - x264
+      - yle-dl
+      - zsh
+
+   - name: Update all packages
+     package: name=* state=latest
+
+   - name: Disable unhelpful services
+     service: name={{ item }} enabled=no
+     with_items:
+      - bluetooth
+      - cups
+      - dmraid-activation
+      - iscsi
+      - lvm2-monitor
+      - mcelog
+      - mdmonitor
+      - multipathd
+
+   - name: Enable helpful services
+     service: name={{ item }} enabled=yes
+     with_items:
+      - gpm
+      - pmcd
+
+   - name: Change root shell
+     user: name=root shell={{ root_shell }}
+
+   - name: Create user
+     user:
+       name: "{{ user_name }}"
+       shell: "{{ user_shell }}"
+       group: "{{ user_group }}"
+       uid: "{{ user_uid }}"
+       non_unique: yes
+
+   - name: Configure sudoers
+     lineinfile:
+       create: true
+       dest: /etc/sudoers.d/{{ user_name }}
+       line: '{{ user_name }} ALL=(ALL) NOPASSWD: ALL'
+       validate: 'visudo -cf %s'
+
+   - name: Create Windows partition mount point
+     file: path=/mnt/c state=directory
+
+   - name: Create Windows mount point fstab entry
+     lineinfile:
+       dest: /etc/fstab
+       line: "#/dev/sda5 /mnt/c ntfs noauto,ro,uid=1000,nls=utf8,comment=systemd.automount 1 2"
+
+   - name: Block unwanted user monitoring
+     lineinfile:
+       dest: /etc/hosts
+       line: 127.0.0.2 musicbrainz.org
+
+   - name: Cleaning up
+     file: path={{ item }} state=absent
+     with_items:
+      - /1
+      - /etc/yum.repos.d/adobe-linux-x86_64.repo.rpmorig
+      - /root/.cache
+      - /root/.lesshst
+      - /root/.rnd
+      - /root/anaconda-ks.cfg
+      - /root/setup.retry
+      - /var/tmp/abrt

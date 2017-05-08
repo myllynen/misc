@@ -188,7 +188,7 @@
         - pmcd
 
     - name: Change root shell
-      user: name=root shell={{ root_shell }}
+      user: name=root shell={{ root_shell }}
 
     - name: Create user
       user:

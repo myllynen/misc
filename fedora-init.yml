@@ -121,6 +121,7 @@
     - name: Install helpful packages
       package: name={{ item }} state=installed
       with_items:
+        - GraphicsMagick
         - adobe-release
         - akmod-wl
         - bash-completion
@@ -135,6 +136,7 @@
         - git
         - gnome-tweak-tool
         - gpm
+        - gstreamer1-libav
         - iotop
         - keychain
         - libselinux-python
@@ -158,12 +160,15 @@
         - strace
         - tcpdump
         - telnet
+        - totem
+        - totem-nautilus
         - unzip
         - vlc
         - wget
         - wodim
         - x264
         - yle-dl
+        - youtube-dl
         - zsh
 
     - name: Update all packages

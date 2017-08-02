@@ -1,8 +1,13 @@
 ---
 # Requires: Ansible 2.2 (due to check_mode and timezone)
+# Usage:
+#   1) install/update ansible
+#   2) adjust and run the playbook
+#   3) set password for the new user
 - hosts: localhost
   become: true
   vars:
+    boot_config: /boot/efi/EFI/fedora/grub.cfg
     console_keymap: fi
     console_font: eurlatgr
     system_locale: en_US.UTF-8
@@ -14,7 +19,7 @@
     user_shell: /bin/zsh
   tasks:
     - name: Check target system
-      raw: rpm -q libselinux-python python python2-dnf
+      raw: rpm -q libselinux-python python2 python2-dnf
       check_mode: no
       register: basics
       changed_when: false
@@ -41,6 +46,11 @@
     - name: Remove rescue images
       file: path={{ item }} state=absent
       with_fileglob: /boot/*rescue*
+      register: rescue_images
+
+    - name: Update GRUB configuration
+      command: grub2-mkconfig -o {{ boot_config }}
+      when: rescue_images | changed
 
     - name: Configure console
       copy:
@@ -105,6 +115,7 @@
         - 'gutenprint*'
         - '*hangul*'
         - hplip
+        - 'java*'
         - kernel-modules-extra
         - '*kkc*'
         - '*libreoffice*'
@@ -157,12 +168,14 @@
         - powertop
         - psmisc
         - screen
+        - seahorse
         - strace
         - tcpdump
         - telnet
         - totem
         - totem-nautilus
         - unzip
+        - util-linux-user
         - vlc
         - wget
         - wodim
@@ -187,7 +200,7 @@
         - multipathd
 
     - name: Enable helpful services
-      service: name={{ item }} enabled=yes
+      service: name={{ item }} enabled=yes state=started
       with_items:
         - gpm
         - pmcd
@@ -234,4 +247,5 @@
         - /root/.rnd
         - /root/anaconda-ks.cfg
         - /root/setup.retry
+        - /var/cache/PackageKit
         - /var/tmp/abrt

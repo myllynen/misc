@@ -39,8 +39,12 @@
       command: grubby --remove-args "rhgb LANG" --args="quiet systemd.show_status=yes" --update-kernel=ALL
       when: adjust_boot_parameters.rc == 0
 
-    - name: Finalize boot parameters
-      replace: dest=/etc/default/grub regexp='GRUB_CMDLINE_LINUX=.*' replace='GRUB_CMDLINE_LINUX="quiet systemd.show_status=yes"'
+    - name: Finalize boot parameters, part I
+      replace: dest=/etc/default/grub regexp=' rhgb' replace=''
+      when: adjust_boot_parameters.rc == 0
+
+    - name: Finalize boot parameters, part II
+      replace: dest=/etc/default/grub regexp='(^GRUB_CMDLINE_LINUX=.*)"$' replace='\1 systemd.show_status=yes"'
       when: adjust_boot_parameters.rc == 0
 
     - name: Remove rescue images
@@ -150,6 +154,7 @@
         - gstreamer1-libav
         - iotop
         - keychain
+        - libnm-gtk
         - libselinux-python
         - libvirt-client
         - ltrace

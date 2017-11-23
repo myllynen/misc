@@ -72,7 +72,11 @@
     - name: Set timezone
       timezone: name="{{ system_timezone }}"
 
-    - name: Enable Adobe repository
+    - name: Check Adobe repository configuration
+      stat: path=/etc/yum.repos.d/adobe-linux-x86_64.repo
+      register: adobe_repo_file
+
+    - name: Configure Adobe repository
       copy:
         dest: /etc/yum.repos.d/adobe-linux-x86_64.repo
         content: |
@@ -81,6 +85,7 @@
           baseurl=http://linuxdownload.adobe.com/linux/x86_64/
           enabled=1
           gpgcheck=0
+      when: not adobe_repo_file.stat.exists
 
     - name: Check RPM Fusion repository
       command: rpm -q rpmfusion-free-release-{{ ansible_distribution_version }} rpmfusion-nonfree-release-{{ ansible_distribution_version }} warn=no

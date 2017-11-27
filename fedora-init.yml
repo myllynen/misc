@@ -224,7 +224,6 @@
         shell: "{{ user_shell }}"
         group: "{{ user_group }}"
         uid: "{{ user_uid }}"
-        non_unique: yes
 
     - name: Configure sudoers
       lineinfile:

@@ -134,7 +134,6 @@
         - pam_krb5
         - perl-Mozilla-CA
         - '*pinyin*'
-        - spice-vdagentd
         - teamd
         - '*zhuyin*'
 

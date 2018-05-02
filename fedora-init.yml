@@ -1,5 +1,5 @@
 ---
-# Requires: Ansible 2.2 (due to check_mode and timezone)
+# Requires: Ansible 2.4 (due to autoremove=yes)
 # Usage:
 #   1) install/update ansible
 #   2) adjust and run the playbook
@@ -18,15 +18,15 @@
     user_shell: /bin/zsh
   tasks:
     - name: Check target system
-      raw: rpm -q libselinux-python python2 python2-dnf
+      raw: rpm -q python2 python2-dnf python2-libselinux
       check_mode: no
       register: basics
       changed_when: false
       ignore_errors: true
 
     - name: Prepare target system
-      raw: dnf -y install libselinux-python python python2-dnf
-      when: basics | failed
+      raw: dnf -y install python2 python2-dnf python2-libselinux
+      when: basics is failed
 
     - name: Detect boot parameters
       command: grep -q rhgb /etc/default/grub
@@ -65,7 +65,7 @@
 
     - name: Update GRUB configuration
       command: grub2-mkconfig -o {{ boot_config }}
-      when: rescue_images | changed
+      when: rescue_images is changed
 
     - name: Configure console
       copy:
@@ -112,7 +112,7 @@
       when: fusion_enabled.rc != 0
 
     - name: Remove unhelpful packages
-      package: name={{ item }} state=absent
+      dnf: name={{ item }} state=absent autoremove=yes
       with_items:
         - NetworkManager-adsl
         - NetworkManager-openconnect
@@ -128,9 +128,9 @@
         - dracut-config-rescue
         - dracut-live
         - evolution
-        - '*firmware'
         - 'foomatic*'
         - gnome-getting-started-docs
+        - gnome-online-miners
         - gnome-user-docs
         - 'gutenprint*'
         - '*hangul*'
@@ -139,19 +139,26 @@
         - kernel-modules-extra
         - '*kkc*'
         - '*libreoffice*'
-        - open-vm-tools
         - orca
         - ostree
         - pam_krb5
         - perl-Mozilla-CA
         - '*pinyin*'
+        - realmd
         - teamd
         - '*zhuyin*'
+
+    # https://github.com/ansible/ansible/issues/27744
+    - name: Remove unhelpful packages (#27744 wildcard issue workaround)
+      raw: dnf remove -y 'PackageKit*' 'abrt*' 'b43*' 'foomatic*' 'gutenprint*' '*hangul*' 'java*' '*kkc*' '*libreoffice*' '*pinyin*' '*zhuyin*'
+      register: dnf_cmd
+      failed_when: false
+      changed_when: dnf_cmd.rc == 0
 
     - name: Install helpful packages
       package: name={{ item }} state=installed
       with_items:
-        - GraphicsMagick
+        - ImageMagick
         - adobe-release
         - akmod-wl
         - bash-completion
@@ -164,13 +171,13 @@
         - fuse-sshfs
         - gconf-editor
         - git
-        - gnome-tweak-tool
+        - gnome-tweaks
         - gpm
         - gstreamer1-libav
+        - gstreamer1-plugins-good-gtk
         - iotop
         - keychain
         - libnm-gtk
-        - libselinux-python
         - libvirt-client
         - ltrace
         - lynx
@@ -181,12 +188,12 @@
         - ntfsprogs
         - patch
         - pcp-doc
-        - pcp-gui
         - pcp-pmda-libvirt
         - pcp-system-tools
-        - policycoreutils-python
         - powertop
         - psmisc
+        - python2-libselinux
+        - python2-policycoreutils
         - screen
         - seahorse
         - strace
@@ -218,6 +225,7 @@
         - mcelog
         - mdmonitor
         - multipathd
+        - pmie
 
     - name: Enable helpful services
       service: name={{ item }} enabled=yes state=started
@@ -228,12 +236,41 @@
     - name: Change root shell
       user: name=root shell={{ root_shell }}
 
+    - name: Disable pulseaudio for root
+      command: systemctl --user mask pulseaudio.service pulseaudio.socket
+      register: systemctl_output
+      changed_when: "'Created symlink' in systemctl_output.stderr"
+
     - name: Create user
       user:
         name: "{{ user_name }}"
         shell: "{{ user_shell }}"
         group: "{{ user_group }}"
         uid: "{{ user_uid }}"
+
+    - name: Disable tracker for the user, part I
+      file:
+        owner: "{{ user_name }}"
+        group: "{{ user_group }}"
+        mode: 0755
+        path: "/home/{{ user_name }}/.config/systemd/user"
+        state: directory
+
+    - name: Disable tracker for the user, part II
+      file:
+        owner: "{{ user_name }}"
+        group: "{{ user_group }}"
+        mode: 0777
+        src: /dev/null
+        dest: "/home/{{ user_name }}/.config/systemd/user/{{ item }}"
+        state: link
+      with_items:
+        - tracker-extract.service
+        - tracker-miner-apps.service
+        - tracker-miner-fs.service
+        - tracker-miner-rss.service
+        - tracker-store.service
+        - tracker-writeback.service
 
     - name: Configure sudoers
       lineinfile:
@@ -262,9 +299,14 @@
         - /1
         - /etc/yum.repos.d/adobe-linux-x86_64.repo.rpmorig
         - /root/.cache
+        - /root/.config/pulse
+        - /root/.esd_auth
         - /root/.lesshst
+        - /root/.local/share/ibus-typing-booster
         - /root/.rnd
         - /root/anaconda-ks.cfg
         - /root/setup.retry
         - /var/cache/PackageKit
+        - /var/lib/abrt
+        - /var/spool/abrt
         - /var/tmp/abrt

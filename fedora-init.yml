@@ -7,7 +7,6 @@
 - hosts: localhost
   become: true
   vars:
-    boot_config: /boot/efi/EFI/fedora/grub.cfg
     console_keymap: fi
     console_font: eurlatgr
     system_locale: en_US.UTF-8
@@ -51,6 +50,18 @@
       file: path={{ item }} state=absent
       with_fileglob: /boot/*rescue*
       register: rescue_images
+
+    - name: Check GRUB configuration path
+      stat: path=/boot/efi/EFI/fedora/grub.cfg
+      register: efi_grub
+      failed_when: false
+      changed_when: false
+
+    - name: Set GRUB configuration path
+      set_fact:
+        boot_config: "{{ '/boot/efi/EFI/fedora/grub.cfg' if (efi_grub.stat.isreg is defined and efi_grub.stat.isreg) else '/boot/grub2/grub.cfg' }}"
+      failed_when: false
+      changed_when: false
 
     - name: Update GRUB configuration
       command: grub2-mkconfig -o {{ boot_config }}

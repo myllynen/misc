@@ -7,6 +7,7 @@
 - hosts: localhost
   become: true
   vars:
+    create_user: false
     console_keymap: fi
     console_font: eurlatgr
     system_locale: en_US.UTF-8
@@ -16,6 +17,7 @@
     user_name: mm
     user_group: users
     user_shell: /bin/zsh
+    workstation: false
   tasks:
     - name: Check target system
       raw: rpm -q python2 python2-dnf python2-libselinux
@@ -88,13 +90,14 @@
       register: fusion_enabled
       changed_when: false
       failed_when: false
+      when: workstation
 
     - name: Enable RPM Fusion repository
       package: name={{ item }} state=installed
       with_items:
         - https://download1.rpmfusion.org/free/fedora/rpmfusion-free-release-{{ ansible_distribution_version }}.noarch.rpm
         - https://download1.rpmfusion.org/nonfree/fedora/rpmfusion-nonfree-release-{{ ansible_distribution_version }}.noarch.rpm
-      when: fusion_enabled.rc != 0
+      when: workstation and fusion_enabled.rc != 0
 
     - name: Remove unhelpful packages
       dnf: name={{ item }} state=absent autoremove=yes
@@ -140,59 +143,60 @@
       failed_when: false
       changed_when: dnf_cmd.rc == 0
 
-    - name: Install helpful packages
+    - name: Install helpful packages (common)
+      package: name={{ item }} state=installed
+      with_items:
+        - bash-completion
+        - bind-utils
+        - bzip2
+        - deltarpm
+        - gpm
+        - iotop
+        - keychain
+        - ltrace
+        - man-pages
+        - mlocate
+        - nano
+        - net-tools
+        - pcp-doc
+        - pcp-system-tools
+        - psmisc
+        - python2-policycoreutils
+        - screen
+        - strace
+        - tcpdump
+        - telnet
+        - unzip
+        - util-linux-user
+        - wget
+        - zsh
+
+    - name: Install helpful packages (workstation)
       package: name={{ item }} state=installed
       with_items:
         - ImageMagick
         - akmod-wl
-        - bash-completion
-        - bind-utils
-        - bzip2
         - dconf-editor
-        - deltarpm
         - ffmpeg
         - fuse-sshfs
         - gconf-editor
         - git
         - gnome-tweaks
-        - gpm
         - gstreamer1-libav
         - gstreamer1-plugins-good-gtk
-        - iotop
-        - keychain
         - libnm-gtk
-        - libvirt-client
-        - ltrace
-        - lynx
-        - man-pages
-        - mlocate
-        - nano
-        - net-tools
         - ntfsprogs
         - patch
-        - pcp-doc
-        - pcp-pmda-libvirt
-        - pcp-system-tools
         - powertop
-        - psmisc
-        - python2-libselinux
-        - python2-policycoreutils
-        - screen
         - seahorse
-        - strace
-        - tcpdump
-        - telnet
         - totem
         - totem-nautilus
-        - unzip
-        - util-linux-user
         - vlc
-        - wget
         - wodim
         - x264
         - yle-dl
         - youtube-dl
-        - zsh
+      when: workstation
 
     - name: Update all packages
       package: name=* state=latest
@@ -209,6 +213,7 @@
         - mdmonitor
         - multipathd
         - pmie
+      failed_when: false
 
     - name: Enable helpful services
       service: name={{ item }} enabled=yes state=started
@@ -230,6 +235,7 @@
         shell: "{{ user_shell }}"
         group: "{{ user_group }}"
         uid: "{{ user_uid }}"
+      when: create_user
 
     - name: Disable tracker for the user, part I
       file:
@@ -238,6 +244,7 @@
         mode: 0755
         path: "/home/{{ user_name }}/.config/systemd/user"
         state: directory
+      when: create_user
 
     - name: Disable tracker for the user, part II
       file:
@@ -254,6 +261,7 @@
         - tracker-miner-rss.service
         - tracker-store.service
         - tracker-writeback.service
+      when: create_user
 
     - name: Configure sudoers
       lineinfile:
@@ -261,26 +269,29 @@
         dest: /etc/sudoers.d/{{ user_name }}
         line: '{{ user_name }} ALL=(ALL) NOPASSWD: ALL'
         validate: 'visudo -cf %s'
+      when: create_user
 
     - name: Create Windows partition mount point
       file: path=/mnt/c state=directory
+      when: workstation
 
     # Needs to be adjusted and enabled manually
     - name: Create Windows mount point fstab entry
       lineinfile:
         dest: /etc/fstab
         line: "#/dev/sda5 /mnt/c ntfs noauto,ro,uid={{ user_uid }},nls=utf8,comment=systemd.automount 1 2"
+      when: workstation
 
     - name: Block unwanted user monitoring
       lineinfile:
         dest: /etc/hosts
         line: 127.0.0.2 musicbrainz.org
+      when: workstation
 
     - name: Cleaning up
       file: path={{ item }} state=absent
       with_items:
         - /1
-        - /root/.cache
         - /root/.config/pulse
         - /root/.esd_auth
         - /root/.lesshst

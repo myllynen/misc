@@ -83,21 +83,6 @@
     - name: Set timezone
       timezone: name="{{ system_timezone }}"
 
-    - name: Check Adobe repository configuration
-      stat: path=/etc/yum.repos.d/adobe-linux-x86_64.repo
-      register: adobe_repo_file
-
-    - name: Configure Adobe repository
-      copy:
-        dest: /etc/yum.repos.d/adobe-linux-x86_64.repo
-        content: |
-          [adobe-linux-x86_64]
-          name=Adobe Systems Incorporated
-          baseurl=http://linuxdownload.adobe.com/linux/x86_64/
-          enabled=1
-          gpgcheck=0
-      when: not adobe_repo_file.stat.exists
-
     - name: Check RPM Fusion repository
       command: rpm -q rpmfusion-free-release-{{ ansible_distribution_version }} rpmfusion-nonfree-release-{{ ansible_distribution_version }} warn=no
       register: fusion_enabled
@@ -159,7 +144,6 @@
       package: name={{ item }} state=installed
       with_items:
         - ImageMagick
-        - adobe-release
         - akmod-wl
         - bash-completion
         - bind-utils
@@ -167,7 +151,6 @@
         - dconf-editor
         - deltarpm
         - ffmpeg
-        - flash-plugin
         - fuse-sshfs
         - gconf-editor
         - git
@@ -297,7 +280,6 @@
       file: path={{ item }} state=absent
       with_items:
         - /1
-        - /etc/yum.repos.d/adobe-linux-x86_64.repo.rpmorig
         - /root/.cache
         - /root/.config/pulse
         - /root/.esd_auth

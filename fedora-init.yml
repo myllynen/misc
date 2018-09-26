@@ -10,6 +10,7 @@
     create_user: false
     console_keymap: fi
     console_font: eurlatgr
+    glibc_langpacks: ['en', 'fi']
     system_locale: en_US.UTF-8
     system_timezone: Europe/Helsinki
     root_shell: /bin/zsh
@@ -20,14 +21,14 @@
     workstation: false
   tasks:
     - name: Check target system
-      raw: rpm -q python2 python2-dnf python2-libselinux
+      raw: rpm -q python3 python3-dnf python3-libselinux
       check_mode: no
       register: basics
       changed_when: false
       ignore_errors: true
 
     - name: Prepare target system
-      raw: dnf -y install python2 python2-dnf python2-libselinux
+      raw: dnf -y install python3 python3-dnf python3-libselinux
       when: basics is failed
 
     - name: Detect boot parameters
@@ -161,7 +162,7 @@
         - pcp-doc
         - pcp-system-tools
         - psmisc
-        - python2-policycoreutils
+        - python3-policycoreutils
         - screen
         - strace
         - tcpdump
@@ -170,6 +171,9 @@
         - util-linux-user
         - wget
         - zsh
+
+    - name: Install helpful packages (langpacks)
+      package: name="glibc-langpack-{{ glibc_langpacks | join(',glibc-langpack-') }}" state=installed
 
     - name: Install helpful packages (workstation)
       package: name={{ item }} state=installed

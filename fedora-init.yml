@@ -271,6 +271,11 @@
         - tracker-writeback.service
       when: create_user
 
+    - name: Disable tracker for the user, part III
+      command: restorecon -Rv "/home/{{ user_name }}/.config/systemd"
+      changed_when: false
+      when: create_user
+
     - name: Configure sudoers
       lineinfile:
         create: true
@@ -306,7 +311,7 @@
         - /root/.local/share/ibus-typing-booster
         - /root/.rnd
         - /root/anaconda-ks.cfg
-        - /root/setup.retry
+        - /root/fedora-init.retry
         - /var/cache/PackageKit
         - /var/lib/abrt
         - /var/spool/abrt

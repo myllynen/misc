@@ -1,6 +1,7 @@
 ---
 # Requires: Ansible 2.4 (due to autoremove=yes)
 # Usage:
+#   0) copy the provided ansible.cfg as ~/.ansible.cfg
 #   1) install/update ansible
 #   2) adjust and run the playbook
 #   3) set password for the new user
@@ -10,7 +11,7 @@
     create_user: false
     console_keymap: fi
     console_font: eurlatgr
-    glibc_langpacks: ['en', 'fi']
+    langpacks: ['en', 'fi']
     system_locale: en_US.UTF-8
     system_timezone: Europe/Helsinki
     root_shell: /bin/zsh
@@ -173,7 +174,7 @@
         - zsh
 
     - name: Install helpful packages (langpacks)
-      package: name="glibc-langpack-{{ glibc_langpacks | join(',glibc-langpack-') }}" state=installed
+      package: name="glibc-langpack-{{ langpacks | join(',glibc-langpack-') }}" state=installed
 
     - name: Install helpful packages (workstation)
       package: name={{ item }} state=installed
@@ -188,7 +189,6 @@
         - gnome-tweaks
         - gstreamer1-libav
         - gstreamer1-plugins-good-gtk
-        - libnm-gtk
         - ntfsprogs
         - patch
         - powertop
@@ -200,6 +200,10 @@
         - x264
         - yle-dl
         - youtube-dl
+      when: workstation
+
+    - name: Install helpful packages (workstation langpacks)
+      package: name="langpacks-{{ langpacks | join(',langpacks-') }}" state=installed
       when: workstation
 
     - name: Update all packages

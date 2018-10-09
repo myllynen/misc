@@ -39,7 +39,7 @@
       changed_when: false
 
     - name: Adjust boot parameters
-      command: grubby --remove-args "rhgb LANG" --args="quiet systemd.show_status=yes" --update-kernel=ALL
+      command: grubby --remove-args "rhgb LANG" --args="quiet video=efifb:nobgrt systemd.show_status=yes" --update-kernel=ALL
       when: adjust_boot_parameters.rc == 0
 
     - name: Finalize boot parameters, part I
@@ -47,7 +47,7 @@
       when: adjust_boot_parameters.rc == 0
 
     - name: Finalize boot parameters, part II
-      replace: dest=/etc/default/grub regexp='(^GRUB_CMDLINE_LINUX=.*)"$' replace='\1 systemd.show_status=yes"'
+      replace: dest=/etc/default/grub regexp='(^GRUB_CMDLINE_LINUX=.*)"$' replace='\1 video=efifb:nobgrt systemd.show_status=yes"'
       when: adjust_boot_parameters.rc == 0
 
     - name: Remove rescue images

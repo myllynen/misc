@@ -152,6 +152,7 @@
         - bind-utils
         - bzip2
         - deltarpm
+        - dnf-utils
         - gpm
         - iotop
         - keychain

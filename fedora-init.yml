@@ -102,41 +102,43 @@
       when: workstation and fusion_enabled.rc != 0
 
     - name: Remove unhelpful packages
-      dnf: name={{ item }} state=absent autoremove=yes
-      with_items:
-        - NetworkManager-adsl
-        - NetworkManager-openconnect
-        - NetworkManager-openvpn
-        - NetworkManager-pptp
-        - NetworkManager-team
-        - NetworkManager-vpnc
-        - NetworkManager-wwan
-        - 'PackageKit*'
-        - 'abrt*'
-        - anaconda
-        - 'b43*'
-        - dracut-config-rescue
-        - dracut-live
-        - evolution
-        - 'foomatic*'
-        - gnome-getting-started-docs
-        - gnome-online-miners
-        - gnome-user-docs
-        - 'gutenprint*'
-        - '*hangul*'
-        - hplip
-        - 'java*'
-        - kernel-modules-extra
-        - '*kkc*'
-        - '*libreoffice*'
-        - orca
-        - ostree
-        - pam_krb5
-        - perl-Mozilla-CA
-        - '*pinyin*'
-        - realmd
-        - teamd
-        - '*zhuyin*'
+      dnf:
+        state: absent
+        autoremove: yes
+        name:
+          - NetworkManager-adsl
+          - NetworkManager-openconnect
+          - NetworkManager-openvpn
+          - NetworkManager-pptp
+          - NetworkManager-team
+          - NetworkManager-vpnc
+          - NetworkManager-wwan
+          - 'PackageKit*'
+          - 'abrt*'
+          - anaconda
+          - 'b43*'
+          - dracut-config-rescue
+          - dracut-live
+          - evolution
+          - 'foomatic*'
+          - gnome-getting-started-docs
+          - gnome-online-miners
+          - gnome-user-docs
+          - 'gutenprint*'
+          - '*hangul*'
+          - hplip
+          - 'java*'
+          - kernel-modules-extra
+          - '*kkc*'
+          - '*libreoffice*'
+          - orca
+          - ostree
+          - pam_krb5
+          - perl-Mozilla-CA
+          - '*pinyin*'
+          - realmd
+          - teamd
+          - '*zhuyin*'
 
     # https://github.com/ansible/ansible/issues/27744
     - name: Remove unhelpful packages (#27744 wildcard issue workaround)
@@ -146,61 +148,63 @@
       changed_when: dnf_cmd.rc == 0
 
     - name: Install helpful packages (common)
-      package: name={{ item }} state=installed
-      with_items:
-        - bash-completion
-        - bind-utils
-        - bzip2
-        - deltarpm
-        - dnf-utils
-        - gpm
-        - iotop
-        - keychain
-        - ltrace
-        - man-pages
-        - mlocate
-        - nano
-        - net-tools
-        - pcp-doc
-        - pcp-system-tools
-        - psmisc
-        - python3-policycoreutils
-        - screen
-        - strace
-        - tcpdump
-        - telnet
-        - unzip
-        - util-linux-user
-        - wget
-        - zsh
+      package:
+        state: installed
+        name:
+          - bash-completion
+          - bind-utils
+          - bzip2
+          - deltarpm
+          - dnf-utils
+          - gpm
+          - iotop
+          - keychain
+          - ltrace
+          - man-pages
+          - mlocate
+          - nano
+          - net-tools
+          - pcp-doc
+          - pcp-system-tools
+          - psmisc
+          - python3-policycoreutils
+          - screen
+          - strace
+          - tcpdump
+          - telnet
+          - unzip
+          - util-linux-user
+          - wget
+          - zsh
 
     - name: Install helpful packages (langpacks)
       package: name="glibc-langpack-{{ langpacks | join(',glibc-langpack-') }}" state=installed
 
     - name: Install helpful packages (workstation)
-      package: name={{ item }} state=installed
-      with_items:
-        - ImageMagick
-        - akmod-wl
-        - dconf-editor
-        - ffmpeg
-        - fuse-sshfs
-        - gconf-editor
-        - git
-        - gnome-tweaks
-        - gstreamer1-libav
-        - gstreamer1-plugins-good-gtk
-        - ntfsprogs
-        - patch
-        - powertop
-        - seahorse
-        - totem
-        - totem-nautilus
-        - vlc
-        - wodim
-        - x264
-        - yle-dl
-        - youtube-dl
+      package:
+        state: installed
+        name:
+          - ImageMagick
+          - akmod-wl
+          - dconf-editor
+          - ffmpeg
+          - fuse-sshfs
+          - gconf-editor
+          - git
+          - gnome-tweaks
+          - gstreamer1-libav
+          - gstreamer1-plugins-good-gtk
+          - ntfsprogs
+          - patch
+          - powertop
+          - seahorse
+          - totem
+          - totem-nautilus
+          - vlc
+          - wodim
+          - x264
+          - yle-dl
+          - youtube-dl
       when: workstation
 
     - name: Install helpful packages (workstation langpacks)

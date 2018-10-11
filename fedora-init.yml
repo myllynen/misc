@@ -71,6 +71,12 @@
       command: grub2-mkconfig -o {{ boot_config }}
       when: rescue_images is changed
 
+    - name: Detect LUKS configuration
+      command: grep -q mapper/luks /etc/fstab
+      register: luks_in_use
+      failed_when: false
+      changed_when: false
+
     - name: Configure console
       copy:
         dest: /etc/vconsole.conf
@@ -146,6 +152,14 @@
       register: dnf_cmd
       failed_when: false
       changed_when: dnf_cmd.rc == 0
+
+    # Rewrite to use dnf module once the #27744 fix is available
+    - name: Remove unneeded Plymouth packages
+      raw: dnf remove -y 'plymouth*'
+      register: dnf_cmd
+      failed_when: false
+      changed_when: dnf_cmd.rc == 0
+      when: not luks_in_use.rc == 0
 
     - name: Install helpful packages (common)
       package:

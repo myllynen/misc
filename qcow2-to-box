@@ -1,0 +1,63 @@
+#!/bin/sh
+
+if [ $# -ne 1 ]; then
+  echo "Usage: $(basename $0) <qcow image>" 2>&1
+  exit 1
+fi
+
+img=$1
+dir=$(dirname "$img")
+box=$(basename "${img%.*}.box")
+
+if ! qemu-img info "$img" | grep -qi qcow; then
+  echo "Not a qcow image: $img" 2>&1
+  exit 1
+fi
+
+if [ ! -w "$dir" ]; then
+  echo "No write permission for $dir, aborting!" 2>&1
+  exit 1
+fi
+
+if [ -f "$dir/$box" ]; then
+  echo "$dir/$box already exists, aborting!" 2>&1
+  exit 1
+fi
+
+# Real work ahead
+
+cd "$dir"
+echo "Creating $box, this will take a few minutes..."
+
+echo "Running virt-sysprep..."
+virt-sysprep -q --operations defaults,-ssh-userdir -a "$img"
+
+echo "Running virt-sparsify..."
+virt-sparsify -q --compress "$img" "$img.sparse"
+mv "$img.sparse" "$img"
+
+echo "Creating metafiles..."
+[ -f ./Vagrantfile ] && mv ./Vagrantfile ./Vagrantfile.bak
+cat <<EOF> ./Vagrantfile
+Vagrant.configure("2") do |config|
+  config.vm.synced_folder ".", "/vagrant", type: "rsync"
+  config.vm.provider :libvirt do |libvirt|
+    libvirt.driver = "kvm"
+    libvirt.connect_via_ssh = false
+    libvirt.username = "root"
+    libvirt.storage_pool_name = "default"
+  end
+end
+EOF
+cat <<EOF> ./metadata.json
+{"provider": "libvirt", "format": "qcow2", "virtual_size": 32}
+EOF
+
+echo "Writing box image..."
+mv "$img" ./box.img
+tar czf "$box" ./Vagrantfile ./metadata.json ./box.img || exit 3
+rm -f ./Vagrantfile ./metadata.json
+[ -f ./Vagrantfile.bak ] && mv ./Vagrantfile.bak ./Vagrantfile
+mv ./box.img "$img"
+
+echo "Created box image: $box"

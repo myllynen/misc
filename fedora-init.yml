@@ -277,7 +277,6 @@
       file:
         owner: "{{ user_name }}"
         group: "{{ user_group }}"
-        mode: 0777
         src: /dev/null
         dest: "/home/{{ user_name }}/.config/systemd/user/{{ item }}"
         state: link

@@ -1,6 +1,17 @@
 # RHEL 7 base / OpenStack / cloud example kickstart file
 #
-# Post-process with:
+# Install:
+# virt-install \
+#   --connect qemu:///system --name test --virt-type kvm --arch x86_64 \
+#   --vcpus 2 --cpu host --ram 2048 --os-type linux --os-variant rhel7.6 \
+#   --disk pool=default,format=qcow2,cache=none,io=native,size=8 \
+#   --network network=default --graphics vnc --noreboot \
+#   --location /VirtualMachines/boot/rhel-server-7.6-x86_64-dvd.iso \
+#   --initrd-inject /VirtualMachines/boot/ks/rhel-7-base.ks \
+#   --extra-args "ip=dhcp inst.ks=file:/rhel-7-base.ks console=tty0 console=ttyS0,115200 quiet systemd.show_status=yes" \
+#   --noautoconsole
+#
+# Post-process:
 # 1) virt-sysprep --root-password password:foobar -a ./rhel.qcow2
 # 2) virt-sparsify --compress|--in-place ./rhel.qcow2
 
@@ -15,7 +26,7 @@ selinux --enforcing
 auth --useshadow --passalgo=sha512
 rootpw foobar
 network --device eth0 --bootproto dhcp --onboot yes --hostname localhost
-firewall --disabled
+firewall --enabled --service=ssh
 firstboot --disabled
 lang en_US.UTF-8
 timezone --utc Europe/Helsinki
@@ -60,7 +71,6 @@ zsh
 -biosdevname
 -btrfs-progs
 -dracut-config-rescue
--firewalld
 -*firmware*
 -iprutils
 -kernel-tools
@@ -126,15 +136,19 @@ for i in 0; do
   cat <<EOF > /etc/sysconfig/network-scripts/ifcfg-eth$i
 DEVICE=eth$i
 TYPE=Ethernet
+#HWADDR=
+#UUID=
 ONBOOT=yes
 BOOTPROTO=dhcp
 NM_CONTROLLED=no
 NOZEROCONF=yes
 DEFROUTE=no
-PEERDNS=yes
+IPV6_DEFROUTE=no
 PERSISTENT_DHCLIENT=yes
 IPV6INIT=$ipv6
 DHCPV6C=$ipv6
+IPV4_FAILURE_FATAL=yes
+IPV6_FAILURE_FATAL=$ipv6
 EOF
 done
 sed -i -e 's,DEFROUTE=no,DEFROUTE=yes,' /etc/sysconfig/network-scripts/ifcfg-eth0
@@ -150,7 +164,8 @@ restorecon -R /root/.ssh > /dev/null 2>&1
 # Repositories
 if [ ! -f /etc/centos-release ]; then
   /bin/rm -f /etc/yum.repos.d/* > /dev/null 2>&1
-  wget http://192.168.122.1/ks/intra.repo -O /etc/yum.repos.d/intra.repo
+  ping -c1 -q 192.168.122.1 > /dev/null 2>&1 && \
+    wget http://192.168.122.1/ks/intra.repo -O /etc/yum.repos.d/intra.repo
 fi
 
 # Packages - keys

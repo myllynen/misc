@@ -19,17 +19,18 @@ install
 cmdline
 zerombr
 clearpart --all
-bootloader --append="console=tty0 console=ttyS0,115200 biosdevname=0 net.ifnames=0 ipv6.disable=1 quiet systemd.show_status=yes"
+bootloader --timeout=1 --append="console=tty0 console=ttyS0,115200 biosdevname=0 net.ifnames=0 ipv6.disable=1 quiet systemd.show_status=yes"
 reqpart
-part / --fstype xfs --grow --asprimary --size 1024
+part / --fstype xfs --asprimary --size 1024 --grow
 selinux --enforcing
 auth --useshadow --passalgo=sha512
-rootpw foobar
-network --device eth0 --bootproto dhcp --onboot yes --hostname localhost
+rootpw --plaintext foobar
+#network --device eth0 --bootproto dhcp --onboot yes --hostname localhost
+#--noipv6
 firewall --enabled --service=ssh
 firstboot --disabled
 lang en_US.UTF-8
-timezone --utc Europe/Helsinki
+timezone --ntpservers=0.rhel.pool.ntp.org --utc Europe/Helsinki
 keyboard fi
 services --enabled tuned
 poweroff
@@ -37,8 +38,9 @@ poweroff
 %addon com_redhat_kdump --enable --reserve-mb=auto
 %end
 
-#--excludedocs
 %packages --instLangs=en_US
+#--ignoremissing
+#--excludedocs
 @Core
 bash-completion
 #bind-utils
@@ -106,9 +108,8 @@ qemu-guest-agent
 #-tuned
 %end
 
-%post
+%post --erroronfail
 # GRUB / console
-sed -i -e 's,GRUB_TIMEOUT=.,GRUB_TIMEOUT=1,' /etc/default/grub
 #sed -i -e 's,GRUB_TERMINAL.*,GRUB_TERMINAL="serial console",' /etc/default/grub
 #sed -i -e '/GRUB_SERIAL_COMMAND/d' -e '$ i GRUB_SERIAL_COMMAND="serial --speed=115200"' /etc/default/grub
 #sed -i -e 's/console=tty0 //' -e 's/ console=ttyS0,115200//' /etc/default/grub
@@ -169,8 +170,8 @@ if [ ! -f /etc/centos-release ]; then
 fi
 
 # Packages - keys
-rpm --import /etc/pki/rpm-gpg/RPM-GPG-KEY-redhat-release > /dev/null 2>&1
-rpm --import /etc/pki/rpm-gpg/RPM-GPG-KEY-CentOS-7 > /dev/null 2>&1
+rpm --import /etc/pki/rpm-gpg/RPM-GPG-KEY-redhat-release > /dev/null 2>&1 || :
+rpm --import /etc/pki/rpm-gpg/RPM-GPG-KEY-CentOS-7 > /dev/null 2>&1 || :
 
 # Packages - trimming
 echo "%_install_langs en_US" > /etc/rpm/macros.image-language-conf
@@ -217,10 +218,6 @@ if [ -f /etc/cloud/cloud.cfg ]; then
   sed -i -e '/   ssh-authorized-keys:/a \ \ \ \ - ssh-rsa AAAAB3NzaC1yc2EAAAABIwAAAQEA6NF8iallvQVp22WDkTkyrtvp9eWW6A8YVr+kz4TjGYe7gHzIw+niNltGEFHzD8+v1I2YJ6oXevct1YeS0o9HZyN1Q9qgCgzUFtdOKLv6IedplqoPkcmF0aYet2PkEDo3MlTBckFXPITAMzF8dJSIFo9D8HfdOV0IAdx4O7PtixWKn5y2hMNG0zQPyUecp4pzC6kivAIhyfHilFR61RGL+GPXQ2MWZWFYbAGjyiYJnAmCP3NOTd0jMZEnDkbUvxhMmBYSdETk1rRgm+R4LOzFUGaHqHDLKLX+FIPKcF96hrucXzcWyLbIbEgE98OHlnVYCzRdK8jlqm8tehUc9c9WhQ== vagrant insecure public key' /etc/cloud/cloud.cfg
   /bin/rm -rf /var/lib/cloud/* > /dev/null 2>&1
 fi
-
-# NTP
-#sed -i -e 's,^server ,#server ,g' /etc/chrony.conf
-#echo 'server 0.rhel.pool.ntp.org iburst' >> /etc/chrony.conf
 
 # Make sure rescue image is not built without a configuration change
 echo dracut_rescue_image=no > /etc/dracut.conf.d/no-rescue.conf

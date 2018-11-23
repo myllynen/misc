@@ -21,6 +21,8 @@ zerombr
 clearpart --all
 bootloader --timeout=1 --append="console=tty0 console=ttyS0,115200 biosdevname=0 net.ifnames=0 ipv6.disable=1 quiet systemd.show_status=yes"
 reqpart
+#part /boot --fstype xfs --asprimary --size 1024
+#part swap --fstype swap --asprimary --size 1024
 part / --fstype xfs --asprimary --size 1024 --grow
 selinux --enforcing
 auth --useshadow --passalgo=sha512
@@ -132,6 +134,7 @@ echo 'verbose=1' >> /etc/qemu-ga/qemu-ga.conf
 echo virtual-guest > /etc/tuned/active_profile
 
 # Networking
+rm -f /etc/sysconfig/network-scripts/ifcfg-e* > /dev/null 2>&1 || :
 grep ipv6.disable=1 /etc/default/grub && ipv6=no || ipv6=yes
 for i in 0; do
   cat <<EOF > /etc/sysconfig/network-scripts/ifcfg-eth$i
@@ -164,9 +167,12 @@ restorecon -R /root/.ssh > /dev/null 2>&1
 
 # Repositories
 if [ ! -f /etc/centos-release ]; then
+  repofile=intra.repo
+  repohost=192.168.122.1
   /bin/rm -f /etc/yum.repos.d/* > /dev/null 2>&1
-  ping -c1 -q 192.168.122.1 > /dev/null 2>&1 && \
-    wget http://192.168.122.1/ks/intra.repo -O /etc/yum.repos.d/intra.repo
+  ping -c1 -q $repohost > /dev/null 2>&1 && \
+    wget http://$repohost/ks/$repofile -O /etc/yum.repos.d/$repofile
+  [ -s /etc/yum.repos.d/$repofile ] || rm -f /etc/yum.repos.d/$repofile
 fi
 
 # Packages - keys
@@ -185,7 +191,7 @@ echo "override_install_langs=en_US" >> /etc/yum.conf
 # Packages - update
 #yum -y update
 if [ $(rpm -q kernel | wc -l) -gt 1 ]; then
-  rpm -e $(rpm -q --last kernel | awk 'FNR>1{print $1}')
+  yum -C -y remove $(rpm -q --last kernel | awk 'FNR>1{print $1}')
 fi
 
 # Services

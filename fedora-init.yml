@@ -2,11 +2,13 @@
 # Requires: Ansible 2.4 (due to autoremove=yes)
 # Usage:
 #   0) copy the provided ansible.cfg as ~/.ansible.cfg
-#   1) install/update ansible
+#   1) install/update ansible as needed
 #   2) adjust and run the playbook
 #   3) set password for the new user
-- hosts: localhost
+#   4) run with (< Ansible 2.8): -e ansible_python_interpreter=/usr/bin/python3
+- hosts: all
   become: true
+  remote_user: root
   vars:
     create_user: false
     console_keymap: fi
@@ -21,22 +23,36 @@
     user_shell: /bin/zsh
     workstation: false
   tasks:
-    - name: Check target system
+    - name: Check target basics
       raw: rpm -q python3 python3-dnf python3-libselinux
       check_mode: no
       register: basics
       changed_when: false
       ignore_errors: true
 
-    - name: Prepare target system
+    - name: Prepare target basics
       raw: dnf -y install python3 python3-dnf python3-libselinux
       when: basics is failed
+
+    - name: Check target remote_tmp
+      stat: path={{ ansible_env.HOME }}/.ansible/tmp
+      register: target_tmp
+      failed_when: false
+      changed_when: false
+
+    - name: Create target remote_tmp
+      file: path={{ ansible_env.HOME }}/.ansible/tmp mode=0700 recurse=yes
+      when: not target_tmp.stat.exists
 
     - name: Detect boot parameters
       command: grep -q rhgb /etc/default/grub
       register: adjust_boot_parameters
       failed_when: false
       changed_when: false
+
+    - name: Adjust boot timeout
+      replace: dest=/etc/default/grub regexp='^GRUB_TIMEOUT=.*' replace='GRUB_TIMEOUT=1'
+      when: adjust_boot_parameters.rc == 0
 
     - name: Adjust boot parameters
       command: grubby --remove-args "rhgb LANG" --args="quiet video=efifb:nobgrt systemd.show_status=yes" --update-kernel=ALL
@@ -50,26 +66,29 @@
       replace: dest=/etc/default/grub regexp='(^GRUB_CMDLINE_LINUX=.*)"$' replace='\1 video=efifb:nobgrt systemd.show_status=yes"'
       when: adjust_boot_parameters.rc == 0
 
-    - name: Remove rescue images
-      file: path={{ item }} state=absent
-      with_fileglob: /boot/*rescue*
+    - name: Detect rescue images
+      find: paths=/boot patterns=*rescue*
       register: rescue_images
 
+    - name: Remove rescue images
+      file: path="{{ item['path'] }}" state=absent
+      with_items: "{{ rescue_images['files'] }}"
+
     - name: Check GRUB configuration path
-      stat: path=/boot/efi/EFI/fedora/grub.cfg
+      stat: path="/boot/efi/EFI/{{ ansible_distribution | lower }}/grub.cfg"
       register: efi_grub
       failed_when: false
       changed_when: false
 
     - name: Set GRUB configuration path
       set_fact:
-        boot_config: "{{ '/boot/efi/EFI/fedora/grub.cfg' if (efi_grub.stat.isreg is defined and efi_grub.stat.isreg) else '/boot/grub2/grub.cfg' }}"
+        boot_config: "{{ '/boot/efi/EFI/{{ ansible_distribution | lower }}/grub.cfg' if efi_grub.stat.exists else '/boot/grub2/grub.cfg' }}"
       failed_when: false
       changed_when: false
 
     - name: Update GRUB configuration
       command: grub2-mkconfig -o {{ boot_config }}
-      when: rescue_images is changed
+      when: adjust_boot_parameters.rc == 0
 
     - name: Detect LUKS configuration
       command: grep -q mapper/luks /etc/fstab
@@ -94,7 +113,7 @@
       timezone: name="{{ system_timezone }}"
 
     - name: Check RPM Fusion repository
-      command: rpm -q rpmfusion-free-release-{{ ansible_distribution_version }} rpmfusion-nonfree-release-{{ ansible_distribution_version }} warn=no
+      command: rpm -q rpmfusion-free-release-{{ ansible_distribution_major_version }} rpmfusion-nonfree-release-{{ ansible_distribution_major_version }} warn=no
       register: fusion_enabled
       changed_when: false
       failed_when: false
@@ -103,9 +122,17 @@
     - name: Enable RPM Fusion repository
       package: name={{ item }} state=installed
       with_items:
-        - https://download1.rpmfusion.org/free/fedora/rpmfusion-free-release-{{ ansible_distribution_version }}.noarch.rpm
-        - https://download1.rpmfusion.org/nonfree/fedora/rpmfusion-nonfree-release-{{ ansible_distribution_version }}.noarch.rpm
+        - https://download1.rpmfusion.org/free/fedora/rpmfusion-free-release-{{ ansible_distribution_major_version }}.noarch.rpm
+        - https://download1.rpmfusion.org/nonfree/fedora/rpmfusion-nonfree-release-{{ ansible_distribution_major_version }}.noarch.rpm
       when: workstation and fusion_enabled.rc != 0
+
+    # Rewrite to use dnf module once the #27744 fix is available
+    - name: Remove unhelpful firmware packages
+      raw: dnf remove -y 'a*firmware*' 'i*firmware*' 'lib*firmware*'
+      register: dnf_cmd
+      failed_when: false
+      changed_when: dnf_cmd.rc == 0
+      when: ansible_virtualization_role == "guest"
 
     - name: Remove unhelpful packages
       dnf:
@@ -170,6 +197,7 @@
           - bzip2
           - deltarpm
           - dnf-utils
+          - drpm
           - gpm
           - iotop
           - keychain
@@ -182,10 +210,10 @@
           - pcp-system-tools
           - psmisc
           - python3-policycoreutils
-          - screen
           - strace
           - tcpdump
           - telnet
+          - tmux
           - unzip
           - util-linux-user
           - wget
@@ -198,7 +226,7 @@
       package:
         state: installed
         name:
-          - ImageMagick
+          - GraphicsMagick
           - akmod-wl
           - dconf-editor
           - ffmpeg
@@ -329,6 +357,7 @@
         - /root/.local/share/ibus-typing-booster
         - /root/.rnd
         - /root/anaconda-ks.cfg
+        - /root/original-ks.cfg
         - /root/fedora-init.retry
         - /var/cache/PackageKit
         - /var/lib/abrt

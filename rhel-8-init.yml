@@ -1,0 +1,399 @@
+---
+# Requires: Ansible 2.4 (due to autoremove=yes)
+# Usage:
+#   0) copy the provided ansible.cfg as ~/.ansible.cfg
+#   1) install/update ansible as needed
+#   2) adjust and run the playbook
+#   3) set password for the new user
+#   4) run with (< Ansible 2.8): -e ansible_python_interpreter=/usr/libexec/platform-python
+- hosts: all
+  become: true
+  remote_user: root
+  vars:
+    create_user: false
+    console_keymap: fi
+    console_font: eurlatgr
+    langpacks: ['en', 'fi']
+    system_locale: en_US.UTF-8
+    system_timezone: Europe/Helsinki
+    root_shell: /bin/zsh
+    user_uid: 1000
+    user_name: mm
+    user_group: users
+    user_shell: /bin/zsh
+    # XXX Untested for the time being
+    workstation: false
+    use_epel: false
+  tasks:
+    - name: Check target basics
+      raw: rpm -q platform-python python3-dnf python3-libselinux
+      check_mode: no
+      register: basics
+      changed_when: false
+      ignore_errors: true
+
+    - name: Prepare target basics
+      raw: dnf -y install platform-python python3-dnf python3-libselinux
+      when: basics is failed
+
+    - name: Check target remote_tmp
+      stat: path={{ ansible_env.HOME }}/.ansible/tmp
+      register: target_tmp
+      failed_when: false
+      changed_when: false
+
+    - name: Create target remote_tmp
+      file: path={{ ansible_env.HOME }}/.ansible/tmp mode=0700 recurse=yes
+      when: not target_tmp.stat.exists
+
+    - name: Detect boot parameters
+      command: grep -q rhgb /etc/default/grub
+      register: adjust_boot_parameters
+      failed_when: false
+      changed_when: false
+
+    - name: Adjust boot timeout
+      replace: dest=/etc/default/grub regexp='^GRUB_TIMEOUT=.*' replace='GRUB_TIMEOUT=1'
+      when: adjust_boot_parameters.rc == 0
+
+    - name: Adjust boot parameters
+      command: grubby --remove-args "rhgb LANG" --args="quiet video=efifb:nobgrt systemd.show_status=yes" --update-kernel=ALL
+      when: adjust_boot_parameters.rc == 0
+
+    - name: Finalize boot parameters, part I
+      replace: dest=/etc/default/grub regexp=' rhgb' replace=''
+      when: adjust_boot_parameters.rc == 0
+
+    - name: Finalize boot parameters, part II
+      replace: dest=/etc/default/grub regexp='(^GRUB_CMDLINE_LINUX=.*)"$' replace='\1 video=efifb:nobgrt systemd.show_status=yes"'
+      when: adjust_boot_parameters.rc == 0
+
+    - name: Detect rescue images
+      find: paths=/boot patterns=*rescue*
+      register: rescue_images
+
+    - name: Remove rescue images
+      file: path="{{ item['path'] }}" state=absent
+      with_items: "{{ rescue_images['files'] }}"
+
+    - name: Check GRUB configuration path
+      stat: path="/boot/efi/EFI/{{ ansible_distribution | lower }}/grub.cfg"
+      register: efi_grub
+      failed_when: false
+      changed_when: false
+
+    - name: Set GRUB configuration path
+      set_fact:
+        boot_config: "{{ '/boot/efi/EFI/{{ ansible_distribution | lower }}/grub.cfg' if efi_grub.stat.exists else '/boot/grub2/grub.cfg' }}"
+      failed_when: false
+      changed_when: false
+
+    - name: Update GRUB configuration
+      command: grub2-mkconfig -o {{ boot_config }}
+      when: adjust_boot_parameters.rc == 0
+
+    - name: Detect LUKS configuration
+      command: grep -q mapper/luks /etc/fstab
+      register: luks_in_use
+      failed_when: false
+      changed_when: false
+
+    - name: Configure console
+      copy:
+        dest: /etc/vconsole.conf
+        content: |
+          KEYMAP="{{ console_keymap }}"
+          FONT="{{ console_font }}"
+
+    - name: Configure locale
+      copy:
+        dest: /etc/locale.conf
+        content: |
+          LANG="{{ system_locale }}"
+
+    - name: Set timezone
+      timezone: name="{{ system_timezone }}"
+
+    - name: Check EPEL repository configuration
+      stat: path=/etc/yum.repos.d/epel.repo
+      register: epel_repo
+      failed_when: false
+      changed_when: false
+
+    - name: Enable EPEL repository
+      copy:
+        dest: /etc/yum.repos.d/epel.repo
+        mode: 0644
+        content: |
+          [epel]
+          name=Extra Packages for Enterprise Linux {{ ansible_distribution_major_version }} - $basearch
+          #baseurl=http://download.fedoraproject.org/pub/epel/{{ ansible_distribution_major_version }}/$basearch
+          metalink=https://mirrors.fedoraproject.org/metalink?repo=epel-{{ ansible_distribution_major_version }}&arch=$basearch
+          failovermethod=priority
+          enabled=1
+          gpgcheck=0
+      when: use_epel and not epel_repo.stat.exists
+
+    - name: Check RPM Fusion repository
+      command: rpm -q rpmfusion-free-release-{{ ansible_distribution_major_version }} rpmfusion-nonfree-release-{{ ansible_distribution_major_version }} warn=no
+      register: fusion_enabled
+      changed_when: false
+      failed_when: false
+      when: workstation and use_epel
+
+    - name: Enable RPM Fusion repository
+      package: name={{ item }} state=installed
+      with_items:
+        - https://download1.rpmfusion.org/free/el/rpmfusion-free-release-{{ ansible_distribution_major_version }}.noarch.rpm
+        - https://download1.rpmfusion.org/nonfree/el/rpmfusion-nonfree-release-{{ ansible_distribution_major_version }}.noarch.rpm
+      when: workstation and use_epel and fusion_enabled.rc != 0
+
+    # Rewrite to use dnf module once the #27744 fix is available
+    - name: Remove unhelpful firmware packages
+      raw: dnf remove -y 'a*firmware*' 'i*firmware*' 'lib*firmware*'
+      register: dnf_cmd
+      failed_when: false
+      changed_when: dnf_cmd.rc == 0
+      when: ansible_virtualization_role == "guest"
+
+    - name: Remove unhelpful packages
+      dnf:
+        state: absent
+        autoremove: yes
+        name:
+          - NetworkManager-adsl
+          - NetworkManager-openconnect
+          - NetworkManager-openvpn
+          - NetworkManager-pptp
+          - NetworkManager-team
+          - NetworkManager-vpnc
+          - NetworkManager-wwan
+          - 'PackageKit*'
+          - 'abrt*'
+          - anaconda
+          - 'b43*'
+          - dracut-config-rescue
+          - dracut-live
+          - evolution
+          - 'foomatic*'
+          - gnome-getting-started-docs
+          - gnome-online-miners
+          - gnome-user-docs
+          - 'gutenprint*'
+          - '*hangul*'
+          - hplip
+          - 'java*'
+          - kernel-modules-extra
+          - '*kkc*'
+          - '*libreoffice*'
+          - orca
+          - ostree
+          - pam_krb5
+          - perl-Mozilla-CA
+          - '*pinyin*'
+          - realmd
+          - teamd
+          - '*zhuyin*'
+
+    # https://github.com/ansible/ansible/issues/27744
+    - name: Remove unhelpful packages (#27744 wildcard issue workaround)
+      raw: dnf remove -y 'PackageKit*' 'abrt*' 'b43*' 'foomatic*' 'gutenprint*' '*hangul*' 'java*' '*kkc*' '*libreoffice*' '*pinyin*' '*zhuyin*'
+      register: dnf_cmd
+      failed_when: false
+      changed_when: dnf_cmd.rc == 0
+
+    # Rewrite to use dnf module once the #27744 fix is available
+    - name: Remove unneeded Plymouth packages
+      raw: dnf remove -y 'plymouth*'
+      register: dnf_cmd
+      failed_when: false
+      changed_when: dnf_cmd.rc == 0
+      when: not luks_in_use.rc == 0
+
+    - name: Install helpful packages (common)
+      package:
+        state: installed
+        name:
+          - bash-completion
+          - bind-utils
+          - bzip2
+          - dnf-utils
+          - drpm
+          - gpm
+          - iotop
+          - ltrace
+          - man-pages
+          - mlocate
+          - nano
+          - net-tools
+          - pcp-doc
+          - pcp-system-tools
+          - psmisc
+          - python3-policycoreutils
+          - strace
+          - tcpdump
+          - telnet
+          - tmux
+          - unzip
+          - util-linux-user
+          - wget
+          - zsh
+
+    - name: Install helpful packages (langpacks)
+      package: name="glibc-langpack-{{ langpacks | join(',glibc-langpack-') }}" state=installed
+
+    - name: Install helpful packages (common from EPEL)
+      package:
+        state: installed
+        name:
+          - epel-release
+          - keychain
+      when: use_epel
+
+    # XXX Adjust list once RHEL 8 Workstation and EPEL 8 become available
+    - name: Install helpful packages (workstation)
+      package:
+        state: installed
+        name:
+          - GraphicsMagick
+          - akmod-wl
+          - dconf-editor
+          - ffmpeg
+          - fuse-sshfs
+          - gconf-editor
+          - git
+          - gnome-tweaks
+          - gstreamer1-libav
+          - gstreamer1-plugins-good-gtk
+          - ntfsprogs
+          - patch
+          - powertop
+          - seahorse
+          - totem
+          - totem-nautilus
+          - vlc
+          - wodim
+          - x264
+      when: workstation
+
+    - name: Install helpful packages (workstation langpacks)
+      package: name="langpacks-{{ langpacks | join(',langpacks-') }}" state=installed
+      when: workstation
+
+    - name: Install helpful packages (workstation from EPEL)
+      package:
+        state: installed
+        name:
+          - yle-dl
+          - youtube-dl
+      when: workstation and use_epel
+
+    - name: Update all packages
+      package: name=* state=latest
+
+    - name: Disable unhelpful services
+      service: name={{ item }} enabled=no
+      with_items:
+        - bluetooth
+        - cups
+        - iscsi
+        - lvm2-monitor
+        - mcelog
+        - mdmonitor
+        - multipathd
+        - pmie
+      failed_when: false
+
+    - name: Enable helpful services
+      service: name={{ item }} enabled=yes state=started
+      with_items:
+        - gpm
+        - pmcd
+
+    - name: Change root shell
+      user: name=root shell={{ root_shell }}
+
+    - name: Disable pulseaudio for root
+      command: systemctl --user mask pulseaudio.service pulseaudio.socket
+      register: systemctl_output
+      changed_when: "'Created symlink' in systemctl_output.stderr"
+
+    - name: Create user
+      user:
+        name: "{{ user_name }}"
+        shell: "{{ user_shell }}"
+        group: "{{ user_group }}"
+        uid: "{{ user_uid }}"
+      when: create_user
+
+    - name: Disable tracker for the user, part I
+      file:
+        owner: "{{ user_name }}"
+        group: "{{ user_group }}"
+        mode: 0755
+        path: "/home/{{ user_name }}/.config/systemd/user"
+        state: directory
+      when: create_user
+
+    - name: Disable tracker for the user, part II
+      file:
+        owner: "{{ user_name }}"
+        group: "{{ user_group }}"
+        src: /dev/null
+        dest: "/home/{{ user_name }}/.config/systemd/user/{{ item }}"
+        state: link
+      with_items:
+        - tracker-extract.service
+        - tracker-miner-apps.service
+        - tracker-miner-fs.service
+        - tracker-miner-rss.service
+        - tracker-store.service
+        - tracker-writeback.service
+      when: create_user
+
+    - name: Disable tracker for the user, part III
+      command: restorecon -Rv "/home/{{ user_name }}/.config/systemd"
+      changed_when: false
+      when: create_user
+
+    - name: Configure sudoers
+      lineinfile:
+        create: true
+        dest: /etc/sudoers.d/{{ user_name }}
+        line: '{{ user_name }} ALL=(ALL) NOPASSWD: ALL'
+        validate: 'visudo -cf %s'
+      when: create_user
+
+    - name: Create Windows partition mount point
+      file: path=/mnt/c state=directory
+      when: workstation
+
+    # Needs to be adjusted and enabled manually
+    - name: Create Windows mount point fstab entry
+      lineinfile:
+        dest: /etc/fstab
+        line: "#/dev/sda5 /mnt/c ntfs noauto,ro,uid={{ user_uid }},nls=utf8,comment=systemd.automount 1 2"
+      when: workstation
+
+    - name: Block unwanted user monitoring
+      lineinfile:
+        dest: /etc/hosts
+        line: 127.0.0.2 musicbrainz.org
+      when: workstation
+
+    - name: Cleaning up
+      file: path={{ item }} state=absent
+      with_items:
+        - /1
+        - /root/.config/pulse
+        - /root/.esd_auth
+        - /root/.lesshst
+        - /root/.local/share/ibus-typing-booster
+        - /root/.rnd
+        - /root/anaconda-ks.cfg
+        - /root/original-ks.cfg
+        - /root/rhel-{{ ansible_distribution_major_version }}-init.retry
+        - /var/cache/PackageKit
+        - /var/lib/abrt
+        - /var/spool/abrt
+        - /var/tmp/abrt

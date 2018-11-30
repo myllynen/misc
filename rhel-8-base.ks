@@ -8,7 +8,7 @@
 #   --network network=default --graphics vnc --noreboot \
 #   --location /VirtualMachines/boot/rhel-server-8.0-x86_64-dvd.iso \
 #   --initrd-inject /VirtualMachines/boot/ks/rhel-8-base.ks \
-#   --extra-args "ip=dhcp inst.noblscfg inst.ks=file:/rhel-8-base.ks console=tty0 console=ttyS0,115200 quiet systemd.show_status=yes" \
+#   --extra-args "ip=dhcp inst.noblscfg inst.ks=file:/rhel-8-base.ks console=tty0 console=ttyS0,115200 net.ifnames.prefix=net quiet systemd.show_status=yes" \
 #   --noautoconsole
 #
 # Post-process:
@@ -18,7 +18,7 @@
 cmdline
 zerombr
 clearpart --all
-bootloader --timeout=1 --append="console=tty0 console=ttyS0,115200 biosdevname=0 net.ifnames=0 ipv6.disable=1 quiet systemd.show_status=yes"
+bootloader --timeout=1 --append="console=tty0 console=ttyS0,115200 net.ifnames.prefix=net ipv6.disable=1 quiet systemd.show_status=yes"
 reqpart
 #part /boot --fstype xfs --asprimary --size 1024
 #part swap --fstype swap --asprimary --size 1024
@@ -26,7 +26,7 @@ part / --fstype xfs --asprimary --size 1024 --grow
 selinux --enforcing
 auth --useshadow --passalgo=sha512
 rootpw --plaintext foobar
-#network --device eth0 --bootproto dhcp --onboot yes --hostname localhost
+#network --device net0 --bootproto dhcp --onboot yes --hostname localhost
 #--noipv6
 firewall --enabled --service=ssh
 firstboot --disabled
@@ -58,6 +58,7 @@ mlocate
 nano
 #net-tools
 openssh-clients
+prefixdevname
 psmisc
 python3
 python3-libselinux
@@ -144,11 +145,11 @@ echo 'verbose=1' >> /etc/qemu-ga/qemu-ga.conf
 echo virtual-guest > /etc/tuned/active_profile
 
 # Networking
-rm -f /etc/sysconfig/network-scripts/ifcfg-e* > /dev/null 2>&1 || :
+netdevprefix=net
 grep ipv6.disable=1 /etc/default/grub && ipv6=no || ipv6=yes
 for i in 0; do
-  cat <<EOF > /etc/sysconfig/network-scripts/ifcfg-eth$i
-DEVICE=eth$i
+  cat <<EOF > /etc/sysconfig/network-scripts/ifcfg-$netdevprefix$i
+DEVICE=$netdevprefix$i
 TYPE=Ethernet
 #HWADDR=
 #UUID=
@@ -165,7 +166,7 @@ IPV4_FAILURE_FATAL=yes
 IPV6_FAILURE_FATAL=$ipv6
 EOF
 done
-sed -i -e 's,DEFROUTE=no,DEFROUTE=yes,' /etc/sysconfig/network-scripts/ifcfg-eth0
+sed -i -e 's,DEFROUTE=no,DEFROUTE=yes,' /etc/sysconfig/network-scripts/ifcfg-${netdevprefix}0
 
 # ssh/d
 sed -i -e 's,^#UseDNS.*,UseDNS no,' /etc/ssh/sshd_config

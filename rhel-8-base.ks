@@ -19,9 +19,10 @@ cmdline
 zerombr
 clearpart --all
 bootloader --timeout=1 --append="console=tty0 console=ttyS0,115200 net.ifnames.prefix=net ipv6.disable=1 quiet systemd.show_status=yes"
-reqpart
+#part /boot/efi --fstype=efi --ondisk=vda --size=200 --fsoptions="umask=0077,shortname=winnt"
 #part /boot --fstype xfs --asprimary --size 1024
 #part swap --fstype swap --asprimary --size 1024
+reqpart
 part / --fstype xfs --asprimary --size 1024 --grow
 selinux --enforcing
 auth --useshadow --passalgo=sha512
@@ -97,6 +98,15 @@ zsh
 -sssd*
 -subs*
 
+# BIOS/UEFI cross-compatibility packages
+#efibootmgr
+#grub2-tools*
+#grub2-pc
+#grub2-pc-modules
+#grub2-efi-x64
+#grub2-efi-x64-modules
+#shim-x64
+
 # Guest utilities, always include either one
 qemu-guest-agent
 #open-vm-tools
@@ -135,6 +145,13 @@ grub2-mkconfig -o $grubcfg
 systemctl enable serial-getty@ttyS0.service
 #systemctl enable serial-getty@ttyS1.service
 #echo ttyS1 >> /etc/securetty
+
+# GRUB BIOS/UEFI cross-compatibility (needs UEFI)
+#for grubcfg in /boot/grub2/grub.cfg /boot/efi/EFI/redhat/grub.cfg; do
+#  grub2-mkconfig -o $grubcfg
+#  sed -i -n '1,/BEGIN.*uefi.*/p;/END.*uefi.*/,$p' $grubcfg
+#done
+#grub2-install --force --target=i386-pc /dev/vda > /dev/null 2>&1 || :
 
 # Modules
 echo blacklist intel_rapl >> /etc/modprobe.d/blacklist.conf

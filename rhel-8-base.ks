@@ -40,8 +40,9 @@ poweroff
 %end
 
 %packages --instLangs=en_US
-#--ignoremissing
-#--excludedocs
+# --excludedocs
+# --excludeWeakdeps
+# --ignoremissing
 @Core
 bash-completion
 #bind-utils
@@ -76,7 +77,6 @@ zsh
 
 -a*firmware*
 -biosdevname
--btrfs-progs
 -dracut-config-rescue
 -geolite2-*
 -i*firmware*
@@ -87,7 +87,6 @@ zsh
 -libxkbcommon
 -network-scripts
 #-NetworkManager*
-#-NetworkManager-config-server
 -NetworkManager-team
 -NetworkManager-tui
 -parted
@@ -109,16 +108,20 @@ qemu-guest-agent
 
 # Ultra
 #-audit
-#-authselect
-#-cracklib*
+#-authselect*
+#-cracklib-dicts
 #-e2fsprogs
-#-hwdata
+#-firewalld
+#-lshw
+#-kbd
 #-kexec-tools
 #-polkit
 #-postfix
 #-rootfiles
-#-sg3_utils
+#-sg3_utils*
+#-trousers
 #-tuned
+#-yum
 %end
 
 %post --erroronfail
@@ -146,7 +149,8 @@ echo virtual-guest > /etc/tuned/active_profile
 
 # Networking
 netdevprefix=net
-grep ipv6.disable=1 /etc/default/grub && ipv6=no || ipv6=yes
+rpm -q NetworkManager > /dev/null 2>&1 && nm=yes || nm=no
+grep -q ipv6.disable=1 /etc/default/grub && ipv6=no || ipv6=yes
 for i in 0; do
   cat <<EOF > /etc/sysconfig/network-scripts/ifcfg-$netdevprefix$i
 DEVICE=$netdevprefix$i
@@ -155,7 +159,7 @@ TYPE=Ethernet
 #UUID=
 ONBOOT=yes
 BOOTPROTO=dhcp
-NM_CONTROLLED=yes
+NM_CONTROLLED=$nm
 NOZEROCONF=yes
 DEFROUTE=no
 IPV6_DEFROUTE=no
@@ -182,32 +186,32 @@ if [ ! -f /etc/centos-release ]; then
   repohost=192.168.122.1
   /bin/rm -f /etc/yum.repos.d/* > /dev/null 2>&1
   ping -c1 -q $repohost > /dev/null 2>&1 && \
-    wget http://$repohost/ks/$repofile -O /etc/yum.repos.d/$repofile
+    curl http://$repohost/ks/$repofile -o /etc/yum.repos.d/$repofile
   [ -s /etc/yum.repos.d/$repofile ] || rm -f /etc/yum.repos.d/$repofile
 fi
 
 # Packages - keys
 rpm --import /etc/pki/rpm-gpg/RPM-GPG-KEY-redhat-release > /dev/null 2>&1 || :
-rpm --import /etc/pki/rpm-gpg/RPM-GPG-KEY-CentOS-7 > /dev/null 2>&1 || :
+rpm --import /etc/pki/rpm-gpg/RPM-GPG-KEY-CentOS-8 > /dev/null 2>&1 || :
 
 # Packages - trimming
-echo "%_install_langs en_US" > /etc/rpm/macros.image-language-conf
+echo "%_install_langs en_US" > /etc/rpm/macros.install-langs-conf
 #echo "%_excludedocs 1" > /etc/rpm/macros.excludedocs-conf
-echo "override_install_langs=en_US" >> /etc/yum.conf
-#echo "tsflags=nodocs" >> /etc/yum.conf
-#yum -C -y remove linux-firmware > /dev/null 2>&1 || :
+#echo "install_weak_deps=False" >> /etc/dnf/dnf.conf
+#dnf -C -y remove linux-firmware > /dev/null 2>&1 || :
 
 # Packages - EPEL
-#yum -y install epel-release
+#dnf -y install epel-release
 
 # Packages - update
-#yum -y update
+#dnf -y update
 if [ $(rpm -q kernel | wc -l) -gt 1 ]; then
-  yum -C -y remove $(rpm -q --last kernel | awk 'FNR>1{print $1}')
+  dnf -C -y remove $(rpm -q --last kernel | awk 'FNR>1{print $1}')
 fi
 
 # Services
-systemctl disable remote-fs.target
+systemctl disable dnf-makecache.timer nis-domainname.service remote-fs.target
+rpm -q NetworkManager > /dev/null 2>&1 || systemctl enable network.service
 
 # Watchdog
 if [ -f /etc/watchdog.conf ]; then
@@ -216,7 +220,7 @@ if [ -f /etc/watchdog.conf ]; then
 fi
 
 # cloud-init
-#yum -y install cloud-init cloud-utils-growpart
+#dnf -y install cloud-init cloud-utils-growpart
 if [ -f /etc/cloud/cloud.cfg ]; then
   sed -i -e 's/DEBUG/WARNING/g' /etc/cloud/cloud.cfg.d/05_logging.cfg
   sed -i -e '1i \\' /etc/cloud/cloud.cfg
@@ -245,8 +249,8 @@ rm -f /var/lib/systemd/random-seed
 restorecon -R /etc > /dev/null 2>&1 || :
 
 # Clean
-yum -C clean all
+dnf -C clean all
 /bin/rm -rf /etc/*- /etc/*.bak /root/* /tmp/* /var/tmp/*
-/bin/rm -rf /var/cache/yum/* /var/lib/yum/repos/* /var/lib/yum/yumdb/*
+/bin/rm -rf /var/cache/dnf/* /var/lib/dnf/repos/* /var/lib/dnf/yumdb/*
 /bin/rm -rf /var/log/*debug /var/log/anaconda /var/lib/rhsm
 %end

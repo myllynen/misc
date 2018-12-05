@@ -33,6 +33,7 @@ different characteristics)_.
 1. RHEL Server default installation (using all defaults with the GUI
    installer)
 2. Red Hat RHEL 8 Qcow2 image (from https://access.redhat.com/downloads/)
+   (has no `firewalld` running)
 3. [rhel-8-base.ks](rhel-8-base.ks) based kickstart installation
 4. [rhel-8-base.ks](rhel-8-base.ks) "ultra lean" installation
    (using __--excludedocs__ and other `%packages` options listed in the

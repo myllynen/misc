@@ -20,16 +20,19 @@ Nothing but random stuff here.
 * [rhel-8-init.yml](rhel-8-init.yml)
   * Ansible playbook to initialize a RHEL 8 system after installation
 * [vagrant.ks](vagrant.ks)
-  * Kickstart snippet for Fedora/RHEL installation Vagrant-readiness
+  * Kickstart snippet to make Fedora/RHEL installation Vagrant-ready
 
 ## RHEL 8 Footprint Comparison
 
 The following table illustrates RHEL 8 image footprint with various
-installation options. Last updated for RHEL 8.0 Beta (later releases may
-have slightly different characteristics):
+installation options.
 
-1. RHEL Server default installation (using all defaults with the installer)
-2. Red Hat RHEL 8 Qcow2 image
+_Last updated for RHEL 8.0 Beta (later releases may have slightly
+different characteristics)_.
+
+1. RHEL Server default installation (using all defaults with the GUI
+   installer)
+2. Red Hat RHEL 8 Qcow2 image (from https://access.redhat.com/downloads/)
 3. [rhel-8-base.ks](rhel-8-base.ks) based kickstart installation
 4. [rhel-8-base.ks](rhel-8-base.ks) "ultra lean" installation
    (using __--excludedocs__ and other `%packages` options listed in the

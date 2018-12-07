@@ -5,7 +5,7 @@
 #   --connect qemu:///system --name test --virt-type kvm --arch x86_64 \
 #   --vcpus 2 --cpu host --ram 2048 --os-type linux --os-variant rhel7.6 \
 #   --disk pool=default,format=qcow2,cache=none,io=native,size=8 \
-#   --network network=default --graphics vnc --noreboot \
+#   --network network=default --graphics vnc --sound none --noreboot \
 #   --location /VirtualMachines/boot/rhel-server-8.0-x86_64-dvd.iso \
 #   --initrd-inject /VirtualMachines/boot/ks/rhel-8-base.ks \
 #   --extra-args "ip=dhcp inst.noblscfg inst.ks=file:/rhel-8-base.ks console=tty0 console=ttyS0,115200 net.ifnames.prefix=net quiet systemd.show_status=yes" \
@@ -19,10 +19,10 @@ cmdline
 zerombr
 clearpart --all
 bootloader --timeout=1 --append="console=tty0 console=ttyS0,115200 net.ifnames.prefix=net ipv6.disable=1 quiet systemd.show_status=yes"
+reqpart
 #part /boot/efi --fstype=efi --ondisk=vda --size=200 --fsoptions="umask=0077,shortname=winnt"
 #part /boot --fstype xfs --asprimary --size 1024
 #part swap --fstype swap --asprimary --size 1024
-reqpart
 part / --fstype xfs --asprimary --size 1024 --grow
 selinux --enforcing
 auth --useshadow --passalgo=sha512
@@ -116,7 +116,7 @@ qemu-guest-agent
 #pciutils
 #virt-what
 
-# Ultra
+# Ultra lean
 #-audit
 #-authselect*
 #-cracklib-dicts
@@ -204,7 +204,8 @@ if [ ! -f /etc/centos-release ]; then
   /bin/rm -f /etc/yum.repos.d/* > /dev/null 2>&1
   ping -c1 -q $repohost > /dev/null 2>&1 && \
     curl http://$repohost/ks/$repofile -o /etc/yum.repos.d/$repofile
-  [ -s /etc/yum.repos.d/$repofile ] || rm -f /etc/yum.repos.d/$repofile
+  grep -q name= /etc/yum.repos.d/$repofile > /dev/null 2>&1 || \
+    rm -f /etc/yum.repos.d/$repofile
 fi
 
 # Packages - keys
@@ -215,7 +216,7 @@ rpm --import /etc/pki/rpm-gpg/RPM-GPG-KEY-CentOS-8 > /dev/null 2>&1 || :
 echo "%_install_langs en_US" > /etc/rpm/macros.install-langs-conf
 #echo "%_excludedocs 1" > /etc/rpm/macros.excludedocs-conf
 #echo "install_weak_deps=False" >> /etc/dnf/dnf.conf
-#dnf -C -y remove linux-firmware > /dev/null 2>&1 || :
+dnf -C -y remove linux-firmware > /dev/null 2>&1 || :
 
 # Packages - EPEL
 #dnf -y install epel-release

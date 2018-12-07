@@ -5,10 +5,10 @@
 #   --connect qemu:///system --name test --virt-type kvm --arch x86_64 \
 #   --vcpus 2 --cpu host --ram 2048 --os-type linux --os-variant rhel7.6 \
 #   --disk pool=default,format=qcow2,cache=none,io=native,size=8 \
-#   --network network=default --graphics vnc --noreboot \
+#   --network network=default --graphics vnc --sound none --noreboot \
 #   --location /VirtualMachines/boot/rhel-server-7.6-x86_64-dvd.iso \
 #   --initrd-inject /VirtualMachines/boot/ks/rhel-7-base.ks \
-#   --extra-args "ip=dhcp inst.ks=file:/rhel-7-base.ks console=tty0 console=ttyS0,115200 quiet systemd.show_status=yes" \
+#   --extra-args "ip=dhcp inst.ks=file:/rhel-7-base.ks console=tty0 console=ttyS0,115200 biosdevname=0 net.ifnames=0 quiet systemd.show_status=yes" \
 #   --noautoconsole
 #
 # Post-process:
@@ -41,8 +41,8 @@ poweroff
 %end
 
 %packages --instLangs=en_US
-#--ignoremissing
-#--excludedocs
+# --excludedocs
+# --ignoremissing
 @Core
 bash-completion
 #bind-utils
@@ -98,15 +98,19 @@ qemu-guest-agent
 #pciutils
 #virt-what
 
-# Ultra
+# Ultra lean
 #-audit
 #-authconfig
 #-e2fsprogs
+#-firewalld
+#-lshw
+#-kbd
 #-kexec-tools
 #-polkit
 #-postfix
 #-rootfiles
-#-sg3_utils
+#-sg3_utils*
+#-trousers
 #-tuned
 %end
 
@@ -135,16 +139,18 @@ echo virtual-guest > /etc/tuned/active_profile
 
 # Networking
 rm -f /etc/sysconfig/network-scripts/ifcfg-e* > /dev/null 2>&1 || :
-grep ipv6.disable=1 /etc/default/grub && ipv6=no || ipv6=yes
+netdevprefix=eth
+rpm -q NetworkManager > /dev/null 2>&1 && nm=yes || nm=no
+grep -q ipv6.disable=1 /etc/default/grub && ipv6=no || ipv6=yes
 for i in 0; do
-  cat <<EOF > /etc/sysconfig/network-scripts/ifcfg-eth$i
-DEVICE=eth$i
+  cat <<EOF > /etc/sysconfig/network-scripts/ifcfg-$netdevprefix$i
+DEVICE=$netdevprefix$i
 TYPE=Ethernet
 #HWADDR=
 #UUID=
 ONBOOT=yes
 BOOTPROTO=dhcp
-NM_CONTROLLED=no
+NM_CONTROLLED=$nm
 NOZEROCONF=yes
 DEFROUTE=no
 IPV6_DEFROUTE=no
@@ -155,7 +161,7 @@ IPV4_FAILURE_FATAL=yes
 IPV6_FAILURE_FATAL=$ipv6
 EOF
 done
-sed -i -e 's,DEFROUTE=no,DEFROUTE=yes,' /etc/sysconfig/network-scripts/ifcfg-eth0
+sed -i -e 's,DEFROUTE=no,DEFROUTE=yes,' /etc/sysconfig/network-scripts/ifcfg-${netdevprefix}0
 
 # ssh/d
 sed -i -e 's,^#UseDNS.*,UseDNS no,' /etc/ssh/sshd_config
@@ -171,8 +177,9 @@ if [ ! -f /etc/centos-release ]; then
   repohost=192.168.122.1
   /bin/rm -f /etc/yum.repos.d/* > /dev/null 2>&1
   ping -c1 -q $repohost > /dev/null 2>&1 && \
-    wget http://$repohost/ks/$repofile -O /etc/yum.repos.d/$repofile
-  [ -s /etc/yum.repos.d/$repofile ] || rm -f /etc/yum.repos.d/$repofile
+    curl http://$repohost/ks/$repofile -o /etc/yum.repos.d/$repofile
+  grep -q name= /etc/yum.repos.d/$repofile > /dev/null 2>&1 || \
+    rm -f /etc/yum.repos.d/$repofile
 fi
 
 # Packages - keys
@@ -180,10 +187,9 @@ rpm --import /etc/pki/rpm-gpg/RPM-GPG-KEY-redhat-release > /dev/null 2>&1 || :
 rpm --import /etc/pki/rpm-gpg/RPM-GPG-KEY-CentOS-7 > /dev/null 2>&1 || :
 
 # Packages - trimming
-echo "%_install_langs en_US" > /etc/rpm/macros.image-language-conf
+echo "%_install_langs en_US" > /etc/rpm/macros.install-langs-conf
 #echo "%_excludedocs 1" > /etc/rpm/macros.excludedocs-conf
-echo "override_install_langs=en_US" >> /etc/yum.conf
-#echo "tsflags=nodocs" >> /etc/yum.conf
+yum -C -y remove linux-firmware > /dev/null 2>&1 || :
 
 # Packages - EPEL
 #yum -y install epel-release
@@ -197,6 +203,7 @@ fi
 # Services
 systemctl disable remote-fs.target
 systemctl disable systemd-readahead-collect.service systemd-readahead-drop.service systemd-readahead-replay.service
+rpm -q NetworkManager > /dev/null 2>&1 || systemctl enable network.service
 
 # Watchdog
 if [ -f /etc/watchdog.conf ]; then

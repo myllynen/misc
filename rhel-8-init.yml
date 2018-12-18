@@ -274,6 +274,7 @@
           - vlc
           - wodim
           - x264
+          - xorg-x11-fonts-misc
       when: workstation
 
     - name: Install helpful packages (workstation langpacks)

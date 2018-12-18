@@ -245,6 +245,7 @@
           - vlc
           - wodim
           - x264
+          - xorg-x11-fonts-misc
           - yle-dl
           - youtube-dl
       when: workstation

@@ -131,7 +131,7 @@
       raw: dnf remove -y 'a*firmware*' 'i*firmware*' 'lib*firmware*'
       register: dnf_cmd
       failed_when: false
-      changed_when: dnf_cmd.rc == 0
+      changed_when: "'Removed:' in dnf_cmd.stdout"
       when: ansible_virtualization_role == "guest"
 
     - name: Remove unhelpful packages
@@ -178,14 +178,14 @@
       raw: dnf remove -y 'PackageKit*' 'abrt*' 'b43*' 'foomatic*' 'gutenprint*' '*hangul*' 'java*' '*kkc*' '*libreoffice*' '*pinyin*' '*zhuyin*'
       register: dnf_cmd
       failed_when: false
-      changed_when: dnf_cmd.rc == 0
+      changed_when: "'Removed:' in dnf_cmd.stdout"
 
     # Rewrite to use dnf module once the #27744 fix is available
     - name: Remove unneeded Plymouth packages
       raw: dnf remove -y 'plymouth*'
       register: dnf_cmd
       failed_when: false
-      changed_when: dnf_cmd.rc == 0
+      changed_when: "'Removed:' in dnf_cmd.stdout"
       when: not luks_in_use.rc == 0
 
     - name: Install helpful packages (common)
@@ -280,10 +280,19 @@
     - name: Change root shell
       user: name=root shell={{ root_shell }}
 
-    - name: Disable pulseaudio for root
-      command: systemctl --user mask pulseaudio.service pulseaudio.socket
-      register: systemctl_output
-      changed_when: "'Created symlink' in systemctl_output.stderr"
+    - name: Disable pulseaudio for root, part I
+      file:
+        path: /root/.config/systemd/user
+        state: directory
+
+    - name: Disable pulseaudio for root, part II
+      file:
+        src: /dev/null
+        dest: /root/.config/systemd/user/{{ item }}
+        state: link
+      with_items:
+        - pulseaudio.service
+        - pulseaudio.socket
 
     - name: Create user
       user:

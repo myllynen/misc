@@ -13,7 +13,8 @@
 #
 # Post-process:
 # 1) virt-sysprep --root-password password:foobar -a ./rhel.qcow2
-# 2) virt-sparsify --compress|--in-place ./rhel.qcow2
+# 2) virt-sparsify --in-place ./rhel.qcow2
+# 3) qemu-img convert -c -p -O qcow2 ./rhel.qcow2 ./rhel-final.qcow2
 
 install
 cmdline

@@ -71,6 +71,7 @@ different characteristics)_.
    `network.service` instead of `NetworkManager`,
    all custom packages omitted)
 5. [rhel-8-base.ks](rhel-8-base.ks) "ultra lean" with SELinux disabled
+   (see https://bugzilla.redhat.com/show_bug.cgi?id=1660142)
 
 NB. The _linux-firmware_ package takes 291M on disk if installed, it
 is removed by the kickstart `%post` script but in case of kernel update

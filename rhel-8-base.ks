@@ -203,9 +203,8 @@ if [ ! -f /etc/centos-release ]; then
   repofile=intra.repo
   repohost=192.168.122.1
   /bin/rm -f /etc/yum.repos.d/* > /dev/null 2>&1
-  ping -c1 -q $repohost > /dev/null 2>&1 && \
-    curl http://$repohost/ks/$repofile -o /etc/yum.repos.d/$repofile
-  grep -q name= /etc/yum.repos.d/$repofile > /dev/null 2>&1 || \
+  curl http://$repohost/ks/$repofile -o /etc/yum.repos.d/$repofile
+  grep -q gpgcheck /etc/yum.repos.d/$repofile > /dev/null 2>&1 || \
     rm -f /etc/yum.repos.d/$repofile
 fi
 

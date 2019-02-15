@@ -237,6 +237,7 @@
           - unzip
           - util-linux-user
           - wget
+          - xauth
           - zsh
 
     - name: Install helpful packages (langpacks)
@@ -248,6 +249,7 @@
         name:
           - epel-release
           - keychain
+          - xclip
       when: use_epel
 
     # XXX Adjust list once RHEL 8 Workstation and EPEL 8 become available

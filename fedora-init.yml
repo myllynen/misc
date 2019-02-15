@@ -217,6 +217,8 @@
           - unzip
           - util-linux-user
           - wget
+          - xauth
+          - xclip
           - zsh
 
     - name: Install helpful packages (langpacks)

@@ -60,6 +60,9 @@ installation options.
 _Last updated for RHEL 8.0 Beta (later releases may have slightly
 different characteristics)_.
 
+See also [this RFE](https://bugzilla.redhat.com/show_bug.cgi?id=1660122)
+for comments about the official RHEL 8 Qcow2 image.
+
 1. RHEL Server default installation (using all defaults with the GUI
    installer)
 2. Red Hat RHEL 8 Qcow2 image (from https://access.redhat.com/downloads/)

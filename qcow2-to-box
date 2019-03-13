@@ -5,9 +5,9 @@ if [ $# -ne 1 ]; then
   exit 1
 fi
 
-img=$1
-dir=$(dirname "$img")
-box=$(basename "${img%.*}.box")
+img="$1"
+dir="$(dirname "$img")"
+box="$(basename "${img%.*}.box")"
 
 if ! qemu-img info "$img" | grep -qi qcow; then
   echo "Not a qcow image: $img" 2>&1
@@ -15,7 +15,7 @@ if ! qemu-img info "$img" | grep -qi qcow; then
 fi
 
 if [ ! -w "$dir" ]; then
-  echo "No write permission for $dir, aborting!" 2>&1
+  echo "No write permission to $dir, aborting!" 2>&1
   exit 1
 fi
 
@@ -30,11 +30,15 @@ cd "$dir"
 echo "Creating $box, this will take a few minutes..."
 
 echo "Running virt-sysprep..."
-virt-sysprep -q --operations defaults,-ssh-userdir -a "$img"
+virt-sysprep -q --operations defaults,-ssh-userdir -a "$img" || exit 2
 
 echo "Running virt-sparsify..."
-virt-sparsify -q --compress "$img" "$img.sparse"
-mv "$img.sparse" "$img"
+virt-sparsify -q --in-place "$img" || exit 2
+
+echo "Running qemu-img convert..."
+qemu-img convert -c -O qcow2 "$img" "$img.compr" || exit 2
+mv "$img.compr" "$img" || exit 2
+
 
 echo "Creating metafiles..."
 [ -f ./Vagrantfile ] && mv ./Vagrantfile ./Vagrantfile.bak

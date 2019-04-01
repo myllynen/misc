@@ -20,28 +20,28 @@ install
 cmdline
 zerombr
 clearpart --all
-bootloader --timeout=1 --append="console=tty0 console=ttyS0,115200 biosdevname=0 net.ifnames=0 ipv6.disable=1 quiet systemd.show_status=yes"
+bootloader --timeout 1 --append "console=tty0 console=ttyS0,115200 biosdevname=0 net.ifnames=0 ipv6.disable=1 quiet systemd.show_status=yes"
 reqpart
 #part /boot --fstype xfs --asprimary --size 1024
 #part swap --fstype swap --asprimary --size 1024
 part / --fstype xfs --asprimary --size 1024 --grow
 selinux --enforcing
-auth --useshadow --passalgo=sha512
+auth --useshadow --passalgo sha512
 rootpw --plaintext foobar
 #network --device eth0 --bootproto dhcp --onboot yes --hostname localhost
 #--noipv6
-firewall --enabled --service=ssh
+firewall --enabled --service ssh
 firstboot --disabled
 lang en_US.UTF-8
-timezone --ntpservers=0.rhel.pool.ntp.org --utc Europe/Helsinki
+timezone --ntpservers 0.rhel.pool.ntp.org --utc Europe/Helsinki
 keyboard fi
 services --enabled tuned
 poweroff
 
-%addon com_redhat_kdump --enable --reserve-mb=auto
+%addon com_redhat_kdump --enable --reserve-mb auto
 %end
 
-%packages --instLangs=en_US
+%packages --instLangs en_US
 # --excludedocs
 # --ignoremissing
 @Core

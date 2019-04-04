@@ -14,7 +14,7 @@ Nothing but random stuff here.
 * [qcow2-to-box](qcow2-to-box)
   * A simple script to create Vagrant boxes from Qcow2 images
 * [rhel-7-base.ks](rhel-7-base.ks)
-  * RHEL 7 base installation kickstart example
+  * RHEL 7 base installation kickstart example (see below)
 * [rhel-8-base.ks](rhel-8-base.ks)
   * RHEL 8 base installation kickstart example (see below)
 * [rhel-8-init.yml](rhel-8-init.yml)
@@ -42,8 +42,8 @@ different characteristics)_.
    all custom packages omitted)
 5. [rhel-7-base.ks](rhel-7-base.ks) "ultra lean" with SELinux disabled
 
-NB. The _linux-firmware_ package takes 176M on disk if installed, it
-is removed by the kickstart `%post` script but in case of kernel update
+NB. The _linux-firmware_ package takes 176M on disk if installed, it is
+removed by the kickstart `%post` script but in case of a kernel update
 it will be installed again, even if not needed on VMs.
 
 | Variant    |    1   |    2   |    3   |    4   |    5   |
@@ -79,6 +79,11 @@ for comments about the official RHEL 8 Qcow2 image.
 NB. The _linux-firmware_ package takes 291M on disk if installed, it
 is removed by the kickstart `%post` script but in case of kernel update
 it will be installed again, even if not needed on VMs.
+
+See also [this RFE](https://bugzilla.redhat.com/show_bug.cgi?id=1657204)
+for discussion to possibly change RHEL firmware packages as [weak
+dependencies](https://fedoraproject.org/wiki/Packaging:WeakDependencies)
+for RHEL 8 kernel.
 
 | Variant    |    1   |    2   |    3   |    4   |    5   |
 |------------|:------:|:------:|:------:|:------:|:------:|

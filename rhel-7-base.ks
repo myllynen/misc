@@ -135,7 +135,9 @@ echo blacklist pcspkr >> /etc/modprobe.d/blacklist.conf
 # Guest Agent / Performance
 mkdir -p /etc/qemu-ga /etc/tuned
 echo '[general]' > /etc/qemu-ga/qemu-ga.conf
-echo 'verbose=1' >> /etc/qemu-ga/qemu-ga.conf
+#echo 'logfile = /var/log/qemu-ga/qemu-ga.log' >> /etc/qemu-ga/qemu-ga.conf
+#mkdir -p /var/log/qemu-ga
+echo 'verbose = 1' >> /etc/qemu-ga/qemu-ga.conf
 echo virtual-guest > /etc/tuned/active_profile
 
 # Networking

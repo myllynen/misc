@@ -1,8 +1,7 @@
 ---
-# Requires: Ansible 2.4 (due to autoremove=yes)
 # Usage:
-#   0) copy the provided ansible.cfg as ~/.ansible.cfg
-#   1) install/update ansible as needed
+#   0) copy the accompanying ansible.cfg as ~/.ansible.cfg
+#   1) install Ansible 2.4+
 #   2) adjust and run the playbook
 #   3) set password for the new user
 #   4) run with (< Ansible 2.8): -e ansible_python_interpreter=/usr/bin/python3
@@ -22,6 +21,8 @@
     user_group: users
     user_shell: /bin/zsh
     workstation: false
+    enable_sshd: true
+    disable_network_services: true
   tasks:
     - name: Check target basics
       raw: rpm -q python3 python3-dnf python3-libselinux
@@ -67,7 +68,7 @@
       when: adjust_boot_parameters.rc == 0
 
     - name: Detect rescue images
-      find: paths=/boot patterns=*rescue*
+      find: paths=/boot,/boot/loader/entries patterns=*rescue*
       register: rescue_images
 
     - name: Remove rescue images
@@ -128,7 +129,7 @@
 
     # Rewrite to use dnf module once the #27744 fix is available
     - name: Remove unhelpful firmware packages
-      raw: dnf remove -y 'a*firmware*' 'i*firmware*' 'lib*firmware*'
+      raw: dnf remove -y 'a*firmware*' 'i*firmware*' 'lib*firmware*' 'z*firmware'
       register: dnf_cmd
       failed_when: false
       changed_when: "'Removed:' in dnf_cmd.stdout"
@@ -243,7 +244,6 @@
           - powertop
           - seahorse
           - totem
-          - totem-nautilus
           - vlc
           - wodim
           - x264
@@ -262,10 +262,9 @@
     - name: Disable unhelpful services
       service: name={{ item }} enabled=no
       with_items:
-        - bluetooth
         - cups
         - dmraid-activation
-        - iscsi
+        - flatpak-add-fedora-repos
         - lvm2-monitor
         - mcelog
         - mdmonitor
@@ -273,11 +272,40 @@
         - pmie
       failed_when: false
 
+    - name: Disable unhelpful network services
+      service: name={{ item }} enabled=no state=stopped
+      with_items:
+        - bluetooth.service
+        - bluetooth.target
+        - iscsi.service
+        - iscsid.socket
+        - iscsiuio.socket
+        - nfs-client.target
+        - nfs-convert.service
+        - remote-fs.target
+        - sssd-kcm.service
+        - sssd.service
+      failed_when: false
+      when: disable_network_services
+
     - name: Enable helpful services
       service: name={{ item }} enabled=yes state=started
       with_items:
         - gpm
         - pmcd
+
+    - name: Install SSH daemon
+      package: name=openssh-server state=installed
+      when: enable_sshd      
+
+    - name: Configure SSH daemon
+      replace: dest=/etc/ssh/sshd_config regexp='^#MaxAuthTries 6' replace='MaxAuthTries 10'
+      when: enable_sshd
+      register: sshd_config
+
+    - name: Enable SSH daemon
+      service: name=sshd enabled=yes state="{{ 'restarted' if sshd_config.changed else 'started' }}"
+      when: enable_sshd
 
     - name: Change root shell
       user: name=root shell={{ root_shell }}

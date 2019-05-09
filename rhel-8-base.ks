@@ -95,6 +95,7 @@ zsh
 -plymouth
 -rdma*
 -*rhn*
+-*spacewalk*
 -sqlite
 -sssd*
 -subs*

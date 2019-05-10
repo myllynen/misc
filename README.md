@@ -57,21 +57,21 @@ it will be installed again, even if not needed on VMs.
 The following table illustrates RHEL 8 image footprint with various
 installation options.
 
-_Last updated for RHEL 8.0 Beta (later releases may have slightly
-different characteristics)_.
+_Last updated for RHEL 8.0 (later releases may have slightly different
+characteristics)_.
 
 See also [this RFE](https://bugzilla.redhat.com/show_bug.cgi?id=1660122)
 for comments about the official RHEL 8 Qcow2 image.
 
 1. RHEL Server default installation (using all defaults with the GUI
-   installer)
+   installer for a Minimal installation)
 2. Red Hat RHEL 8 Qcow2 image (from https://access.redhat.com/downloads/)
    (has no `firewalld` running)
 3. [rhel-8-base.ks](rhel-8-base.ks) based kickstart installation
 4. [rhel-8-base.ks](rhel-8-base.ks) "ultra lean" installation
    (using __--excludedocs__ and other `%packages` options listed in the
    file, `firewalld`, `kdump`, and `tuned` services disabled, using
-   `network.service` instead of `NetworkManager`,
+   `network.service` and `dhclient` instead of `NetworkManager`,
    all custom packages omitted)
 5. [rhel-8-base.ks](rhel-8-base.ks) "ultra lean" with SELinux disabled
    (see https://bugzilla.redhat.com/show_bug.cgi?id=1660142)
@@ -87,9 +87,9 @@ for RHEL 8 kernel.
 
 | Variant    |    1   |    2   |    3   |    4   |    5   |
 |------------|:------:|:------:|:------:|:------:|:------:|
-| RPMs       |   382  |   433  |   327  |   228  |   222  |
-| Disk usage | 1386M  | 1295M  |  736M  |  540M  |  490M  |
-| RAM usage  |  145M  |  129M  |  138M  |   85M  |   55M  |
+| RPMs       |   406  |   437  |   331  |   233  |   227  |
+| Disk usage | 1491M  | 1279M  |  709M  |  515M  |  463M  |
+| RAM usage  |  179M  |  148M  |  161M  |  103M  |   70M  |
 
 ## License
 

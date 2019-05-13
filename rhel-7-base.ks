@@ -167,6 +167,7 @@ done
 sed -i -e 's,DEFROUTE=no,DEFROUTE=yes,' /etc/sysconfig/network-scripts/ifcfg-${netdevprefix}0
 
 # ssh/d
+sed -i -e 's,^#MaxAuthTries 6,MaxAuthTries 10,' /etc/ssh/sshd_config
 sed -i -e 's,^#UseDNS.*,UseDNS no,' /etc/ssh/sshd_config
 # https://lists.centos.org/pipermail/centos-devel/2016-July/014981.html
 echo "OPTIONS=-u0" >> /etc/sysconfig/sshd

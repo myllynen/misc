@@ -387,7 +387,7 @@
         line: 127.0.0.2 musicbrainz.org
       when: workstation
 
-    - name: Cleaning up
+    - name: Cleaning up, part I
       file: path={{ item }} state=absent
       with_items:
         - /1
@@ -403,3 +403,16 @@
         - /var/lib/abrt
         - /var/spool/abrt
         - /var/tmp/abrt
+
+    - name: Cleaning up, part II
+      find:
+        paths: /tmp
+        patterns: "ks-script*"
+        use_regex: true
+      register: tmp_files
+
+    - name: Cleaning up, part III
+      file:
+        path: "{{ item['path'] }}"
+        state: absent
+      with_items: "{{ tmp_files['files'] }}"

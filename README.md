@@ -40,7 +40,8 @@ different characteristics)_.
    all additional packages listed in `%packages` section omitted,
    `firewalld`, `kdump`, and `tuned` services disabled, using
    `network.service` and `dhclient` instead of `NetworkManager`,
-   `auth` disabled (due to depending on excluded packages)
+   `auth` and `firewall` directives omitted
+   (due to depending on excluded packages)
 5. "Ultra lean" installation with also SELinux disabled
 
 NB. The _linux-firmware_ package takes 176M on disk if installed, it is
@@ -74,7 +75,8 @@ for comments about the official RHEL 8 Qcow2 image.
    all additional packages listed in `%packages` section omitted,
    `firewalld`, `kdump`, and `tuned` services disabled, using
    `network.service` and `dhclient` instead of `NetworkManager`,
-   `authselect` disabled (due to depending on excluded packages)
+   `authselect` and `firewall` directives omitted
+   (due to depending on excluded packages)
 5. "Ultra lean" installation with also SELinux disabled
    (see https://bugzilla.redhat.com/show_bug.cgi?id=1660142)
 

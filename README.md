@@ -35,12 +35,13 @@ different characteristics)_.
 2. Red Hat RHEL 7 Qcow2 image (from https://access.redhat.com/downloads/)
    (has no `firewalld` running)
 3. [rhel-7-base.ks](rhel-7-base.ks) based kickstart installation
-4. [rhel-7-base.ks](rhel-7-base.ks) "ultra lean" installation
-   (using __--excludedocs__ and other `%packages` options listed in the
-   file, `firewalld`, `kdump`, and `tuned` services disabled, using
-   `network.service` instead of `NetworkManager`,
-   all custom packages omitted)
-5. [rhel-7-base.ks](rhel-7-base.ks) "ultra lean" with SELinux disabled
+4. "Ultra lean" installation using [rhel-7-base.ks](rhel-7-base.ks)
+   with __--excludedocs__ and other `%packages` options listed,
+   all additional packages listed in `%packages` section omitted,
+   `firewalld`, `kdump`, and `tuned` services disabled, using
+   `network.service` and `dhclient` instead of `NetworkManager`,
+   `auth` disabled (due to depending on excluded packages)
+5. "Ultra lean" installation with also SELinux disabled
 
 NB. The _linux-firmware_ package takes 176M on disk if installed, it is
 removed by the kickstart `%post` script but in case of a kernel update
@@ -68,12 +69,13 @@ for comments about the official RHEL 8 Qcow2 image.
 2. Red Hat RHEL 8 Qcow2 image (from https://access.redhat.com/downloads/)
    (has no `firewalld` running)
 3. [rhel-8-base.ks](rhel-8-base.ks) based kickstart installation
-4. [rhel-8-base.ks](rhel-8-base.ks) "ultra lean" installation
-   (using __--excludedocs__ and other `%packages` options listed in the
-   file, `firewalld`, `kdump`, and `tuned` services disabled, using
+4. "Ultra lean" installation using [rhel-8-base.ks](rhel-8-base.ks)
+   with __--excludedocs__ and other `%packages` options listed,
+   all additional packages listed in `%packages` section omitted,
+   `firewalld`, `kdump`, and `tuned` services disabled, using
    `network.service` and `dhclient` instead of `NetworkManager`,
-   all custom packages omitted)
-5. [rhel-8-base.ks](rhel-8-base.ks) "ultra lean" with SELinux disabled
+   `authselect` disabled (due to depending on excluded packages)
+5. "Ultra lean" installation with also SELinux disabled
    (see https://bugzilla.redhat.com/show_bug.cgi?id=1660142)
 
 NB. The _linux-firmware_ package takes 291M on disk if installed, it

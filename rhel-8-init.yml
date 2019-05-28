@@ -133,21 +133,21 @@
           failovermethod=priority
           enabled=1
           gpgcheck=0
-      when: use_epel and not epel_repo.stat.exists
+      when: use_epel | bool and not epel_repo.stat.exists
 
     - name: Check RPM Fusion repository
       command: rpm -q rpmfusion-free-release-{{ ansible_distribution_major_version }} rpmfusion-nonfree-release-{{ ansible_distribution_major_version }} warn=no
       register: fusion_enabled
       changed_when: false
       failed_when: false
-      when: workstation and use_epel
+      when: workstation | bool and use_epel | bool
 
     - name: Enable RPM Fusion repository
       package: name={{ item }} state=installed
       with_items:
         - https://download1.rpmfusion.org/free/el/rpmfusion-free-release-{{ ansible_distribution_major_version }}.noarch.rpm
         - https://download1.rpmfusion.org/nonfree/el/rpmfusion-nonfree-release-{{ ansible_distribution_major_version }}.noarch.rpm
-      when: workstation and use_epel and fusion_enabled.rc != 0
+      when: workstation | bool and use_epel | bool and fusion_enabled.rc != 0
 
     # Rewrite to use dnf module once the #27744 fix is available
     - name: Remove unhelpful firmware packages
@@ -251,7 +251,7 @@
           - epel-release
           - keychain
           - xclip
-      when: use_epel
+      when: use_epel | bool
 
     # XXX Adjust list once RHEL 8 Workstation and EPEL 8 become available
     - name: Install helpful packages (workstation)
@@ -269,11 +269,11 @@
           - totem-nautilus
           - wodim
           - xorg-x11-fonts-misc
-      when: workstation
+      when: workstation | bool
 
     - name: Install helpful packages (workstation langpacks)
       package: name="langpacks-{{ langpacks | join(',langpacks-') }}" state=installed
-      when: workstation
+      when: workstation | bool
 
     - name: Install helpful packages (workstation from EPEL)
       package:
@@ -290,7 +290,7 @@
           - x264
           - yle-dl
           - youtube-dl
-      when: workstation and use_epel
+      when: workstation | bool and use_epel | bool
 
     - name: Update all packages
       package: name=* state=latest
@@ -321,7 +321,7 @@
         - sssd-kcm.service
         - sssd.service
       failed_when: false
-      when: disable_network_services
+      when: disable_network_services | bool
 
     - name: Enable helpful services
       service: name={{ item }} enabled=yes state=started
@@ -331,16 +331,16 @@
 
     - name: Install SSH daemon
       package: name=openssh-server state=installed
-      when: enable_sshd
+      when: enable_sshd | bool
 
     - name: Configure SSH daemon
       replace: dest=/etc/ssh/sshd_config regexp='^#MaxAuthTries 6' replace='MaxAuthTries 10'
-      when: enable_sshd
+      when: enable_sshd | bool
       register: sshd_config
 
     - name: Enable SSH daemon
       service: name=sshd enabled=yes state="{{ 'restarted' if sshd_config.changed else 'started' }}"
-      when: enable_sshd
+      when: enable_sshd | bool
 
     - name: Change root shell
       user: name=root shell={{ root_shell }}
@@ -365,7 +365,7 @@
         shell: "{{ user_shell }}"
         group: "{{ user_group }}"
         uid: "{{ user_uid }}"
-      when: create_user
+      when: create_user | bool
 
     - name: Disable tracker for the user, part I
       file:
@@ -374,7 +374,7 @@
         mode: 0755
         path: "/home/{{ user_name }}/.config/systemd/user"
         state: directory
-      when: create_user
+      when: create_user | bool
 
     - name: Disable tracker for the user, part II
       file:
@@ -390,12 +390,12 @@
         - tracker-miner-rss.service
         - tracker-store.service
         - tracker-writeback.service
-      when: create_user
+      when: create_user | bool
 
     - name: Disable tracker for the user, part III
       command: restorecon -Rv "/home/{{ user_name }}/.config/systemd"
       changed_when: false
-      when: create_user
+      when: create_user | bool
 
     - name: Configure sudoers
       lineinfile:
@@ -403,24 +403,24 @@
         dest: /etc/sudoers.d/{{ user_name }}
         line: '{{ user_name }} ALL=(ALL) NOPASSWD: ALL'
         validate: 'visudo -cf %s'
-      when: create_user
+      when: create_user | bool
 
     - name: Create Windows partition mount point
       file: path=/mnt/c state=directory
-      when: workstation
+      when: workstation | bool
 
     # Needs to be adjusted and enabled manually
     - name: Create Windows mount point fstab entry
       lineinfile:
         dest: /etc/fstab
         line: "#/dev/sda5 /mnt/c ntfs noauto,ro,uid={{ user_uid }},nls=utf8,comment=systemd.automount 1 2"
-      when: workstation
+      when: workstation | bool
 
     - name: Block unwanted user monitoring
       lineinfile:
         dest: /etc/hosts
         line: 127.0.0.2 musicbrainz.org
-      when: workstation
+      when: workstation | bool
 
     - name: Cleaning up, part I
       file: path={{ item }} state=absent

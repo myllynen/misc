@@ -3,8 +3,10 @@
 #   0) copy the accompanying ansible.cfg as ~/.ansible.cfg
 #   1) install Ansible 2.4+
 #   2) adjust and run the playbook
-#   3) set password for the new user
-#   4) run with (< Ansible 2.8): -e ansible_python_interpreter=/usr/libexec/platform-python
+#     - for example: ansible-playbook -c local -i localhost, rhel-8-init.yml
+#     - with Ansible < 2.8 add:
+#       -e ansible_python_interpreter=/usr/libexec/platform-python
+#   3) set password for the new user and reboot
 - hosts: all
   become: true
   remote_user: root
@@ -195,6 +197,9 @@
           - realmd
           - teamd
           - '*zhuyin*'
+      register: dnf_cmd
+      failed_when: false
+      changed_when: dnf_cmd.stdout is defined and "'Removed:' in dnf_cmd.stdout"
 
     # https://github.com/ansible/ansible/issues/27744
     - name: Remove unhelpful packages (#27744 wildcard issue workaround)

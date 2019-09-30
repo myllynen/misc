@@ -25,7 +25,6 @@
     workstation: false
     enable_sshd: true
     disable_network_services: true
-    # XXX Untested for the time being
     use_epel: false
   tasks:
     - name: Check target basics
@@ -129,9 +128,9 @@
         mode: 0644
         content: |
           [epel]
-          name=Extra Packages for Enterprise Linux {{ ansible_distribution_major_version }} - $basearch
-          #baseurl=http://download.fedoraproject.org/pub/epel/{{ ansible_distribution_major_version }}/$basearch
-          metalink=https://mirrors.fedoraproject.org/metalink?repo=epel-{{ ansible_distribution_major_version }}&arch=$basearch
+          name=Extra Packages for Enterprise Linux $releasever - $basearch
+          #baseurl=https://download.fedoraproject.org/pub/epel/$releasever/Everything/$basearch
+          metalink=https://mirrors.fedoraproject.org/metalink?repo=epel-$releasever&arch=$basearch&infra=$infra&content=$contentdir
           failovermethod=priority
           enabled=1
           gpgcheck=0
@@ -254,11 +253,10 @@
         state: installed
         name:
           - epel-release
-          - keychain
-          - xclip
+          #- keychain
+          #- xclip
       when: use_epel | bool
 
-    # XXX Adjust list once RHEL 8 Workstation and EPEL 8 become available
     - name: Install helpful packages (workstation)
       package:
         state: installed
@@ -284,17 +282,17 @@
       package:
         state: installed
         name:
-          - GraphicsMagick
-          - akmod-wl
-          - ffmpeg
-          - fuse-sshfs
-          - gconf-editor
+          #- GraphicsMagick
+          #- akmod-wl
+          #- ffmpeg
+          #- fuse-sshfs
+          #- gconf-editor
           - gstreamer1-libav
-          - ntfsprogs
-          - vlc
+          #- ntfsprogs
+          #- vlc
           - x264
-          - yle-dl
-          - youtube-dl
+          #- yle-dl
+          #- youtube-dl
       when: workstation | bool and use_epel | bool
 
     - name: Update all packages

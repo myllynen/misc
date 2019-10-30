@@ -54,6 +54,10 @@
       failed_when: false
       changed_when: false
 
+    - name: Install grubby              
+      package: name=grubby state=installed
+      when: adjust_boot_parameters.rc == 0
+
     - name: Adjust boot timeout
       replace: dest=/etc/default/grub regexp='^GRUB_TIMEOUT=.*' replace='GRUB_TIMEOUT=1'
       when: adjust_boot_parameters.rc == 0

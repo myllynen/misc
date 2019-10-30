@@ -266,7 +266,7 @@
         state: installed
         name:
           - dconf-editor
-          - git
+          - git-core
           - gnome-tweaks
           - gstreamer1-plugins-good-gtk
           - patch

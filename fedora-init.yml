@@ -244,7 +244,7 @@
           - ffmpeg
           - fuse-sshfs
           - gconf-editor
-          - git
+          - git-core
           - gnome-tweaks
           - gstreamer1-libav
           - gstreamer1-plugins-good-gtk

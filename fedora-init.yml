@@ -262,7 +262,7 @@
       when: workstation | bool
 
     - name: Install helpful packages (workstation langpacks)
-      package: name="langpacks-{{ langpacks | join(',langpacks-') }}" state=installed
+      package: name="langpacks-core-{{ langpacks | join(',langpacks-core-') }}" state=installed
       when: workstation | bool
 
     - name: Update all packages

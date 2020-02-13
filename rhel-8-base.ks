@@ -82,7 +82,7 @@ zsh
 -dracut-config-rescue
 -geolite2-*
 -i*firmware*
--initscripts
+#initscripts
 -iprutils
 -kernel-tools
 -lib*firmware*

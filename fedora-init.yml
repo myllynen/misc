@@ -243,7 +243,6 @@
           - dconf-editor
           - ffmpeg
           - fuse-sshfs
-          - gconf-editor
           - git-core
           - gnome-tweaks
           - gstreamer1-libav
@@ -257,7 +256,6 @@
           - wodim
           - x264
           - xorg-x11-fonts-misc
-          - yle-dl
           - youtube-dl
       when: workstation | bool
 

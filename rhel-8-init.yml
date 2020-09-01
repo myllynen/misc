@@ -120,25 +120,37 @@
     - name: Set timezone
       timezone: name="{{ system_timezone }}"
 
-    - name: Check EPEL repository configuration
-      stat: path=/etc/yum.repos.d/epel.repo
-      register: epel_repo
+    - name: Check EPEL repository
+      command: rpm -q epel-release-{{ ansible_distribution_major_version }} warn=no
+      register: epel_enabled
+      changed_when: false
+      failed_when: false
+      when: use_epel | bool
+
+    - name: Enable EPEL repository
+      package: name={{ item }} state=installed
+      with_items:
+        - https://dl.fedoraproject.org/pub/epel/epel-release-latest-{{ ansible_distribution_major_version }}.noarch.rpm
+      when: use_epel | bool and epel_enabled.rc != 0
+
+    - name: Check CentOS PowerTools repository configuration
+      stat: path=/etc/yum.repos.d/CentOS-PowerTools.repo
+      register: centos_powertools_repo
       failed_when: false
       changed_when: false
 
-    - name: Enable EPEL repository
+    - name: Enable CentOS PowerTools repository
       copy:
-        dest: /etc/yum.repos.d/epel.repo
+        dest: /etc/yum.repos.d/CentOS-PowerTools.repo
         mode: 0644
         content: |
-          [epel]
-          name=Extra Packages for Enterprise Linux $releasever - $basearch
-          #baseurl=https://download.fedoraproject.org/pub/epel/$releasever/Everything/$basearch
-          metalink=https://mirrors.fedoraproject.org/metalink?repo=epel-$releasever&arch=$basearch&infra=$infra&content=$contentdir
-          failovermethod=priority
+          [PowerTools]
+          name=CentOS-$releasever - PowerTools
+          #baseurl=http://mirror.centos.org/$contentdir/$releasever/PowerTools/$basearch/os/
+          mirrorlist=http://mirrorlist.centos.org/?release=$releasever&arch=$basearch&repo=PowerTools&infra=$infra
           enabled=1
           gpgcheck=0
-      when: use_epel | bool and not epel_repo.stat.exists
+      when: workstation | bool and use_epel | bool and not centos_powertools_repo.stat.exists
 
     - name: Check RPM Fusion repository
       command: rpm -q rpmfusion-free-release-{{ ansible_distribution_major_version }} rpmfusion-nonfree-release-{{ ansible_distribution_major_version }} warn=no
@@ -257,8 +269,8 @@
         state: installed
         name:
           - epel-release
-          #- keychain
-          #- xclip
+          - keychain
+          - xclip
       when: use_epel | bool
 
     - name: Install helpful packages (workstation)
@@ -286,17 +298,15 @@
       package:
         state: installed
         name:
-          #- GraphicsMagick
-          #- akmod-wl
-          #- ffmpeg
-          #- fuse-sshfs
-          #- gconf-editor
+          - GraphicsMagick
+          - akmod-wl
+          - ffmpeg
+          - fuse-sshfs
           - gstreamer1-libav
-          #- ntfsprogs
-          #- vlc
+          - ntfsprogs
+          - vlc
           - x264
-          #- yle-dl
-          #- youtube-dl
+          - youtube-dl
       when: workstation | bool and use_epel | bool
 
     - name: Update all packages

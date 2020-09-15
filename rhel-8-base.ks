@@ -146,6 +146,7 @@ test -f /boot/grub2/grub.cfg && grubcfg=/boot/grub2/grub.cfg || grubcfg=/boot/ef
 grub2-mkconfig -o $grubcfg
 systemctl enable serial-getty@ttyS0.service
 #systemctl enable serial-getty@ttyS1.service
+# NB. pam_securetty.so is disabled by default on RHEL 8
 #echo ttyS1 >> /etc/securetty
 
 # GRUB BIOS/UEFI cross-compatibility (needs UEFI)

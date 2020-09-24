@@ -127,10 +127,12 @@
       when: workstation | bool
 
     - name: Enable RPM Fusion repository
-      package: name={{ item }} state=installed
-      with_items:
-        - https://download1.rpmfusion.org/free/fedora/rpmfusion-free-release-{{ ansible_distribution_major_version }}.noarch.rpm
-        - https://download1.rpmfusion.org/nonfree/fedora/rpmfusion-nonfree-release-{{ ansible_distribution_major_version }}.noarch.rpm
+      dnf:
+        state: present
+        disable_gpg_check: true
+        name:
+          - https://download1.rpmfusion.org/free/fedora/rpmfusion-free-release-{{ ansible_distribution_major_version }}.noarch.rpm
+          - https://download1.rpmfusion.org/nonfree/fedora/rpmfusion-nonfree-release-{{ ansible_distribution_major_version }}.noarch.rpm
       when: workstation and fusion_enabled.rc != 0
 
     # Rewrite to use dnf module once the #27744 fix is available

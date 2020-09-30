@@ -3,12 +3,12 @@
 # Install:
 # virt-install \
 #   --connect qemu:///system --name test --virt-type kvm --arch x86_64 \
-#   --vcpus 2 --cpu host --ram 2048 --os-type linux --os-variant rhel8.0 \
+#   --vcpus 2 --cpu host --ram 2048 --os-type linux --os-variant rhel8.2 \
 #   --disk pool=default,format=qcow2,cache=none,io=native,size=8 \
 #   --network network=default --graphics vnc --sound none --noreboot \
-#   --location /VirtualMachines/boot/rhel-8.1-x86_64-dvd.iso \
+#   --location /VirtualMachines/boot/rhel-8.2-x86_64-dvd.iso \
 #   --initrd-inject /VirtualMachines/boot/ks/rhel-8-base.ks \
-#   --extra-args "ip=dhcp inst.noblscfg inst.ks=file:/rhel-8-base.ks console=tty0 console=ttyS0,115200 net.ifnames.prefix=net quiet systemd.show_status=yes" \
+#   --extra-args "ip=dhcp inst.ks=file:/rhel-8-base.ks console=tty0 console=ttyS0,115200 net.ifnames.prefix=net quiet systemd.show_status=yes" \
 #   --noautoconsole
 #
 # Post-process:

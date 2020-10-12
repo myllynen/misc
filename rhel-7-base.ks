@@ -63,6 +63,7 @@ policycoreutils-python
 psmisc
 #screen
 strace
+tar
 #tcpdump
 #telnet
 tuned

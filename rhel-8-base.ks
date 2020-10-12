@@ -67,6 +67,7 @@ python3
 python3-libselinux
 python3-policycoreutils
 strace
+tar
 #tcpdump
 #telnet
 #tmux

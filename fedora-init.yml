@@ -1,12 +1,12 @@
 ---
 # Usage:
-#   0) copy the accompanying ansible.cfg as ~/.ansible.cfg
-#   1) install Ansible 2.4+
-#   2) adjust and run the playbook
-#     - for example: ansible-playbook -c local -i localhost, fedora-init.yml
-#     - with Ansible < 2.8 add:
-#       -e ansible_python_interpreter=/usr/bin/python3
-#   3) set password for the new user and reboot
+# 1) Copy the accompanying ansible.cfg as ~/.ansible.cfg
+# 2) Install Ansible
+# 3) Adjust and run the playbook
+#   - for example: ansible-playbook -c local -i localhost, fedora-init.yml
+#   - make sure no existing user with the given UID exists if creating user
+# 4) set password for the new user and reboot
+#
 - hosts: all
   become: true
   remote_user: root
@@ -30,12 +30,12 @@
       raw: rpm -q python3 python3-dnf python3-libselinux
       check_mode: no
       register: basics
+      failed_when: false
       changed_when: false
-      ignore_errors: true
 
     - name: Prepare target basics
       raw: dnf -y install python3 python3-dnf python3-libselinux
-      when: basics is failed
+      when: basics.rc != 0
 
     - name: Check target remote_tmp
       stat: path={{ ansible_env.HOME }}/.ansible/tmp
@@ -49,12 +49,13 @@
 
     - name: Detect boot parameters
       command: grep -q rhgb /etc/default/grub
+      check_mode: no
       register: adjust_boot_parameters
       failed_when: false
       changed_when: false
 
     - name: Install grubby
-      package: name=grubby state=installed
+      dnf: name=grubby state=installed
       when: adjust_boot_parameters.rc == 0
 
     - name: Adjust boot timeout
@@ -63,14 +64,6 @@
 
     - name: Adjust boot parameters
       command: grubby --remove-args "rhgb LANG" --args="quiet video=efifb:nobgrt systemd.show_status=yes" --update-kernel=ALL
-      when: adjust_boot_parameters.rc == 0
-
-    - name: Finalize boot parameters, part I
-      replace: dest=/etc/default/grub regexp=' rhgb' replace=''
-      when: adjust_boot_parameters.rc == 0
-
-    - name: Finalize boot parameters, part II
-      replace: dest=/etc/default/grub regexp='(^GRUB_CMDLINE_LINUX=.*)"$' replace='\1 video=efifb:nobgrt systemd.show_status=yes"'
       when: adjust_boot_parameters.rc == 0
 
     - name: Detect rescue images
@@ -87,18 +80,15 @@
       failed_when: false
       changed_when: false
 
-    - name: Set GRUB configuration path
-      set_fact:
-        boot_config: "{{ '/boot/efi/EFI/{{ ansible_distribution | lower }}/grub.cfg' if efi_grub.stat.exists else '/boot/grub2/grub.cfg' }}"
-      failed_when: false
-      changed_when: false
-
     - name: Update GRUB configuration
       command: grub2-mkconfig -o {{ boot_config }}
+      vars:
+        boot_config: "{{ '/boot/efi/EFI/{{ ansible_distribution | lower }}/grub.cfg' if efi_grub.stat.exists else '/boot/grub2/grub.cfg' }}"
       when: adjust_boot_parameters.rc == 0
 
     - name: Detect LUKS configuration
       command: grep -q mapper/luks /etc/fstab
+      check_mode: no
       register: luks_in_use
       failed_when: false
       changed_when: false
@@ -122,8 +112,8 @@
     - name: Check RPM Fusion repository
       command: rpm -q rpmfusion-free-release-{{ ansible_distribution_major_version }} rpmfusion-nonfree-release-{{ ansible_distribution_major_version }} warn=no
       register: fusion_enabled
-      changed_when: false
       failed_when: false
+      changed_when: false
       when: workstation | bool
 
     - name: Enable RPM Fusion repository
@@ -135,12 +125,14 @@
           - https://download1.rpmfusion.org/nonfree/fedora/rpmfusion-nonfree-release-{{ ansible_distribution_major_version }}.noarch.rpm
       when: workstation and fusion_enabled.rc != 0
 
-    # Rewrite to use dnf module once the #27744 fix is available
-    - name: Remove unhelpful firmware packages
-      raw: dnf remove -y 'a*firmware*' 'i*firmware*' 'lib*firmware*' 'z*firmware'
-      register: dnf_cmd
-      failed_when: false
-      changed_when: "'Removed:' in dnf_cmd.stdout"
+    - name: Remove unneeded firmware packages
+      dnf:
+        state: absent
+        name:
+          - 'a*firmware*'
+          - 'i*firmware*'
+          - 'lib*firmware*'
+          - 'z*firmware'
       when: ansible_virtualization_role == "guest"
 
     - name: Remove unhelpful packages
@@ -171,6 +163,7 @@
           - hplip
           - 'java*'
           - kernel-modules-extra
+          - kexec-tools
           - '*kkc*'
           - '*libreoffice*'
           - orca
@@ -180,28 +173,19 @@
           - '*pinyin*'
           - realmd
           - teamd
+          - trousers
           - '*zhuyin*'
-      register: dnf_cmd
-      failed_when: false
-      changed_when: dnf_cmd.stdout is defined and "'Removed:' in dnf_cmd.stdout"
 
-    # https://github.com/ansible/ansible/issues/27744
-    - name: Remove unhelpful packages (#27744 wildcard issue workaround)
-      raw: dnf remove -y 'PackageKit*' 'abrt*' 'b43*' 'foomatic*' 'gutenprint*' '*hangul*' 'java*' '*kkc*' '*libreoffice*' '*pinyin*' '*zhuyin*'
-      register: dnf_cmd
-      failed_when: false
-      changed_when: "'Removed:' in dnf_cmd.stdout"
-
-    # Rewrite to use dnf module once the #27744 fix is available
     - name: Remove unneeded Plymouth packages
-      raw: dnf remove -y 'plymouth*'
-      register: dnf_cmd
-      failed_when: false
-      changed_when: "'Removed:' in dnf_cmd.stdout"
+      dnf:
+        state: absent
+        autoremove: yes
+        name:
+          - 'plymouth*'
       when: not luks_in_use.rc == 0
 
     - name: Install helpful packages (common)
-      package:
+      dnf:
         state: installed
         name:
           - bash-completion
@@ -217,12 +201,13 @@
           - man-pages
           - mlocate
           - nano
-          - net-tools
+          - openssh-clients
           - pcp-doc
           - pcp-system-tools
+          - policycoreutils-python-utils
           - psmisc
-          - python3-policycoreutils
           - strace
+          - tar
           - tcpdump
           - telnet
           - tmux
@@ -234,10 +219,10 @@
           - zsh
 
     - name: Install helpful packages (langpacks)
-      package: name="glibc-langpack-{{ langpacks | join(',glibc-langpack-') }}" state=installed
+      dnf: name="glibc-langpack-{{ langpacks | join(',glibc-langpack-') }}" state=installed
 
     - name: Install helpful packages (workstation)
-      package:
+      dnf:
         state: installed
         name:
           - GraphicsMagick
@@ -262,17 +247,18 @@
       when: workstation | bool
 
     - name: Install helpful packages (workstation langpacks)
-      package: name="langpacks-core-{{ langpacks | join(',langpacks-core-') }}" state=installed
+      dnf: name="langpacks-core-{{ langpacks | join(',langpacks-core-') }}" state=installed
       when: workstation | bool
 
     - name: Update all packages
-      package: name=* state=latest
+      dnf: name='*' state=latest update_cache=yes
 
     - name: Disable unhelpful services
       service: name={{ item }} enabled=no
       with_items:
         - cups
         - dmraid-activation
+        - dnf-makecache.timer
         - flatpak-add-fedora-repos
         - lvm2-monitor
         - mcelog
@@ -281,18 +267,31 @@
         - pmie
       failed_when: false
 
+    - name: Disable unhelpful services on VMs
+      service: name={{ item }} enabled=no
+      with_items:
+        - akmods
+        - libvirtd
+        - pcscd.socket
+        - raid-check.timer
+        - switcheroo-control
+        - thermald
+        - upower
+      failed_when: false
+      when: ansible_virtualization_role == "guest"
+
     - name: Disable unhelpful network services
       service: name={{ item }} enabled=no state=stopped
       with_items:
         - bluetooth.service
-        - bluetooth.target
+        #- bluetooth.target
         - iscsi.service
         - iscsid.socket
         - iscsiuio.socket
         - nfs-client.target
         - nfs-convert.service
         - remote-fs.target
-        - sssd-kcm.service
+        #- sssd-kcm.service
         - sssd.service
       failed_when: false
       when: disable_network_services | bool
@@ -302,15 +301,16 @@
       with_items:
         - gpm
         - pmcd
+        - pmlogger
 
     - name: Install SSH daemon
-      package: name=openssh-server state=installed
+      dnf: name=openssh-server state=installed
       when: enable_sshd | bool
 
     - name: Configure SSH daemon
       replace: dest=/etc/ssh/sshd_config regexp='^#MaxAuthTries 6' replace='MaxAuthTries 10'
-      when: enable_sshd | bool
       register: sshd_config
+      when: enable_sshd | bool
 
     - name: Enable SSH daemon
       service: name=sshd enabled=yes state="{{ 'restarted' if sshd_config.changed else 'started' }}"
@@ -368,7 +368,8 @@
 
     - name: Disable tracker for the user, part III
       command: restorecon -Rv "/home/{{ user_name }}/.config/systemd"
-      changed_when: false
+      register: restorecon
+      changed_when: "'Relabeled' in restorecon.stdout"
       when: create_user | bool
 
     - name: Configure sudoers
@@ -405,6 +406,7 @@
         - /root/.lesshst
         - /root/.local/share/ibus-typing-booster
         - /root/.rnd
+        - /root/.wget-hsts
         - /root/anaconda-ks.cfg
         - /root/original-ks.cfg
         - /root/fedora-init.retry

@@ -148,7 +148,7 @@
           - thermald
       when: ansible_virtualization_role == "guest"
 
-    - name: Remove unhelpful packages on KVM
+    - name: Remove unneeded packages on KVM
       dnf:
         state: absent
         autoremove: yes
@@ -157,7 +157,7 @@
           - virtualbox-guest-additions
       when: ansible_virtualization_type == "kvm"
 
-    - name: Remove unhelpful packages on VirtualBox
+    - name: Remove unneeded packages on VirtualBox
       dnf:
         state: absent
         autoremove: yes
@@ -167,7 +167,7 @@
           - spice-vdagent
       when: ansible_virtualization_type == "virtualbox"
 
-    - name: Remove unhelpful packages on VMware
+    - name: Remove unneeded packages on VMware
       dnf:
         state: absent
         autoremove: yes
@@ -268,7 +268,6 @@
         state: installed
         name:
           - GraphicsMagick
-          - akmod-wl
           - dconf-editor
           - ffmpeg
           - fuse-sshfs

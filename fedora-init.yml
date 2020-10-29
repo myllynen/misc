@@ -128,12 +128,62 @@
     - name: Remove unneeded firmware packages
       dnf:
         state: absent
+        autoremove: yes
         name:
           - 'a*firmware*'
           - 'i*firmware*'
           - 'lib*firmware*'
           - 'z*firmware'
       when: ansible_virtualization_role == "guest"
+
+    - name: Remove unhelpful packages on VM
+      dnf:
+        state: absent
+        autoremove: yes
+        name:
+          - akmods
+          - 'dmraid*'
+          - 'libvirt*'
+          - 'pcsc*'
+          - thermald
+      when: ansible_virtualization_role == "guest"
+
+    - name: Remove unhelpful packages on KVM
+      dnf:
+        state: absent
+        autoremove: yes
+        name:
+          - open-vm-tools
+          - virtualbox-guest-additions
+      when: ansible_virtualization_type == "kvm"
+
+    - name: Remove unhelpful packages on VirtualBox
+      dnf:
+        state: absent
+        autoremove: yes
+        name:
+          - open-vm-tools
+          - qemu-guest-agent
+          - spice-vdagent
+      when: ansible_virtualization_type == "virtualbox"
+
+    - name: Remove unhelpful packages on VMware
+      dnf:
+        state: absent
+        autoremove: yes
+        name:
+          - qemu-guest-agent
+          - spice-vdagent
+          - virtualbox-guest-additions
+      when: ansible_virtualization_type == "VMware"
+
+    - name: Remove unneeded Plymouth packages
+      dnf:
+        state: absent
+        autoremove: yes
+        name:
+          - 'plymouth*'
+      when: not luks_in_use.rc == 0
 
     - name: Remove unhelpful packages
       dnf:
@@ -175,14 +225,6 @@
           - teamd
           - trousers
           - '*zhuyin*'
-
-    - name: Remove unneeded Plymouth packages
-      dnf:
-        state: absent
-        autoremove: yes
-        name:
-          - 'plymouth*'
-      when: not luks_in_use.rc == 0
 
     - name: Install helpful packages (common)
       dnf:
@@ -270,12 +312,8 @@
     - name: Disable unhelpful services on VMs
       service: name={{ item }} enabled=no
       with_items:
-        - akmods
-        - libvirtd
-        - pcscd.socket
         - raid-check.timer
         - switcheroo-control
-        - thermald
         - upower
       failed_when: false
       when: ansible_virtualization_role == "guest"

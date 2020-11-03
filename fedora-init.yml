@@ -123,7 +123,7 @@
       name:
       - https://download1.rpmfusion.org/free/fedora/rpmfusion-free-release-{{ ansible_distribution_major_version }}.noarch.rpm
       - https://download1.rpmfusion.org/nonfree/fedora/rpmfusion-nonfree-release-{{ ansible_distribution_major_version }}.noarch.rpm
-    when: workstation and fusion_enabled.rc != 0
+    when: workstation | bool and fusion_enabled.rc != 0
 
   - name: Remove unneeded firmware packages
     dnf:
@@ -228,7 +228,7 @@
 
   - name: Install helpful packages (common)
     dnf:
-      state: installed
+      state: present
       name:
       - bash-completion
       - bind-utils
@@ -265,7 +265,7 @@
 
   - name: Install helpful packages (workstation)
     dnf:
-      state: installed
+      state: present
       name:
       - GraphicsMagick
       - dconf-editor

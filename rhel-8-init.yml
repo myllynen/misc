@@ -25,7 +25,7 @@
     workstation: false
     enable_sshd: true
     disable_network_services: true
-    use_epel: true
+    use_epel: false
   tasks:
   - name: Check target basics
     raw: rpm -q platform-python python3-dnf python3-libselinux

@@ -71,8 +71,8 @@
       register: rescue_images
 
     - name: Remove rescue images
-      file: path="{{ item['path'] }}" state=absent
-      with_items: "{{ rescue_images['files'] }}"
+      file: path="{{ item }}" state=absent
+      with_items: "{{ rescue_images.files | map(attribute='path') | list }}"
 
     - name: Check GRUB configuration path
       stat: path="/boot/efi/EFI/{{ ansible_distribution | lower }}/grub.cfg"
@@ -472,6 +472,6 @@
 
     - name: Cleaning up, part III
       file:
-        path: "{{ item['path'] }}"
+        path: "{{ item }}"
         state: absent
-      with_items: "{{ tmp_files['files'] }}"
+      with_items: "{{ tmp_files.files | map(attribute='path') | list }}"

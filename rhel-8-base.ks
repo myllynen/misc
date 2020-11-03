@@ -3,12 +3,12 @@
 # Install:
 # virt-install \
 #   --connect qemu:///system --name test --virt-type kvm --arch x86_64 \
-#   --vcpus 2 --cpu host --ram 2048 --os-type linux --os-variant rhel8.2 \
+#   --vcpus 2 --cpu host --ram 2048 --os-type linux --os-variant rhel8.3 \
 #   --disk pool=default,format=qcow2,cache=none,io=native,size=8 \
 #   --network network=default --graphics vnc --sound none --noreboot \
-#   --location /VirtualMachines/boot/rhel-8.2-x86_64-dvd.iso \
+#   --location /VirtualMachines/boot/rhel-8.3-x86_64-dvd.iso \
 #   --initrd-inject /VirtualMachines/boot/ks/rhel-8-base.ks \
-#   --extra-args "ip=dhcp inst.ks=file:/rhel-8-base.ks console=tty0 console=ttyS0,115200 net.ifnames.prefix=net quiet systemd.show_status=yes" \
+#   --extra-args "ip=dhcp inst.ks=file:/rhel-8-base.ks console=tty0 console=ttyS0,115200 net.ifnames.prefix=net ipv6.disable=1 quiet systemd.show_status=yes" \
 #   --noautoconsole
 #
 # Post-process:
@@ -38,9 +38,12 @@ keyboard fi
 services --enabled tuned
 poweroff
 
-%addon com_redhat_kdump --enable --reserve-mb auto
-%end
+#%addon org_fedora_oscap
+#content-type = scap-security-guide
+#profile = xccdf_org.ssgproject.content_profile_ospp
+#%end
 
+# Options must be kept in sync with the below Packages - trimming section
 %packages --instLangs en_US
 # --excludedocs
 # --excludeWeakdeps
@@ -61,11 +64,12 @@ mlocate
 nano
 #net-tools
 openssh-clients
+#pciutils
+policycoreutils-python-utils
 prefixdevname
 psmisc
 python3
 python3-libselinux
-python3-policycoreutils
 strace
 tar
 #tcpdump
@@ -77,6 +81,12 @@ util-linux-user
 #watchdog
 wget
 zsh
+
+# For security profile
+#aide
+#openscap
+#openscap-scanner
+#scap-security-guide
 
 -a*firmware*
 -biosdevname
@@ -101,7 +111,7 @@ zsh
 -sssd*
 -subs*
 
-# BIOS/UEFI cross-compatibility packages
+# BIOS/UEFI cross-compatible image packages
 #efibootmgr
 #grub2-tools*
 #grub2-pc
@@ -109,15 +119,6 @@ zsh
 #grub2-efi-x64
 #grub2-efi-x64-modules
 #shim-x64
-
-# Guest utilities, always include either one
-qemu-guest-agent
-#open-vm-tools
-
-# For (virtual) HW inspection
-#dmidecode
-#pciutils
-#virt-what
 
 # Ultra lean
 #-audit
@@ -134,6 +135,7 @@ qemu-guest-agent
 #-sg3_utils*
 #-trousers
 #-tuned
+#-virt-what
 #-yum
 %end
 
@@ -234,7 +236,7 @@ if [ $(rpm -q kernel | wc -l) -gt 1 ]; then
 fi
 
 # Services
-systemctl disable dnf-makecache.timer nis-domainname.service remote-fs.target
+systemctl disable dnf-makecache.timer loadmodules.service nis-domainname.service remote-fs.target
 rpm -q NetworkManager > /dev/null 2>&1 || systemctl enable network.service
 
 # Watchdog

@@ -321,14 +321,12 @@
       service: name={{ item }} enabled=no state=stopped
       with_items:
         - bluetooth.service
-        #- bluetooth.target
         - iscsi.service
         - iscsid.socket
         - iscsiuio.socket
         - nfs-client.target
         - nfs-convert.service
         - remote-fs.target
-        #- sssd-kcm.service
         - sssd.service
       failed_when: false
       when: disable_network_services | bool
@@ -467,7 +465,6 @@
       find:
         paths: /tmp
         patterns: "ks-script*"
-        use_regex: true
       register: tmp_files
 
     - name: Cleaning up, part III

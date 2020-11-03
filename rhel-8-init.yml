@@ -1,12 +1,12 @@
 ---
 # Usage:
-#   0) copy the accompanying ansible.cfg as ~/.ansible.cfg
-#   1) install Ansible 2.4+
-#   2) adjust and run the playbook
-#     - for example: ansible-playbook -c local -i localhost, rhel-8-init.yml
-#     - with Ansible < 2.8 add:
-#       -e ansible_python_interpreter=/usr/libexec/platform-python
-#   3) set password for the new user and reboot
+# 1) Copy the accompanying ansible.cfg as ~/.ansible.cfg
+# 2) Install Ansible
+# 3) Adjust and run the playbook
+#   - for example: ansible-playbook -c local -i localhost, fedora-init.yml
+#   - make sure no existing user with the given UID exists if creating user
+# 4) set password for the new user and reboot
+#
 - hosts: all
   become: true
   remote_user: root
@@ -25,446 +25,496 @@
     workstation: false
     enable_sshd: true
     disable_network_services: true
-    use_epel: false
+    use_epel: true
   tasks:
-    - name: Check target basics
-      raw: rpm -q platform-python python3-dnf python3-libselinux
-      check_mode: no
-      register: basics
-      changed_when: false
-      ignore_errors: true
+  - name: Check target basics
+    raw: rpm -q platform-python python3-dnf python3-libselinux
+    check_mode: no
+    register: basics
+    failed_when: false
+    changed_when: false
 
-    - name: Prepare target basics
-      raw: dnf -y install platform-python python3-dnf python3-libselinux
-      when: basics is failed
+  - name: Prepare target basics
+    raw: dnf -y install platform-python python3-dnf python3-libselinux
+    when: basics.rc != 0
 
-    - name: Check target remote_tmp
-      stat: path={{ ansible_env.HOME }}/.ansible/tmp
-      register: target_tmp
-      failed_when: false
-      changed_when: false
+  - name: Check target remote_tmp
+    stat: path={{ ansible_env.HOME }}/.ansible/tmp
+    register: target_tmp
+    failed_when: false
+    changed_when: false
 
-    - name: Create target remote_tmp
-      file: path={{ ansible_env.HOME }}/.ansible/tmp mode=0700 recurse=yes
-      when: not target_tmp.stat.exists
+  - name: Create target remote_tmp
+    file: path={{ ansible_env.HOME }}/.ansible/tmp mode=0700 recurse=yes
+    when: not target_tmp.stat.exists
 
-    - name: Detect boot parameters
-      command: grep -q rhgb /etc/default/grub
-      register: adjust_boot_parameters
-      failed_when: false
-      changed_when: false
+  - name: Detect boot parameters
+    command: grep -q rhgb /etc/default/grub
+    check_mode: no
+    register: adjust_boot_parameters
+    failed_when: false
+    changed_when: false
 
-    - name: Install grubby              
-      package: name=grubby state=installed
-      when: adjust_boot_parameters.rc == 0
+  - name: Install grubby
+    dnf: name=grubby state=installed
+    when: adjust_boot_parameters.rc == 0
 
-    - name: Adjust boot timeout
-      replace: dest=/etc/default/grub regexp='^GRUB_TIMEOUT=.*' replace='GRUB_TIMEOUT=1'
-      when: adjust_boot_parameters.rc == 0
+  - name: Adjust boot timeout
+    replace: dest=/etc/default/grub regexp='^GRUB_TIMEOUT=.*' replace='GRUB_TIMEOUT=1'
+    when: adjust_boot_parameters.rc == 0
 
-    - name: Adjust boot parameters
-      command: grubby --remove-args "rhgb LANG" --args="quiet video=efifb:nobgrt systemd.show_status=yes" --update-kernel=ALL
-      when: adjust_boot_parameters.rc == 0
+  - name: Adjust boot parameters
+    command: grubby --remove-args "rhgb LANG" --args="quiet video=efifb:nobgrt systemd.show_status=yes" --update-kernel=ALL
+    when: adjust_boot_parameters.rc == 0
 
-    - name: Finalize boot parameters, part I
-      replace: dest=/etc/default/grub regexp=' rhgb' replace=''
-      when: adjust_boot_parameters.rc == 0
+  - name: Detect rescue images
+    find: paths=/boot,/boot/loader/entries patterns=*rescue*
+    register: rescue_images
 
-    - name: Finalize boot parameters, part II
-      replace: dest=/etc/default/grub regexp='(^GRUB_CMDLINE_LINUX=.*)"$' replace='\1 video=efifb:nobgrt systemd.show_status=yes"'
-      when: adjust_boot_parameters.rc == 0
+  - name: Remove rescue images
+    file: path="{{ item }}" state=absent
+    loop: "{{ rescue_images.files | map(attribute='path') | list }}"
 
-    - name: Detect rescue images
-      find: paths=/boot,/boot/loader/entries patterns=*rescue*
-      register: rescue_images
+  - name: Check GRUB configuration path
+    stat: path="/boot/efi/EFI/{{ ansible_distribution | lower }}/grub.cfg"
+    register: efi_grub
+    failed_when: false
+    changed_when: false
 
-    - name: Remove rescue images
-      file: path="{{ item['path'] }}" state=absent
-      with_items: "{{ rescue_images['files'] }}"
+  - name: Update GRUB configuration
+    command: grub2-mkconfig -o {{ boot_config }}
+    vars:
+      boot_config: "{{ '/boot/efi/EFI/{{ ansible_distribution | lower }}/grub.cfg' if efi_grub.stat.exists else '/boot/grub2/grub.cfg' }}"
+    when: adjust_boot_parameters.rc == 0
 
-    - name: Check GRUB configuration path
-      stat: path="/boot/efi/EFI/{{ ansible_distribution | lower }}/grub.cfg"
-      register: efi_grub
-      failed_when: false
-      changed_when: false
+  - name: Detect LUKS configuration
+    command: grep -q mapper/luks /etc/fstab
+    check_mode: no
+    register: luks_in_use
+    failed_when: false
+    changed_when: false
 
-    - name: Set GRUB configuration path
-      set_fact:
-        boot_config: "{{ '/boot/efi/EFI/{{ ansible_distribution | lower }}/grub.cfg' if efi_grub.stat.exists else '/boot/grub2/grub.cfg' }}"
-      failed_when: false
-      changed_when: false
+  - name: Configure console
+    copy:
+      dest: /etc/vconsole.conf
+      content: |
+        KEYMAP="{{ console_keymap }}"
+        FONT="{{ console_font }}"
 
-    - name: Update GRUB configuration
-      command: grub2-mkconfig -o {{ boot_config }}
-      when: adjust_boot_parameters.rc == 0
+  - name: Configure locale
+    copy:
+      dest: /etc/locale.conf
+      content: |
+        LANG="{{ system_locale }}"
 
-    - name: Detect LUKS configuration
-      command: grep -q mapper/luks /etc/fstab
-      register: luks_in_use
-      failed_when: false
-      changed_when: false
+  - name: Set timezone
+    timezone: name="{{ system_timezone }}"
 
-    - name: Configure console
-      copy:
-        dest: /etc/vconsole.conf
-        content: |
-          KEYMAP="{{ console_keymap }}"
-          FONT="{{ console_font }}"
+  - name: Check EPEL repository
+    command: rpm -q epel-release-{{ ansible_distribution_major_version }} warn=no
+    register: epel_enabled
+    failed_when: false
+    changed_when: false
+    when: use_epel | bool
 
-    - name: Configure locale
-      copy:
-        dest: /etc/locale.conf
-        content: |
-          LANG="{{ system_locale }}"
+  - name: Enable EPEL repository
+    dnf:
+      state: present
+      disable_gpg_check: true
+      name:
+      - https://dl.fedoraproject.org/pub/epel/epel-release-latest-{{ ansible_distribution_major_version }}.noarch.rpm
+    when: use_epel | bool and epel_enabled.rc != 0
 
-    - name: Set timezone
-      timezone: name="{{ system_timezone }}"
+  - name: Check CentOS PowerTools repository
+    stat: path=/etc/yum.repos.d/CentOS-PowerTools.repo
+    register: centos_powertools_repo
+    failed_when: false
+    changed_when: false
+    when: workstation | bool and use_epel | bool
 
-    - name: Check EPEL repository
-      command: rpm -q epel-release-{{ ansible_distribution_major_version }} warn=no
-      register: epel_enabled
-      changed_when: false
-      failed_when: false
-      when: use_epel | bool
+  - name: Enable CentOS PowerTools repository
+    copy:
+      dest: /etc/yum.repos.d/CentOS-PowerTools.repo
+      mode: 0644
+      content: |
+        [PowerTools]
+        name=CentOS-$releasever - PowerTools
+        #baseurl=http://mirror.centos.org/$contentdir/$releasever/PowerTools/$basearch/os/
+        mirrorlist=http://mirrorlist.centos.org/?release=$releasever&arch=$basearch&repo=PowerTools&infra=$infra
+        enabled=1
+        gpgcheck=0
+    when: workstation | bool and use_epel | bool and not centos_powertools_repo.stat.exists
 
-    - name: Enable EPEL repository
-      package: name={{ item }} state=installed
-      with_items:
-        - https://dl.fedoraproject.org/pub/epel/epel-release-latest-{{ ansible_distribution_major_version }}.noarch.rpm
-      when: use_epel | bool and epel_enabled.rc != 0
+  - name: Check RPM Fusion repository
+    command: rpm -q rpmfusion-free-release-{{ ansible_distribution_major_version }} rpmfusion-nonfree-release-{{ ansible_distribution_major_version }} warn=no
+    register: fusion_enabled
+    failed_when: false
+    changed_when: false
+    when: workstation | bool and use_epel | bool
 
-    - name: Check CentOS PowerTools repository configuration
-      stat: path=/etc/yum.repos.d/CentOS-PowerTools.repo
-      register: centos_powertools_repo
-      failed_when: false
-      changed_when: false
+  - name: Enable RPM Fusion repository
+    dnf:
+      state: present
+      disable_gpg_check: true
+      name:
+      - https://download1.rpmfusion.org/free/el/rpmfusion-free-release-{{ ansible_distribution_major_version }}.noarch.rpm
+      - https://download1.rpmfusion.org/nonfree/el/rpmfusion-nonfree-release-{{ ansible_distribution_major_version }}.noarch.rpm
+    when: workstation | bool and use_epel | bool and fusion_enabled.rc != 0
 
-    - name: Enable CentOS PowerTools repository
-      copy:
-        dest: /etc/yum.repos.d/CentOS-PowerTools.repo
-        mode: 0644
-        content: |
-          [PowerTools]
-          name=CentOS-$releasever - PowerTools
-          #baseurl=http://mirror.centos.org/$contentdir/$releasever/PowerTools/$basearch/os/
-          mirrorlist=http://mirrorlist.centos.org/?release=$releasever&arch=$basearch&repo=PowerTools&infra=$infra
-          enabled=1
-          gpgcheck=0
-      when: workstation | bool and use_epel | bool and not centos_powertools_repo.stat.exists
+  - name: Remove unneeded firmware packages
+    dnf:
+      state: absent
+      autoremove: yes
+      name:
+      - 'a*firmware*'
+      - 'i*firmware*'
+      - 'lib*firmware*'
+      - 'z*firmware'
+    when: ansible_virtualization_role == "guest"
 
-    - name: Check RPM Fusion repository
-      command: rpm -q rpmfusion-free-release-{{ ansible_distribution_major_version }} rpmfusion-nonfree-release-{{ ansible_distribution_major_version }} warn=no
-      register: fusion_enabled
-      changed_when: false
-      failed_when: false
-      when: workstation | bool and use_epel | bool
+  - name: Remove unhelpful packages on VM
+    dnf:
+      state: absent
+      autoremove: yes
+      name:
+      - akmods
+      - 'dmraid*'
+      - 'libvirt*'
+      - 'pcsc*'
+      - thermald
+    when: ansible_virtualization_role == "guest"
 
-    - name: Enable RPM Fusion repository
-      package: name={{ item }} state=installed
-      with_items:
-        - https://download1.rpmfusion.org/free/el/rpmfusion-free-release-{{ ansible_distribution_major_version }}.noarch.rpm
-        - https://download1.rpmfusion.org/nonfree/el/rpmfusion-nonfree-release-{{ ansible_distribution_major_version }}.noarch.rpm
-      when: workstation | bool and use_epel | bool and fusion_enabled.rc != 0
+  - name: Remove unneeded packages on KVM
+    dnf:
+      state: absent
+      autoremove: yes
+      name:
+      - open-vm-tools
+      - virtualbox-guest-additions
+    when: ansible_virtualization_type == "kvm"
 
-    # Rewrite to use dnf module once the #27744 fix is available
-    - name: Remove unhelpful firmware packages
-      raw: dnf remove -y 'a*firmware*' 'i*firmware*' 'lib*firmware*' 'z*firmware'
-      register: dnf_cmd
-      failed_when: false
-      changed_when: "'Removed:' in dnf_cmd.stdout"
-      when: ansible_virtualization_role == "guest"
+  - name: Remove unneeded packages on VirtualBox
+    dnf:
+      state: absent
+      autoremove: yes
+      name:
+      - open-vm-tools
+      - qemu-guest-agent
+      - spice-vdagent
+    when: ansible_virtualization_type == "virtualbox"
 
-    - name: Remove unhelpful packages
-      dnf:
-        state: absent
-        autoremove: yes
-        name:
-          - NetworkManager-adsl
-          - NetworkManager-openconnect
-          - NetworkManager-openvpn
-          - NetworkManager-pptp
-          - NetworkManager-team
-          - NetworkManager-vpnc
-          - NetworkManager-wwan
-          - 'PackageKit*'
-          - 'abrt*'
-          - anaconda
-          - 'b43*'
-          - dracut-config-rescue
-          - dracut-live
-          - evolution
-          - 'foomatic*'
-          - gnome-getting-started-docs
-          - gnome-online-miners
-          - gnome-user-docs
-          - 'gutenprint*'
-          - '*hangul*'
-          - hplip
-          - 'java*'
-          - kernel-modules-extra
-          - '*kkc*'
-          - '*libreoffice*'
-          - orca
-          - ostree
-          - pam_krb5
-          - perl-Mozilla-CA
-          - '*pinyin*'
-          - realmd
-          - teamd
-          - '*zhuyin*'
-      register: dnf_cmd
-      failed_when: false
-      changed_when: dnf_cmd.stdout is defined and "'Removed:' in dnf_cmd.stdout"
+  - name: Remove unneeded packages on VMware
+    dnf:
+      state: absent
+      autoremove: yes
+      name:
+      - qemu-guest-agent
+      - spice-vdagent
+      - virtualbox-guest-additions
+    when: ansible_virtualization_type == "VMware"
 
-    # https://github.com/ansible/ansible/issues/27744
-    - name: Remove unhelpful packages (#27744 wildcard issue workaround)
-      raw: dnf remove -y 'PackageKit*' 'abrt*' 'b43*' 'foomatic*' 'gutenprint*' '*hangul*' 'java*' '*kkc*' '*libreoffice*' '*pinyin*' '*zhuyin*'
-      register: dnf_cmd
-      failed_when: false
-      changed_when: "'Removed:' in dnf_cmd.stdout"
+  - name: Remove unneeded Plymouth packages
+    dnf:
+      state: absent
+      autoremove: yes
+      name:
+      - 'plymouth*'
+    when: not luks_in_use.rc == 0
 
-    # Rewrite to use dnf module once the #27744 fix is available
-    - name: Remove unneeded Plymouth packages
-      raw: dnf remove -y 'plymouth*'
-      register: dnf_cmd
-      failed_when: false
-      changed_when: "'Removed:' in dnf_cmd.stdout"
-      when: not luks_in_use.rc == 0
+  - name: Remove unhelpful packages
+    dnf:
+      state: absent
+      autoremove: yes
+      name:
+      - NetworkManager-adsl
+      - NetworkManager-openconnect
+      - NetworkManager-openvpn
+      - NetworkManager-pptp
+      - NetworkManager-team
+      - NetworkManager-vpnc
+      - NetworkManager-wwan
+      - 'PackageKit*'
+      - 'abrt*'
+      - anaconda
+      - 'b43*'
+      - dracut-config-rescue
+      - dracut-live
+      - evolution
+      - 'foomatic*'
+      - gnome-getting-started-docs
+      - gnome-online-miners
+      - gnome-user-docs
+      - 'gutenprint*'
+      - '*hangul*'
+      - hplip
+      - 'java*'
+      - kernel-modules-extra
+      - '*kkc*'
+      - '*libreoffice*'
+      - orca
+      - ostree
+      - pam_krb5
+      - perl-Mozilla-CA
+      - '*pinyin*'
+      - realmd
+      - teamd
+      - trousers
+      - '*zhuyin*'
 
-    - name: Install helpful packages (common)
-      package:
-        state: installed
-        name:
-          - bash-completion
-          - bind-utils
-          - bzip2
-          - dnf-utils
-          - drpm
-          - gpm
-          - iotop
-          - ltrace
-          - man-pages
-          - mlocate
-          - nano
-          - net-tools
-          - pcp-doc
-          - pcp-system-tools
-          - psmisc
-          - python3-policycoreutils
-          - strace
-          - tcpdump
-          - telnet
-          - tmux
-          - unzip
-          - util-linux-user
-          - wget
-          - xauth
-          - zsh
+  - name: Install helpful packages (common)
+    dnf:
+      state: present
+      name:
+      - bash-completion
+      - bind-utils
+      - bzip2
+      - dnf-utils
+      - drpm
+      - gpm
+      - iotop
+      - ltrace
+      - man-pages
+      - mlocate
+      - nano
+      - openssh-clients
+      - pcp-doc
+      - pcp-system-tools
+      - policycoreutils-python-utils
+      - psmisc
+      - strace
+      - tar
+      - tcpdump
+      - telnet
+      - tmux
+      - unzip
+      - util-linux-user
+      - wget
+      - xauth
+      - zsh
 
-    - name: Install helpful packages (langpacks)
-      package: name="glibc-langpack-{{ langpacks | join(',glibc-langpack-') }}" state=installed
+  - name: Install helpful packages (langpacks)
+    dnf: name="glibc-langpack-{{ langpacks | join(',glibc-langpack-') }}" state=installed
 
-    - name: Install helpful packages (common from EPEL)
-      package:
-        state: installed
-        name:
-          - epel-release
-          - keychain
-          - xclip
-      when: use_epel | bool
+  - name: Install helpful packages (common from EPEL)
+    dnf:
+      state: present
+      name:
+      - epel-release
+      - keychain
+      - xclip
+    when: use_epel | bool
 
-    - name: Install helpful packages (workstation)
-      package:
-        state: installed
-        name:
-          - dconf-editor
-          - git-core
-          - gnome-tweaks
-          - gstreamer1-plugins-good-gtk
-          - patch
-          - powertop
-          - seahorse
-          - totem
-          - totem-nautilus
-          - wodim
-          - xorg-x11-fonts-misc
-      when: workstation | bool
+  - name: Install helpful packages (workstation)
+    dnf:
+      state: present
+      name:
+      - dconf-editor
+      - git-core
+      - gnome-tweaks
+      - gstreamer1-plugins-good-gtk
+      - patch
+      - powertop
+      - seahorse
+      - totem
+      - totem-nautilus
+      - wodim
+      - xorg-x11-fonts-misc
+    when: workstation | bool
 
-    - name: Install helpful packages (workstation langpacks)
-      package: name="langpacks-{{ langpacks | join(',langpacks-') }}" state=installed
-      when: workstation | bool
+  - name: Install helpful packages (workstation langpacks)
+    dnf: name="langpacks-{{ langpacks | join(',langpacks-') }}" state=installed
+    when: workstation | bool
 
-    - name: Install helpful packages (workstation from EPEL)
-      package:
-        state: installed
-        name:
-          - GraphicsMagick
-          - akmod-wl
-          - ffmpeg
-          - fuse-sshfs
-          - gstreamer1-libav
-          - ntfsprogs
-          - vlc
-          - x264
-          - youtube-dl
-      when: workstation | bool and use_epel | bool
+  - name: Install helpful packages (workstation from EPEL)
+    dnf:
+      state: present
+      name:
+      - GraphicsMagick
+      - ffmpeg
+      - fuse-sshfs
+      - gstreamer1-libav
+      - ntfsprogs
+      - vlc
+      - x264
+      - youtube-dl
+    when: workstation | bool and use_epel | bool
 
-    - name: Update all packages
-      package: name=* state=latest
+  - name: Update all packages
+    dnf: name='*' state=latest update_cache=yes
 
-    - name: Disable unhelpful services
-      service: name={{ item }} enabled=no
-      with_items:
-        - cups
-        - dmraid-activation
-        - lvm2-monitor
-        - mcelog
-        - mdmonitor
-        - multipathd
-        - pmie
-      failed_when: false
+  - name: Disable unhelpful services
+    service: name={{ item }} enabled=no
+    loop:
+    - cups
+    - dmraid-activation
+    - dnf-makecache.timer
+    - lvm2-monitor
+    - mcelog
+    - mdmonitor
+    - multipathd
+    - pmie
+    failed_when: false
 
-    - name: Disable unhelpful network services
-      service: name={{ item }} enabled=no state=stopped
-      with_items:
-        - bluetooth.service
-        - bluetooth.target
-        - iscsi.service
-        - iscsid.socket
-        - iscsiuio.socket
-        - nfs-client.target
-        - nfs-convert.service
-        - remote-fs.target
-        - sssd-kcm.service
-        - sssd.service
-      failed_when: false
-      when: disable_network_services | bool
+  - name: Disable unhelpful services on VMs
+    service: name={{ item }} enabled=no
+    loop:
+    - raid-check.timer
+    - switcheroo-control
+    - upower
+    failed_when: false
+    when: ansible_virtualization_role == "guest"
 
-    - name: Enable helpful services
-      service: name={{ item }} enabled=yes state=started
-      with_items:
-        - gpm
-        - pmcd
+  - name: Disable unhelpful network services
+    service: name={{ item }} enabled=no state=stopped
+    loop:
+    - bluetooth.service
+    - iscsi.service
+    - iscsid.socket
+    - iscsiuio.socket
+    - nfs-client.target
+    - nfs-convert.service
+    - remote-fs.target
+    - sssd.service
+    failed_when: false
+    when: disable_network_services | bool
 
-    - name: Install SSH daemon
-      package: name=openssh-server state=installed
-      when: enable_sshd | bool
+  - name: Enable helpful services
+    service: name={{ item }} enabled=yes state=started
+    loop:
+    - gpm
+    - pmcd
+    - pmlogger
 
-    - name: Configure SSH daemon
-      replace: dest=/etc/ssh/sshd_config regexp='^#MaxAuthTries 6' replace='MaxAuthTries 10'
-      when: enable_sshd | bool
-      register: sshd_config
+  - name: Install SSH daemon
+    dnf: name=openssh-server state=installed
+    when: enable_sshd | bool
 
-    - name: Enable SSH daemon
-      service: name=sshd enabled=yes state="{{ 'restarted' if sshd_config.changed else 'started' }}"
-      when: enable_sshd | bool
+  - name: Configure SSH daemon
+    replace: dest=/etc/ssh/sshd_config regexp='^#MaxAuthTries 6' replace='MaxAuthTries 10'
+    register: sshd_config
+    when: enable_sshd | bool
 
-    - name: Change root shell
-      user: name=root shell={{ root_shell }}
+  - name: Enable SSH daemon
+    service: name=sshd enabled=yes state="{{ 'restarted' if sshd_config.changed else 'started' }}"
+    when: enable_sshd | bool
 
-    - name: Disable pulseaudio for root, part I
-      file:
-        path: /root/.config/systemd/user
-        state: directory
+  - name: Change root shell
+    user: name=root shell={{ root_shell }}
 
-    - name: Disable pulseaudio for root, part II
-      file:
-        src: /dev/null
-        dest: /root/.config/systemd/user/{{ item }}
-        state: link
-      with_items:
-        - pulseaudio.service
-        - pulseaudio.socket
+  - name: Disable pulseaudio for root, part I
+    file:
+      path: /root/.config/systemd/user
+      state: directory
 
-    - name: Create user
-      user:
-        name: "{{ user_name }}"
-        shell: "{{ user_shell }}"
-        group: "{{ user_group }}"
-        uid: "{{ user_uid }}"
-      when: create_user | bool
+  - name: Disable pulseaudio for root, part II
+    file:
+      src: /dev/null
+      dest: /root/.config/systemd/user/{{ item }}
+      state: link
+    loop:
+    - pulseaudio.service
+    - pulseaudio.socket
 
-    - name: Disable tracker for the user, part I
-      file:
-        owner: "{{ user_name }}"
-        group: "{{ user_group }}"
-        mode: 0755
-        path: "/home/{{ user_name }}/.config/systemd/user"
-        state: directory
-      when: create_user | bool
+  - name: Create user
+    user:
+      name: "{{ user_name }}"
+      shell: "{{ user_shell }}"
+      group: "{{ user_group }}"
+      uid: "{{ user_uid }}"
+    when: create_user | bool
 
-    - name: Disable tracker for the user, part II
-      file:
-        owner: "{{ user_name }}"
-        group: "{{ user_group }}"
-        src: /dev/null
-        dest: "/home/{{ user_name }}/.config/systemd/user/{{ item }}"
-        state: link
-      with_items:
-        - tracker-extract.service
-        - tracker-miner-apps.service
-        - tracker-miner-fs.service
-        - tracker-miner-rss.service
-        - tracker-store.service
-        - tracker-writeback.service
-      when: create_user | bool
+  - name: Disable tracker for the user, part I
+    file:
+      owner: "{{ user_name }}"
+      group: "{{ user_group }}"
+      mode: 0755
+      path: "/home/{{ user_name }}/.config/systemd/user"
+      state: directory
+    when: create_user | bool
 
-    - name: Disable tracker for the user, part III
-      command: restorecon -Rv "/home/{{ user_name }}/.config/systemd"
-      changed_when: false
-      when: create_user | bool
+  - name: Disable tracker for the user, part II
+    file:
+      owner: "{{ user_name }}"
+      group: "{{ user_group }}"
+      src: /dev/null
+      dest: "/home/{{ user_name }}/.config/systemd/user/{{ item }}"
+      state: link
+    loop:
+    - tracker-extract.service
+    - tracker-miner-apps.service
+    - tracker-miner-fs.service
+    - tracker-miner-rss.service
+    - tracker-store.service
+    - tracker-writeback.service
+    when: create_user | bool
 
-    - name: Configure sudoers
-      lineinfile:
-        create: true
-        dest: /etc/sudoers.d/{{ user_name }}
-        line: '{{ user_name }} ALL=(ALL) NOPASSWD: ALL'
-        validate: 'visudo -cf %s'
-      when: create_user | bool
+  - name: Disable tracker for the user, part III
+    command: restorecon -Rv "/home/{{ user_name }}/.config/systemd"
+    register: restorecon
+    changed_when: "'Relabeled' in restorecon.stdout"
+    when: create_user | bool
 
-    - name: Create Windows partition mount point
-      file: path=/mnt/c state=directory
-      when: workstation | bool
+  - name: Configure sudoers
+    lineinfile:
+      create: true
+      dest: /etc/sudoers.d/{{ user_name }}
+      line: '{{ user_name }} ALL=(ALL) NOPASSWD: ALL'
+      validate: 'visudo -cf %s'
+    when: create_user | bool
 
-    # Needs to be adjusted and enabled manually
-    - name: Create Windows mount point fstab entry
-      lineinfile:
-        dest: /etc/fstab
-        line: "#/dev/sda5 /mnt/c ntfs noauto,ro,uid={{ user_uid }},nls=utf8,comment=systemd.automount 1 2"
-      when: workstation | bool
+  - name: Create Windows partition mount point
+    file: path=/mnt/c state=directory
+    when: workstation | bool
 
-    - name: Block unwanted user monitoring
-      lineinfile:
-        dest: /etc/hosts
-        line: 127.0.0.2 musicbrainz.org
-      when: workstation | bool
+  - name: Check Windows mount point configuration
+    lineinfile:
+      path: /etc/fstab
+      regexp: '.* ntfs .*'
+      line: ''
+    check_mode: yes
+    register: ntfs_line
+    changed_when: false
+    when: workstation | bool
 
-    - name: Cleaning up, part I
-      file: path={{ item }} state=absent
-      with_items:
-        - /1
-        - /root/.config/pulse
-        - /root/.esd_auth
-        - /root/.lesshst
-        - /root/.local/share/ibus-typing-booster
-        - /root/.rnd
-        - /root/anaconda-ks.cfg
-        - /root/original-ks.cfg
-        - /root/rhel-{{ ansible_distribution_major_version }}-init.retry
-        - /var/cache/PackageKit
-        - /var/lib/abrt
-        - /var/spool/abrt
-        - /var/tmp/abrt
+  # Needs to be adjusted and enabled manually
+  - name: Create Windows mount point fstab entry
+    lineinfile:
+      dest: /etc/fstab
+      line: "#/dev/sda5 /mnt/c ntfs noauto,ro,uid={{ user_uid }},nls=utf8,comment=systemd.automount 1 2"
+    when: workstation | bool and ntfs_line.msg == "line added"
 
-    - name: Cleaning up, part II
-      find:
-        paths: /tmp
-        patterns: "ks-script*"
-        use_regex: true
-      register: tmp_files
+  - name: Block unwanted user monitoring
+    lineinfile:
+      dest: /etc/hosts
+      line: 127.0.0.2 musicbrainz.org
+    when: workstation | bool
 
-    - name: Cleaning up, part III
-      file:
-        path: "{{ item['path'] }}"
-        state: absent
-      with_items: "{{ tmp_files['files'] }}"
+  - name: Cleaning up, part I
+    file: path={{ item }} state=absent
+    loop:
+    - /1
+    - /root/.config/pulse
+    - /root/.esd_auth
+    - /root/.lesshst
+    - /root/.local/share/ibus-typing-booster
+    - /root/.rnd
+    - /root/.wget-hsts
+    - /root/anaconda-ks.cfg
+    - /root/original-ks.cfg
+    - /root/rhel-{{ ansible_distribution_major_version }}-init.retry
+    - /var/cache/PackageKit
+    - /var/lib/abrt
+    - /var/spool/abrt
+    - /var/tmp/abrt
+
+  - name: Cleaning up, part II
+    find:
+      paths: /tmp
+      patterns: "ks-script*"
+    register: tmp_files
+
+  - name: Cleaning up, part III
+    file:
+      path: "{{ item }}"
+      state: absent
+    loop: "{{ tmp_files.files | map(attribute='path') | list }}"

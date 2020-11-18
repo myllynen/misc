@@ -55,7 +55,7 @@
     changed_when: false
 
   - name: Install grubby
-    dnf: name=grubby state=installed
+    dnf: name=grubby state=present
     when: adjust_boot_parameters.rc == 0
 
   - name: Adjust boot timeout
@@ -236,6 +236,7 @@
       - deltarpm
       - dnf-utils
       - drpm
+      - glibc-minimal-langpack
       - gpm
       - iotop
       - keychain
@@ -261,7 +262,7 @@
       - zsh
 
   - name: Install helpful packages (langpacks)
-    dnf: name="glibc-langpack-{{ langpacks | join(',glibc-langpack-') }}" state=installed
+    dnf: name="glibc-langpack-{{ langpacks | join(',glibc-langpack-') }}" state=present
 
   - name: Install helpful packages (workstation)
     dnf:
@@ -288,8 +289,16 @@
     when: workstation | bool
 
   - name: Install helpful packages (workstation langpacks)
-    dnf: name="langpacks-core-{{ langpacks | join(',langpacks-core-') }}" state=installed
+    dnf: name="langpacks-core-{{ langpacks | join(',langpacks-') }}" state=present
     when: workstation | bool
+
+  - name: Remove unhelpful packages ('all' langpacks)
+    dnf:
+      state: absent
+      autoremove: yes
+      name:
+      - gawk-all-langpacks
+      - glibc-all-langpacks
 
   - name: Update all packages
     dnf: name='*' state=latest update_cache=yes
@@ -297,15 +306,15 @@
   - name: Disable unhelpful services
     service: name={{ item }} enabled=no
     loop:
-    - cups
-    - dmraid-activation
+    - cups.service
+    - dmraid-activation.service
     - dnf-makecache.timer
-    - flatpak-add-fedora-repos
-    - lvm2-monitor
-    - mcelog
-    - mdmonitor
-    - multipathd
-    - pmie
+    - flatpak-add-fedora-repos.service
+    - lvm2-monitor.service
+    - mcelog.service
+    - mdmonitor.service
+    - multipathd.service
+    - pmie.service
     failed_when: false
 
   - name: Disable unhelpful services on VMs
@@ -313,7 +322,7 @@
     loop:
     - raid-check.timer
     - switcheroo-control
-    - upower
+    - upower.service
     failed_when: false
     when: ansible_virtualization_role == "guest"
 
@@ -334,12 +343,12 @@
   - name: Enable helpful services
     service: name={{ item }} enabled=yes state=started
     loop:
-    - gpm
-    - pmcd
-    - pmlogger
+    - gpm.service
+    - pmcd.service
+    - pmlogger.service
 
   - name: Install SSH daemon
-    dnf: name=openssh-server state=installed
+    dnf: name=openssh-server state=present
     when: enable_sshd | bool
 
   - name: Configure SSH daemon

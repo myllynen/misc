@@ -340,6 +340,13 @@
     failed_when: false
     when: disable_network_services | bool
 
+  - name: Enable VM kernel modules on KVM
+    copy:
+      dest: /etc/modules-load.d/vhost_net.conf
+      content: |
+        vhost_net
+    when: ansible_virtualization_type == "kvm" and ansible_virtualization_role == "guest"
+
   - name: Enable helpful services
     service: name={{ item }} enabled=yes state=started
     loop:

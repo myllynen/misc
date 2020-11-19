@@ -26,6 +26,7 @@
     enable_sshd: true
     disable_network_services: true
     use_epel: false
+    use_powertools: false
   tasks:
   - name: Check target basics
     raw: rpm -q platform-python python3-dnf python3-libselinux
@@ -127,10 +128,17 @@
 
   - name: Check CentOS PowerTools repository
     stat: path=/etc/yum.repos.d/CentOS-PowerTools.repo
-    register: centos_powertools_repo
+    register: powertools_repo
     failed_when: false
     changed_when: false
-    when: workstation | bool and use_epel | bool
+    when: use_powertools | bool
+
+  - name: Get CentOS RPM GPG key
+    get_url:
+      url: https://www.centos.org/keys/RPM-GPG-KEY-CentOS-Official
+      dest: /etc/pki/rpm-gpg/RPM-GPG-KEY-CentOS-Official
+      mode: '0644'
+    when: use_powertools | bool
 
   - name: Enable CentOS PowerTools repository
     copy:
@@ -142,8 +150,9 @@
         #baseurl=http://mirror.centos.org/$contentdir/$releasever/PowerTools/$basearch/os/
         mirrorlist=http://mirrorlist.centos.org/?release=$releasever&arch=$basearch&repo=PowerTools&infra=$infra
         enabled=1
-        gpgcheck=0
-    when: workstation | bool and use_epel | bool and not centos_powertools_repo.stat.exists
+        gpgcheck=1
+        gpgkey=/etc/pki/rpm-gpg/RPM-GPG-KEY-CentOS-Official
+    when: use_powertools | bool and not powertools_repo.stat.exists
 
   - name: Check RPM Fusion repository
     command: rpm -q rpmfusion-free-release-{{ ansible_distribution_major_version }} rpmfusion-nonfree-release-{{ ansible_distribution_major_version }} warn=no
@@ -361,7 +370,6 @@
     - mcelog.service
     - mdmonitor.service
     - multipathd.service
-    - pmie.service
     failed_when: false
 
   - name: Disable unhelpful services on VMs
@@ -383,7 +391,6 @@
     - nfs-client.target
     - nfs-convert.service
     - remote-fs.target
-    - sssd.service
     failed_when: false
     when: disable_network_services | bool
 

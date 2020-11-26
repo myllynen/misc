@@ -70,6 +70,7 @@ prefixdevname
 psmisc
 python3
 python3-libselinux
+setools-console
 strace
 tar
 #tcpdump

@@ -62,6 +62,7 @@ openssh-clients
 policycoreutils-python
 psmisc
 #screen
+setools-console
 strace
 tar
 #tcpdump

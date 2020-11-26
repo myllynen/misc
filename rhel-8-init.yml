@@ -291,6 +291,7 @@
       - pcp-system-tools
       - policycoreutils-python-utils
       - psmisc
+      - setools-console
       - strace
       - tar
       - tcpdump

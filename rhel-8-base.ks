@@ -18,7 +18,7 @@
 
 cmdline
 zerombr
-clearpart --all
+clearpart --all --initlabel
 bootloader --timeout 1 --append "console=tty0 console=ttyS0,115200 net.ifnames.prefix=net ipv6.disable=1 quiet systemd.show_status=yes"
 reqpart
 #part /boot/efi --fstype efi --ondisk vda --size 200 --fsoptions "umask=0077,shortname=winnt"

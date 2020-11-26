@@ -8,7 +8,7 @@
 #   --network network=default --graphics vnc --sound none --noreboot \
 #   --location /VirtualMachines/boot/rhel-8.3-x86_64-dvd.iso \
 #   --initrd-inject /VirtualMachines/boot/ks/rhel-8-base.ks \
-#   --extra-args "ip=dhcp inst.ks=file:/rhel-8-base.ks console=tty0 console=ttyS0,115200 net.ifnames.prefix=net ipv6.disable=1 quiet systemd.show_status=yes" \
+#   --extra-args "ip=dhcp inst.ks=file:/rhel-8-base.ks inst.geoloc=0 inst.nosave=all console=tty0 console=ttyS0,115200 net.ifnames.prefix=net ipv6.disable=1 quiet systemd.show_status=yes" \
 #   --noautoconsole
 #
 # Post-process:
@@ -277,6 +277,10 @@ restorecon -R /etc > /dev/null 2>&1 || :
 # Clean
 dnf -C clean all
 /bin/rm -rf /etc/*- /etc/*.bak /root/* /tmp/* /var/tmp/*
-/bin/rm -rf /var/cache/dnf/* /var/lib/dnf/repos/* /var/lib/dnf/yumdb/*
+/bin/rm -rf /var/cache/dnf/* /var/lib/dnf/modulefailsafe/*
 /bin/rm -rf /var/log/*debug /var/log/anaconda /var/lib/rhsm
+%end
+
+%post --nochroot
+/bin/rm -rf /mnt/sysimage/tmp/*
 %end

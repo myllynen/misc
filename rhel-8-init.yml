@@ -39,14 +39,8 @@
     raw: dnf -y install platform-python python3-dnf python3-libselinux
     when: basics.rc != 0
 
-  - name: Check target remote_tmp
-    stat: path={{ ansible_env.HOME }}/.ansible/tmp
-    register: target_tmp
-    failed_when: false
-    changed_when: false
-
   - name: Create target remote_tmp
-    file: path={{ ansible_env.HOME }}/.ansible/tmp mode=0700 recurse=yes
+    file: path={{ ansible_env.HOME }}/.ansible/tmp mode=0700 state=directory
     when: not target_tmp.stat.exists
 
   - name: Detect boot parameters
@@ -412,7 +406,7 @@
     when: enable_sshd | bool
 
   - name: Enable SSH daemon
-    service: name=sshd enabled=yes state="{{ 'restarted' if sshd_config.changed else 'started' }}"
+    service: name=sshd enabled=yes state="{{ 'restarted' if sshd_config is changed else 'started' }}"
     when: enable_sshd | bool
 
   - name: Change root shell

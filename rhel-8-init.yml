@@ -41,7 +41,6 @@
 
   - name: Create target remote_tmp
     file: path={{ ansible_env.HOME }}/.ansible/tmp mode=0700 state=directory
-    when: not target_tmp.stat.exists
 
   - name: Detect boot parameters
     command: grep -q rhgb /etc/default/grub

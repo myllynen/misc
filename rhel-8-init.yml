@@ -268,20 +268,26 @@
       state: present
       name:
       - bash-completion
+      - bc
       - bind-utils
       - bzip2
       - dnf-utils
       - drpm
+      - ethtool
       - glibc-minimal-langpack
       - gpm
       - iotop
+      - irqbalance
       - ltrace
       - man-pages
       - mlocate
       - nano
+      - nmap-ncat
+      - numactl
       - openssh-clients
       - pcp-doc
       - pcp-system-tools
+      - perf
       - policycoreutils-python-utils
       - psmisc
       - setools-console
@@ -290,6 +296,7 @@
       - tcpdump
       - telnet
       - tmux
+      - tuned
       - unzip
       - util-linux-user
       - wget
@@ -392,8 +399,10 @@
     service: name={{ item }} enabled=yes state=started
     loop:
     - gpm.service
+    - irqbalance.service
     - pmcd.service
     - pmlogger.service
+    - tuned.service
 
   - name: Install SSH daemon
     dnf: name=openssh-server state=present

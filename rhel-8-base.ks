@@ -60,7 +60,7 @@ dnf-utils
 #drpm
 #iotop
 man-pages
-mlocate
+#mlocate
 nano
 #net-tools
 openssh-clients
@@ -105,7 +105,6 @@ zsh
 -NetworkManager-tui
 -parted
 -plymouth
--rdma*
 -*rhn*
 -*spacewalk*
 -sqlite

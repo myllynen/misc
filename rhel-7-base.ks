@@ -163,7 +163,7 @@ PERSISTENT_DHCLIENT=yes
 IPV6INIT=$ipv6
 DHCPV6C=$ipv6
 IPV4_FAILURE_FATAL=yes
-IPV6_FAILURE_FATAL=$ipv6
+IPV6_FAILURE_FATAL=no
 EOF
 done
 sed -i -e 's,DEFROUTE=no,DEFROUTE=yes,' /etc/sysconfig/network-scripts/ifcfg-${netdevprefix}0

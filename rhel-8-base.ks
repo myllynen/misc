@@ -8,7 +8,7 @@
 #   --network network=default --graphics vnc --sound none --noreboot \
 #   --location /VirtualMachines/boot/rhel-8.3-x86_64-dvd.iso \
 #   --initrd-inject /VirtualMachines/boot/ks/rhel-8-base.ks \
-#   --extra-args "ip=dhcp inst.ks=file:/rhel-8-base.ks inst.geoloc=0 inst.nosave=all console=tty0 console=ttyS0,115200 net.ifnames.prefix=net ipv6.disable=1 quiet systemd.show_status=yes" \
+#   --extra-args "ip=dhcp inst.ks=file:/rhel-8-base.ks inst.geoloc=0 inst.nosave=all console=tty0 console=ttyS0,115200 net.ifnames.prefix=net ipv6.disable=0 quiet systemd.show_status=yes" \
 #   --noautoconsole
 #
 # Post-process:
@@ -19,7 +19,7 @@
 cmdline
 zerombr
 clearpart --all --initlabel
-bootloader --timeout 1 --append "console=tty0 console=ttyS0,115200 net.ifnames.prefix=net ipv6.disable=1 quiet systemd.show_status=yes"
+bootloader --timeout 1 --append "console=tty0 console=ttyS0,115200 net.ifnames.prefix=net ipv6.disable=0 quiet systemd.show_status=yes"
 reqpart
 #part /boot/efi --fstype efi --ondisk vda --size 200 --fsoptions "umask=0077,shortname=winnt"
 #part /boot --fstype xfs --asprimary --size 1024
@@ -28,7 +28,7 @@ part / --fstype xfs --asprimary --size 1024 --grow
 selinux --enforcing
 authselect --useshadow --passalgo sha512
 rootpw --plaintext foobar
-#network --device net0 --bootproto dhcp --onboot yes --hostname localhost
+#network --device net0 --bootproto dhcp --onboot yes --hostname test.example.com
 #--noipv6
 firewall --enabled --service ssh
 firstboot --disabled
@@ -71,7 +71,7 @@ psmisc
 python3
 python3-libselinux
 setools-console
-strace
+#strace
 tar
 #tcpdump
 #telnet
@@ -80,7 +80,7 @@ tuned
 #unzip
 util-linux-user
 #watchdog
-wget
+#wget
 zsh
 
 # For security profile
@@ -94,7 +94,7 @@ zsh
 -dracut-config-rescue
 -geolite2-*
 -i*firmware*
-#initscripts
+#-initscripts
 -iprutils
 -kernel-tools
 -lib*firmware*
@@ -109,7 +109,7 @@ zsh
 -*spacewalk*
 -sqlite
 -sssd*
--subs*
+#-subs*
 
 # BIOS/UEFI cross-compatible image packages
 #efibootmgr

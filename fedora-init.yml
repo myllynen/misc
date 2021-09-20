@@ -3,9 +3,9 @@
 # 1) Copy the accompanying ansible.cfg as ~/.ansible.cfg
 # 2) Install Ansible
 # 3) Adjust and run the playbook
-#   - for example: ansible-playbook -c local -i localhost, fedora-init.yml
-#   - make sure no existing user with the given UID exists if creating user
-# 4) set password for the new user and reboot
+#    - For example: ansible-playbook -c local -i localhost, fedora-init.yml
+#    - Make sure no existing user with the given UID exists if creating user
+# 4) Set password for the new user and reboot
 #
 - hosts: all
   become: true
@@ -227,10 +227,10 @@
       - bc
       - bind-utils
       - bzip2
-      - ethtool
       - deltarpm
       - dnf-utils
       - drpm
+      - ethtool
       - glibc-minimal-langpack
       - gpm
       - iotop
@@ -243,9 +243,9 @@
       - nmap-ncat
       - numactl
       - openssh-clients
-      - perf
       - pcp-doc
       - pcp-system-tools
+      - perf
       - policycoreutils-python-utils
       - psmisc
       - setools-console

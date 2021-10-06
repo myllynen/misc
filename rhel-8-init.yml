@@ -287,7 +287,7 @@
       - openssh-clients
       - pcp-doc
       - pcp-system-tools
-      - perf
+      #- perf
       - policycoreutils-python-utils
       - psmisc
       - setools-console
@@ -300,7 +300,6 @@
       - unzip
       - util-linux-user
       - wget
-      - xauth
       - zsh
 
   - name: Install helpful packages (langpacks)
@@ -329,6 +328,7 @@
       - totem
       - totem-nautilus
       - wodim
+      - xauth
       - xorg-x11-fonts-misc
     when: workstation | bool
 
@@ -360,6 +360,17 @@
 
   - name: Update all packages
     dnf: name='*' state=latest update_cache=yes
+
+  - name: Check current boot parameters
+    shell: cat /proc/cmdline | grep -q rhgb
+    check_mode: no
+    register: rhgb_used
+    failed_when: false
+    changed_when: false
+
+  - name: Ensure correct boot parameters
+    command: grubby --remove-args "rhgb LANG" --args="quiet video=efifb:nobgrt systemd.show_status=yes" --update-kernel=ALL
+    when: rhgb_used.rc == 0
 
   - name: Disable unhelpful services
     service: name={{ item }} enabled=no

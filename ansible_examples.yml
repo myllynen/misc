@@ -1,0 +1,84 @@
+# https://docs.ansible.com/ansible/latest/user_guide/playbooks_filters.html
+# https://jinja.palletsprojects.com/en/2.9.x/templates/#list-of-builtin-filters
+# https://docs.ansible.com/ansible/latest/user_guide/complex_data_manipulation.html
+---
+- name: Miscellaneous Ansible examples
+  hosts: localhost
+  connection: local
+  gather_facts: true
+  become: false
+  tasks:
+    - name: Display variable names
+      debug:
+        msg: "{{ lookup('varnames', '.+').split(',') | sort }}"
+
+    - name: Display facts
+      debug:
+        var: ansible_facts
+
+    - name: Create list from items
+      set_fact:
+        a_list: "{{ a_list | default([]) + [item] }}"
+      loop:
+        - one
+        - two
+        - three
+
+    - name: Display list from items
+      debug:
+        var: a_list
+
+    - name: Create dict from items
+      set_fact:
+        a_dict: "{{ a_dict | default({}) | combine({item: ansible_facts.distribution }) }}"
+      loop: "{{ ansible_play_batch + ansible_run_tags }}"
+
+    - name: Display dict from items
+      debug:
+        var: a_dict
+
+    - name: Test distribution major version
+      debug:
+        msg: ansible_facts.distribution_major_version | int >= 8 is true
+      when: ansible_facts.distribution_major_version | int >= 8
+
+    - name: Set fact based on condition
+      set_fact:
+        tuned_profile: "{{ 'virtual-guest' if ansible_facts.virtualization_role == 'guest' else 'throughput-performance' }}"
+
+    - name: Use distribution specific variable to install packages
+      vars:
+        selinux_packages_rhel_7:
+          - libselinux-python
+          - libsemanage-python
+          - policycoreutils-python
+          - selinux-policy-targeted
+          - setools-console
+        selinux_packages_rhel_8:
+          - python3-libselinux
+          - python3-libsemanage
+          - policycoreutils-python-utils
+          - selinux-policy-targeted
+          - setools-console
+        selinux_packages: "{{ lookup('vars', 'selinux_packages_rhel_' + ansible_facts.distribution_major_version) }}"
+      yum:
+        name: "{{ selinux_packages }}"
+        state: present
+      when: false
+
+    # Example of restarting service in case configuration was changed below
+    - name: Disallow zone drifting
+      replace:
+        dest: /etc/firewalld/firewalld.conf
+        regexp: '^AllowZoneDrifting=yes'
+        replace: 'AllowZoneDrifting=no'
+      register: firewalld_config
+      when: false
+
+    - name: Start firewalld service
+      service:
+        name: firewalld
+        state: "{{ 'restarted' if firewalld_config is changed else 'started' }}"
+        enabled: yes
+      when: false
+    # Example of restarting service in case configuration was changed above

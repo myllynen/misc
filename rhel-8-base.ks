@@ -3,10 +3,10 @@
 # Install:
 # virt-install \
 #   --connect qemu:///system --name test --virt-type kvm --arch x86_64 \
-#   --vcpus 2 --cpu host --ram 2048 --os-type linux --os-variant rhel8.3 \
+#   --vcpus 2 --cpu host --ram 2048 --os-type linux --os-variant rhel8.5 \
 #   --disk pool=default,format=qcow2,cache=none,io=native,size=8 \
 #   --network network=default --graphics vnc --sound none --noreboot \
-#   --location /VirtualMachines/boot/rhel-8.3-x86_64-dvd.iso \
+#   --location /VirtualMachines/boot/rhel-8.5-x86_64-dvd.iso \
 #   --initrd-inject /VirtualMachines/boot/ks/rhel-8-base.ks \
 #   --extra-args "ip=dhcp inst.ks=file:/rhel-8-base.ks inst.geoloc=0 inst.nosave=all console=tty0 console=ttyS0,115200 net.ifnames.prefix=net ipv6.disable=0 quiet systemd.show_status=yes" \
 #   --noautoconsole
@@ -18,10 +18,9 @@
 
 cmdline
 zerombr
-clearpart --all --initlabel
+clearpart --all --initlabel --disklabel gpt
 bootloader --timeout 1 --append "console=tty0 console=ttyS0,115200 net.ifnames.prefix=net ipv6.disable=0 quiet systemd.show_status=yes"
 reqpart
-#part /boot/efi --fstype efi --ondisk vda --size 200 --fsoptions "umask=0077,shortname=winnt"
 #part /boot --fstype xfs --asprimary --size 1024
 #part swap --fstype swap --asprimary --size 1024
 part / --fstype xfs --asprimary --size 1024 --grow
@@ -33,14 +32,14 @@ rootpw --plaintext foobar
 firewall --enabled --service ssh
 firstboot --disabled
 lang en_US.UTF-8
-timezone --ntpservers 0.rhel.pool.ntp.org --utc Europe/Helsinki
+timezone --ntpservers time.cloudflare.com --utc Europe/Helsinki
 keyboard fi
-services --enabled tuned
+services --enabled tuned,systemd-resolved
 poweroff
 
 #%addon org_fedora_oscap
 #content-type = scap-security-guide
-#profile = xccdf_org.ssgproject.content_profile_ospp
+#profile = xccdf_org.ssgproject.content_profile_cis_server_l1
 #%end
 
 # Options must be kept in sync with the below Packages - trimming section
@@ -56,7 +55,6 @@ bzip2
 #cloud-init
 #cloud-utils-growpart
 chrony
-dnf-utils
 #drpm
 #iotop
 man-pages
@@ -79,8 +77,9 @@ tar
 tuned
 #unzip
 util-linux-user
-#watchdog
+virt-what
 #wget
+yum-utils
 zsh
 
 # For security profile
@@ -92,21 +91,15 @@ zsh
 -a*firmware*
 -biosdevname
 -dracut-config-rescue
--geolite2-*
 -i*firmware*
-#-initscripts
 -iprutils
--kernel-tools
 -lib*firmware*
 -libxkbcommon
--network-scripts
 #-NetworkManager*
 -NetworkManager-team
 -NetworkManager-tui
 -parted
 -plymouth
--*rhn*
--*spacewalk*
 -sqlite
 -sssd*
 #-subs*
@@ -196,8 +189,17 @@ IPV6_FAILURE_FATAL=no
 EOF
 done
 sed -i -e 's,DEFROUTE=no,DEFROUTE=yes,' /etc/sysconfig/network-scripts/ifcfg-${netdevprefix}0
+sed -i -e 's,^AllowZoneDrifting=yes,AllowZoneDrifting=no,' /etc/firewalld/firewalld.conf
+
+# IPv6
+if [ "$ipv6" = "no" ]; then
+  sed -i -e '/^::1/d' /etc/hosts
+  sed -i -e 's,^OPTIONS=",OPTIONS="-4 ,g' -e 's, ",",' /etc/sysconfig/chronyd
+  sed -i -e 's,^IPv6_rpfilter=yes,IPv6_rpfilter=no,' /etc/firewalld/firewalld.conf
+fi
 
 # ssh/d
+#sed -i -e 's,^PermitRootLogin no,PermitRootLogin yes,' /etc/ssh/sshd_config
 sed -i -e 's,^#MaxAuthTries 6,MaxAuthTries 10,' /etc/ssh/sshd_config
 sed -i -e 's,^#UseDNS.*,UseDNS no,' /etc/ssh/sshd_config
 # https://lists.centos.org/pipermail/centos-devel/2016-July/014981.html
@@ -211,39 +213,36 @@ if [ ! -f /etc/centos-release ]; then
   repofile=intra.repo
   repohost=192.168.122.1
   /bin/rm -f /etc/yum.repos.d/* > /dev/null 2>&1
-  curl http://$repohost/ks/$repofile -o /etc/yum.repos.d/$repofile
-  grep -q gpgcheck /etc/yum.repos.d/$repofile > /dev/null 2>&1 || \
+  ping -c1 -q $repohost > /dev/null 2>&1 && \
+    curl http://$repohost/ks/$repofile -o /etc/yum.repos.d/$repofile
+  grep -q name= /etc/yum.repos.d/$repofile > /dev/null 2>&1 || \
     rm -f /etc/yum.repos.d/$repofile
 fi
 
 # Packages - keys
 rpm --import /etc/pki/rpm-gpg/RPM-GPG-KEY-redhat-release > /dev/null 2>&1 || :
-rpm --import /etc/pki/rpm-gpg/RPM-GPG-KEY-CentOS-8 > /dev/null 2>&1 || :
 
 # Packages - trimming
 echo "%_install_langs en_US" > /etc/rpm/macros.install-langs-conf
 #echo "%_excludedocs 1" > /etc/rpm/macros.excludedocs-conf
 #echo "install_weak_deps=False" >> /etc/dnf/dnf.conf
-dnf -C -y remove linux-firmware > /dev/null 2>&1 || :
+#dnf -C -y remove linux-firmware > /dev/null 2>&1 || :
 
 # Packages - EPEL
 #dnf -y install epel-release
 
 # Packages - update
 #dnf -y update
-if [ $(rpm -q kernel | wc -l) -gt 1 ]; then
-  dnf -C -y remove $(rpm -q --last kernel | awk 'FNR>1{print $1}')
-fi
+#if [ $(rpm -q kernel | wc -l) -gt 1 ]; then
+#  dnf remove -C --oldinstallonly -y || :
+#fi
 
 # Services
 systemctl disable dnf-makecache.timer loadmodules.service nis-domainname.service remote-fs.target
 rpm -q NetworkManager > /dev/null 2>&1 || systemctl enable network.service
 
 # Watchdog
-if [ -f /etc/watchdog.conf ]; then
-  sed -i -e 's,^#watchdog-device,watchdog-device,' /etc/watchdog.conf
-  systemctl enable watchdog.service
-fi
+sed -i -e 's,^#RuntimeWatchdogSec=.*,RuntimeWatchdogSec=60s,' /etc/systemd/system.conf
 
 # cloud-init
 #dnf -y install cloud-init cloud-utils-growpart
@@ -269,18 +268,23 @@ fi
 # Make sure rescue image is not built without a configuration change
 echo dracut_rescue_image=no > /etc/dracut.conf.d/no-rescue.conf
 
-# Finalize
-truncate -s 0 /etc/resolv.conf
-rm -f /var/lib/systemd/random-seed
-restorecon -R /etc > /dev/null 2>&1 || :
+# Remove machine identification and state
+truncate -s 0 /etc/machine-id /etc/resolv.conf
+/bin/rm -rf /etc/systemd/network/7* /etc/udev/rules.d/7* /etc/ssh/ssh_host_*
+/bin/rm -rf /var/lib/systemd/random-seed
 
-# Clean
-dnf -C clean all
-/bin/rm -rf /etc/*- /etc/*.bak /root/* /tmp/* /var/tmp/*
-/bin/rm -rf /var/cache/dnf/* /var/lib/dnf/modulefailsafe/*
-/bin/rm -rf /var/log/*debug /var/log/anaconda /var/lib/rhsm
-%end
+# Clear caches, files, and logs
+/bin/rm -rf /root/* /tmp/* /var/tmp/*
+/bin/rm -rf /etc/*- /etc/*.bak /etc/*~ /etc/sysconfig/*~
+/bin/rm -rf /var/cache/dnf/* /var/cache/yum/*
+/bin/rm -rf /var/lib/dnf/* /var/lib/yum/repos/* /var/lib/yum/yumdb/*
+/bin/rm -rf /var/log/*debug /var/log/anaconda /var/log/dmesg*
+#truncate -s 0 /var/log/audit/audit.log /var/log/messages /var/log/secure
+#truncate -s 0 /var/log/btmp /var/log/wtmp /var/log/lastlog
 
-%post --nochroot
-/bin/rm -rf /mnt/sysimage/tmp/*
+# Update initramfs
+dracut -f
+
+# Ensure everything is written to the disk
+sync ; echo 3 > /proc/sys/vm/drop_caches ;
 %end

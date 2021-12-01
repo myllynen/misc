@@ -157,14 +157,6 @@ echo blacklist intel_rapl >> /etc/modprobe.d/blacklist.conf
 echo blacklist snd_pcsp >> /etc/modprobe.d/blacklist.conf
 echo blacklist pcspkr >> /etc/modprobe.d/blacklist.conf
 
-# Guest Agent / Performance
-mkdir -p /etc/qemu-ga /etc/tuned
-echo '[general]' > /etc/qemu-ga/qemu-ga.conf
-#echo 'logfile = /var/log/qemu-ga/qemu-ga.log' >> /etc/qemu-ga/qemu-ga.conf
-#mkdir -p /var/log/qemu-ga
-echo 'verbose = 1' >> /etc/qemu-ga/qemu-ga.conf
-echo virtual-guest > /etc/tuned/active_profile
-
 # Networking
 netdevprefix=net
 rpm -q NetworkManager > /dev/null 2>&1 && nm=yes || nm=no

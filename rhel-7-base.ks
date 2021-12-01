@@ -79,10 +79,6 @@ virt-what
 yum-utils
 zsh
 
-# Guest utilities, always include either one
-qemu-guest-agent
-#open-vm-tools
-
 # For security profile
 #aide
 #openscap
@@ -138,14 +134,6 @@ systemctl enable serial-getty@ttyS0.service
 echo blacklist intel_rapl >> /etc/modprobe.d/blacklist.conf
 echo blacklist snd_pcsp >> /etc/modprobe.d/blacklist.conf
 echo blacklist pcspkr >> /etc/modprobe.d/blacklist.conf
-
-# Guest Agent / Performance
-mkdir -p /etc/qemu-ga /etc/tuned
-echo '[general]' > /etc/qemu-ga/qemu-ga.conf
-#echo 'logfile = /var/log/qemu-ga/qemu-ga.log' >> /etc/qemu-ga/qemu-ga.conf
-#mkdir -p /var/log/qemu-ga
-echo 'verbose = 1' >> /etc/qemu-ga/qemu-ga.conf
-echo virtual-guest > /etc/tuned/active_profile
 
 # Networking
 rm -f /etc/sysconfig/network-scripts/ifcfg-e* > /dev/null 2>&1 || :

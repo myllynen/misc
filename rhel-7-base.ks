@@ -20,7 +20,7 @@ install
 cmdline
 zerombr
 clearpart --all --initlabel
-bootloader --timeout 1 --append "console=tty0 console=ttyS0,115200 biosdevname=0 net.ifnames=0 ipv6.disable=1 quiet systemd.show_status=yes"
+bootloader --timeout 1 --append "console=tty0 console=ttyS0,115200 biosdevname=0 net.ifnames=0 ipv6.disable=0 quiet systemd.show_status=yes"
 reqpart
 #part /boot --fstype xfs --asprimary --size 1024
 #part swap --fstype swap --asprimary --size 1024

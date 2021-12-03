@@ -67,6 +67,7 @@ policycoreutils-python
 psmisc
 #screen
 setools-console
+#sos
 #strace
 tar
 #tcpdump

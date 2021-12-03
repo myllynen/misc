@@ -89,6 +89,7 @@ zsh
 -NetworkManager-tui
 -parted
 -plymouth
+-sqlite
 -sssd*
 #-subs*
 

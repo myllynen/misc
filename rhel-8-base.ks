@@ -34,7 +34,7 @@ firstboot --disabled
 lang en_US.UTF-8
 timezone --ntpservers time.cloudflare.com --utc Europe/Helsinki
 keyboard fi
-services --enabled tuned,systemd-resolved
+services --enabled tuned
 poweroff
 
 #%addon org_fedora_oscap
@@ -69,6 +69,7 @@ psmisc
 python3
 python3-libselinux
 setools-console
+#sos
 #strace
 tar
 #tcpdump

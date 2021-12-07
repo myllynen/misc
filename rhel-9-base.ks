@@ -45,15 +45,16 @@ poweroff
 
 # Options must be kept in sync with the below Packages - trimming section
 %packages --inst-langs en_US
-# --exclude-docs
+# --excludedocs
 # --exclude-weakdeps
 # --ignoremissing
-@Core
+# --nocore
 bash-completion
 #bind-utils
 bzip2
 #cloud-init
 #cloud-utils-growpart
+#insights-client
 # TBR
 kbd-legacy
 man-pages
@@ -100,11 +101,11 @@ zsh
 #-firewalld
 #-lshw
 #-kexec-tools
-#-polkit
+#-langpacks-*
+#-man-db
 #-rootfiles
 #-sg3_utils*
 #-tuned
-#-virt-what
 %end
 
 %post --erroronfail

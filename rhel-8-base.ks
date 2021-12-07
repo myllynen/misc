@@ -56,6 +56,7 @@ bzip2
 #cloud-utils-growpart
 chrony
 #drpm
+#insights-client
 #iotop
 man-pages
 #mlocate

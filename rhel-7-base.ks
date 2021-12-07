@@ -55,6 +55,7 @@ bzip2
 #cloud-utils-growpart
 chrony
 #deltarpm
+#insights-client
 #iotop
 libselinux-python
 man-pages

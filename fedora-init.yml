@@ -41,7 +41,7 @@
     file: path={{ ansible_env.HOME }}/.ansible/tmp mode=0700 state=directory
 
   - name: Detect boot parameters
-    command: grep -q rhgb /etc/default/grub
+    command: grep -q TIMEOUT=5 /etc/default/grub
     check_mode: no
     register: adjust_boot_parameters
     failed_when: false
@@ -56,7 +56,7 @@
     when: adjust_boot_parameters.rc == 0
 
   - name: Adjust boot parameters
-    command: grubby --remove-args "rhgb LANG" --args="quiet video=efifb:nobgrt systemd.show_status=yes" --update-kernel=ALL
+    command: grubby --remove-args "rhgb" --args="quiet systemd.show_status=yes" --update-kernel=ALL
     when: adjust_boot_parameters.rc == 0
 
   - name: Detect rescue images
@@ -188,6 +188,7 @@
       - NetworkManager-openvpn
       - NetworkManager-pptp
       - NetworkManager-team
+      - NetworkManager-tui
       - NetworkManager-vpnc
       - NetworkManager-wwan
       - 'PackageKit*'
@@ -257,7 +258,6 @@
       - tuned
       - unzip
       - util-linux-user
-      - wget
       - zsh
 
   - name: Install helpful packages (langpacks)
@@ -312,7 +312,7 @@
     changed_when: false
 
   - name: Ensure correct boot parameters
-    command: grubby --remove-args "rhgb LANG" --args="quiet video=efifb:nobgrt systemd.show_status=yes" --update-kernel=ALL
+    command: grubby --remove-args "rhgb" --args="quiet systemd.show_status=yes" --update-kernel=ALL
     when: rhgb_used.rc == 0
 
   - name: Disable unhelpful services

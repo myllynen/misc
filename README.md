@@ -19,6 +19,10 @@ Nothing but random stuff here.
   * RHEL 8 base installation kickstart example (see below)
 * [rhel-8-init.yml](rhel-8-init.yml)
   * Ansible playbook to initialize a RHEL 8 system after installation
+* [rhel-9-base.ks](rhel-8-base.ks)
+  * RHEL 9 base installation kickstart example (see below)
+* [rhel-9-init.yml](rhel-9-init.yml)
+  * Ansible playbook to initialize a RHEL 9 system after installation
 * [vagrant.ks](vagrant.ks)
   * Kickstart snippet to make Fedora/RHEL installation Vagrant-ready
 

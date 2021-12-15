@@ -20,10 +20,11 @@ cmdline
 zerombr
 clearpart --all --initlabel --disklabel gpt
 bootloader --timeout 1 --append "console=tty0 console=ttyS0,115200 net.ifnames.prefix=net ipv6.disable=0 quiet systemd.show_status=yes"
-reqpart
-#part /boot --fstype xfs --asprimary --size 1024
-#part swap --fstype swap --asprimary --size 1024
-part / --fstype xfs --asprimary --size 1024 --grow
+part biosboot  --fstype biosboot --size 1
+part /boot/efi --fstype efi      --size 63
+part /boot     --fstype xfs      --size 1024
+#part swap      --fstype swap     --size 1024
+part /         --fstype xfs      --size 1024 --grow
 selinux --enforcing
 authselect --useshadow --passalgo sha512
 rootpw --plaintext foobar
@@ -76,6 +77,15 @@ util-linux-user
 yum-utils
 zsh
 
+# BIOS/UEFI cross-compatible image packages
+#efibootmgr
+#-flashrom
+#grub2-efi-x64
+#grub2-pc
+#-mdadm
+##parted
+#shim-x64
+
 # For security profile
 #aide
 #openscap
@@ -99,7 +109,10 @@ zsh
 #-authselect*
 #-e2fsprogs
 #-firewalld
+#-gawk-all-langpacks
+#-glibc-gconv-extra
 #-lshw
+#-kernel-modules
 #-kexec-tools
 #-langpacks-*
 #-man-db
@@ -117,8 +130,16 @@ zsh
 grub2-editenv - unset menu_auto_hide
 systemctl enable serial-getty@ttyS0.service
 #systemctl enable serial-getty@ttyS1.service
-# NB. pam_securetty.so is disabled by default on RHEL 9
+# NB. pam_securetty.so is disabled by default
 #echo ttyS1 >> /etc/securetty
+
+# BIOS/UEFI cross-compatibility
+rm -f /boot/efi/EFI/redhat/grub.cfg.rpmsave
+if [ -d /sys/firmware/efi ]; then
+  test -b /dev/vda && disk=/dev/vda || disk=/dev/sda
+  rpm -q grub2-pc > /dev/null 2>&1 && grub2-install --target=i386-pc $disk || :
+  #rpm -q parted > /dev/null 2>&1 && parted $disk disk_set pmbr_boot off || :
+fi
 
 # Modules
 echo blacklist pcspkr >> /etc/modprobe.d/blacklist.conf
@@ -167,7 +188,7 @@ echo "%_install_langs en_US" > /etc/rpm/macros.install-langs-conf
 
 # Packages - update
 #dnf -y update
-#if [ $(rpm -q kernel | wc -l) -gt 1 ]; then
+#if [ $(rpm -q kernel-core | wc -l) -gt 1 ]; then
 #  dnf remove -C --oldinstallonly -y || :
 #fi
 

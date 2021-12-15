@@ -20,10 +20,11 @@ cmdline
 zerombr
 clearpart --all --initlabel --disklabel gpt
 bootloader --timeout 1 --append "console=tty0 console=ttyS0,115200 net.ifnames.prefix=net ipv6.disable=0 quiet systemd.show_status=yes"
-reqpart
-#part /boot --fstype xfs --asprimary --size 1024
-#part swap --fstype swap --asprimary --size 1024
-part / --fstype xfs --asprimary --size 1024 --grow
+part biosboot  --fstype biosboot --size 1
+part /boot/efi --fstype efi      --size 63
+part /boot     --fstype xfs      --size 1024
+#part swap      --fstype swap     --size 1024
+part /         --fstype xfs      --size 1024 --grow
 selinux --enforcing
 authselect --useshadow --passalgo sha512
 rootpw --plaintext foobar
@@ -47,22 +48,17 @@ poweroff
 # --excludedocs
 # --excludeWeakdeps
 # --ignoremissing
+# --nocore
 @Core
 bash-completion
 #bind-utils
-#boom-boot*
 bzip2
 #cloud-init
 #cloud-utils-growpart
-chrony
-#drpm
 #insights-client
-#iotop
 man-pages
 #mlocate
 nano
-#net-tools
-openssh-clients
 #pciutils
 policycoreutils-python-utils
 prefixdevname
@@ -79,10 +75,17 @@ tar
 tuned
 #unzip
 util-linux-user
-virt-what
-#wget
 yum-utils
 zsh
+
+# BIOS/UEFI cross-compatible image packages
+#efibootmgr
+#-flashrom
+#grub2-efi-x64
+#grub2-pc
+#-mdadm
+##parted
+#shim-x64
 
 # For security profile
 #aide
@@ -106,32 +109,20 @@ zsh
 -sssd*
 #-subs*
 
-# BIOS/UEFI cross-compatible image packages
-#efibootmgr
-#grub2-tools*
-#grub2-pc
-#grub2-pc-modules
-#grub2-efi-x64
-#grub2-efi-x64-modules
-#shim-x64
-
 # Ultra lean
 #-audit
 #-authselect*
-#-cracklib-dicts
 #-e2fsprogs
 #-firewalld
 #-lshw
-#-kbd
 #-kexec-tools
+#-langpacks-*
+#-man-db
 #-polkit
-#-postfix
 #-rootfiles
 #-sg3_utils*
 #-trousers
 #-tuned
-#-virt-what
-#-yum
 %end
 
 %post --erroronfail
@@ -142,17 +133,22 @@ zsh
 sed -i -e 's,rhgb ,,g' /etc/default/grub
 test -f /boot/grub2/grub.cfg && grubcfg=/boot/grub2/grub.cfg || grubcfg=/boot/efi/EFI/redhat/grub.cfg
 grub2-mkconfig -o $grubcfg
+grub2-editenv - unset menu_auto_hide
 systemctl enable serial-getty@ttyS0.service
 #systemctl enable serial-getty@ttyS1.service
-# NB. pam_securetty.so is disabled by default on RHEL 8
+# NB. pam_securetty.so is disabled by default
 #echo ttyS1 >> /etc/securetty
 
-# GRUB BIOS/UEFI cross-compatibility (needs UEFI)
+# BIOS/UEFI cross-compatibility
 #for grubcfg in /boot/grub2/grub.cfg /boot/efi/EFI/redhat/grub.cfg; do
 #  grub2-mkconfig -o $grubcfg
 #  sed -i -n '1,/BEGIN.*uefi.*/p;/END.*uefi.*/,$p' $grubcfg
 #done
-#grub2-install --force --target=i386-pc /dev/vda > /dev/null 2>&1 || :
+#if [ -d /sys/firmware/efi ]; then
+#  test -b /dev/vda && disk=/dev/vda || disk=/dev/sda
+#  rpm -q grub2-pc > /dev/null 2>&1 && grub2-install --target=i386-pc $disk || :
+#  #rpm -q parted > /dev/null 2>&1 && parted $disk disk_set pmbr_boot off || :
+#fi
 
 # Modules
 echo blacklist intel_rapl >> /etc/modprobe.d/blacklist.conf
@@ -186,6 +182,7 @@ sed -i -e 's,DEFROUTE=no,DEFROUTE=yes,' /etc/sysconfig/network-scripts/ifcfg-${n
 sed -i -e 's,^AllowZoneDrifting=yes,AllowZoneDrifting=no,' /etc/firewalld/firewalld.conf
 
 # IPv6
+grep -q ipv6.disable=1 /etc/default/grub && ipv6=no || ipv6=yes
 if [ "$ipv6" = "no" ]; then
   sed -i -e '/^::1/d' /etc/hosts
   sed -i -e 's,^OPTIONS=",OPTIONS="-4 ,g' -e 's, ",",' /etc/sysconfig/chronyd
@@ -193,9 +190,6 @@ if [ "$ipv6" = "no" ]; then
 fi
 
 # ssh/d
-#sed -i -e 's,^PermitRootLogin no,PermitRootLogin yes,' /etc/ssh/sshd_config
-sed -i -e 's,^#MaxAuthTries 6,MaxAuthTries 10,' /etc/ssh/sshd_config
-sed -i -e 's,^#UseDNS.*,UseDNS no,' /etc/ssh/sshd_config
 # https://lists.centos.org/pipermail/centos-devel/2016-July/014981.html
 echo "OPTIONS=-u0" >> /etc/sysconfig/sshd
 mkdir -m 0700 -p /root/.ssh
@@ -236,7 +230,7 @@ systemctl disable dnf-makecache.timer loadmodules.service nis-domainname.service
 rpm -q NetworkManager > /dev/null 2>&1 || systemctl enable network.service
 
 # Watchdog
-sed -i -e 's,^#RuntimeWatchdogSec=.*,RuntimeWatchdogSec=60s,' /etc/systemd/system.conf
+sed -i -e 's,^#RuntimeWatchdogSec=0,RuntimeWatchdogSec=60s,' /etc/systemd/system.conf
 
 # cloud-init
 #dnf -y install cloud-init cloud-utils-growpart
@@ -277,7 +271,7 @@ truncate -s 0 /etc/machine-id /etc/resolv.conf
 #truncate -s 0 /var/log/btmp /var/log/wtmp /var/log/lastlog
 
 # Update initramfs
-dracut -f
+dracut -f --regenerate-all
 
 # Ensure everything is written to the disk
 sync ; echo 3 > /proc/sys/vm/drop_caches ;

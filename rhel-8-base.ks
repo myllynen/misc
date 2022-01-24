@@ -75,6 +75,7 @@ tar
 tuned
 #unzip
 util-linux-user
+vim-enhanced
 yum-utils
 zsh
 
@@ -105,6 +106,7 @@ zsh
 -NetworkManager-tui
 -parted
 -plymouth
+-rhc
 -sqlite
 -sssd*
 #-subs*
@@ -151,6 +153,7 @@ systemctl enable serial-getty@ttyS0.service
 #fi
 
 # Modules
+echo blacklist floppy >> /etc/modprobe.d/blacklist.conf
 echo blacklist intel_rapl >> /etc/modprobe.d/blacklist.conf
 echo blacklist snd_pcsp >> /etc/modprobe.d/blacklist.conf
 echo blacklist pcspkr >> /etc/modprobe.d/blacklist.conf
@@ -257,21 +260,34 @@ fi
 echo dracut_rescue_image=no > /etc/dracut.conf.d/no-rescue.conf
 
 # Remove machine identification and state
+#for netdev in $(nmcli -t dev | cut -d: -f1 | grep -v lo); do
+#  sed -i -e '/UUID=/d' /etc/sysconfig/network-scripts/ifcfg-$netdev
+#  sed -i -e '/DHCP_/d' /etc/sysconfig/network-scripts/ifcfg-$netdev
+#  sed -i -e '/__/d' /etc/sysconfig/network-scripts/ifcfg-$netdev
+#done
 truncate -s 0 /etc/machine-id /etc/resolv.conf
 /bin/rm -rf /etc/systemd/network/7* /etc/udev/rules.d/7* /etc/ssh/ssh_host_*
 /bin/rm -rf /var/lib/systemd/random-seed
 
 # Clear caches, files, and logs
-/bin/rm -rf /root/* /tmp/* /var/tmp/*
+/bin/rm -rf /root/* /tmp/* /tmp/.[a-zA-Z]* /var/tmp/*
 /bin/rm -rf /etc/*- /etc/*.bak /etc/*~ /etc/sysconfig/*~
 /bin/rm -rf /var/cache/dnf/* /var/cache/yum/*
 /bin/rm -rf /var/lib/dnf/* /var/lib/yum/repos/* /var/lib/yum/yumdb/*
+/bin/rm -rf /var/lib/NetworkManager/* /var/lib/unbound/*.key
 /bin/rm -rf /var/log/*debug /var/log/anaconda /var/log/dmesg*
+#truncate -s 0 /var/log/cron /var/log/rhsm/rhsmcertd.log /var/log/tuned/tuned.log
 #truncate -s 0 /var/log/audit/audit.log /var/log/messages /var/log/secure
 #truncate -s 0 /var/log/btmp /var/log/wtmp /var/log/lastlog
 
 # Update initramfs
 dracut -f --regenerate-all
+
+# Create kdump initramfs for the newest kernel
+kver_latest=$(rpm -q --qf "%{version}-%{release}.%{arch}\n" kernel | sort -V | tail -n 1)
+sed -i -e "s,^KDUMP_KERNELVER=.*,KDUMP_KERNELVER=$kver_latest," /etc/sysconfig/kdump
+kdumpctl rebuild
+sed -i -e 's,^KDUMP_KERNELVER=.*,KDUMP_KERNELVER="",' /etc/sysconfig/kdump
 
 # Ensure everything is written to the disk
 sync ; echo 3 > /proc/sys/vm/drop_caches ;

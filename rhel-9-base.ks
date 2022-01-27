@@ -32,7 +32,7 @@ rootpw --plaintext foobar
 #--noipv6
 firewall --enabled --service ssh
 firstboot --disabled
-lang en_US.UTF-8
+lang C.UTF-8
 timezone --utc Europe/Helsinki
 timesource --ntp-server time.cloudflare.com
 keyboard fi
@@ -55,6 +55,7 @@ bash-completion
 bzip2
 #cloud-init
 #cloud-utils-growpart
+glibc-minimal-langpack
 #insights-client
 # TBR
 kbd-legacy
@@ -95,7 +96,10 @@ zsh
 
 -a*firmware*
 -dracut-config-rescue
+-gawk-all-langpacks
+-glibc-gconv-extra
 -i*firmware*
+-langpacks-*
 -lib*firmware*
 -NetworkManager-team
 -NetworkManager-tui
@@ -111,12 +115,9 @@ zsh
 #-authselect*
 #-e2fsprogs
 #-firewalld
-#-gawk-all-langpacks
-#-glibc-gconv-extra
 #-lshw
 #-kernel-modules
 #-kexec-tools
-#-langpacks-*
 #-man-db
 #-rootfiles
 #-sg3_utils*

@@ -183,6 +183,8 @@ EOF
 done
 sed -i -e 's,DEFROUTE=no,DEFROUTE=yes,' /etc/sysconfig/network-scripts/ifcfg-${netdevprefix}0
 sed -i -e 's,^AllowZoneDrifting=yes,AllowZoneDrifting=no,' /etc/firewalld/firewalld.conf
+sed -i -e '/cockpit/d' /etc/firewalld/zones/public.xml
+rm -f /etc/firewalld/zones/public.xml.old
 
 # IPv6
 grep -q ipv6.disable=1 /etc/default/grub && ipv6=no || ipv6=yes
@@ -190,6 +192,7 @@ if [ "$ipv6" = "no" ]; then
   sed -i -e '/^::1/d' /etc/hosts
   sed -i -e 's,^OPTIONS=",OPTIONS="-4 ,g' -e 's, ",",' /etc/sysconfig/chronyd
   sed -i -e 's,^IPv6_rpfilter=yes,IPv6_rpfilter=no,' /etc/firewalld/firewalld.conf
+  sed -i -e '/dhcpv6-client/d' /etc/firewalld/zones/public.xml
 fi
 
 # ssh/d
@@ -276,6 +279,7 @@ truncate -s 0 /etc/machine-id /etc/resolv.conf
 /bin/rm -rf /var/lib/dnf/* /var/lib/yum/repos/* /var/lib/yum/yumdb/*
 /bin/rm -rf /var/lib/NetworkManager/* /var/lib/unbound/*.key
 /bin/rm -rf /var/log/*debug /var/log/anaconda /var/log/dmesg*
+/bin/rm -rf /var/lib/cloud/* /var/log/cloud-init*.log
 #truncate -s 0 /var/log/cron /var/log/rhsm/rhsmcertd.log /var/log/tuned/tuned.log
 #truncate -s 0 /var/log/audit/audit.log /var/log/messages /var/log/secure
 #truncate -s 0 /var/log/btmp /var/log/wtmp /var/log/lastlog

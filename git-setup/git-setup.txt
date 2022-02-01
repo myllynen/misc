@@ -1,0 +1,79 @@
+Quick Guide to Setup GitWeb on RHEL 8
+*************************************
+
+1) Install firewall, gitweb and web server
+
+yum install -y firewalld gitweb git-daemon highlight httpd
+
+2) Enable web server service and open firewall
+
+systemctl enable --now firewalld.service
+systemctl enable --now git.socket
+systemctl enable --now httpd.service
+firewall-cmd --zone=public --add-port=9418/tcp
+firewall-cmd --zone=public --add-service=http
+firewall-cmd --runtime-to-permanent
+
+3) Configure gitweb
+
+echo 'our $site_name = "Intranet Git Repos";' >> /etc/gitweb.conf
+echo 'our $projects_list = "/var/lib/git/conf/gitweb-projects";' >> /etc/gitweb.conf
+echo "\$feature{'highlight'}{'default'} = [1];" >> /etc/gitweb.conf
+
+echo '<p>Welcome to Intranet Git Repos!</p>' > /var/www/git/indextext.html
+sed -i -e 's,git_project_search_form(,#git_project_search_form(,' /var/www/git/gitweb.cgi
+
+4) Add git user and create git directory
+
+useradd -c "Git User" -m -u 4441 git
+mkdir -p /var/lib/git/conf
+touch /var/lib/git/conf/gitweb-projects
+chown -R root:git /var/lib/git
+restorecon -Rv /var/lib/git
+
+5) Configure httpd
+
+cat << 'EOF' > /etc/httpd/conf.d/gitweb.conf
+# Basic configuration
+#SetEnv GIT_HTTP_EXPORT_ALL
+SetEnv GIT_PROJECT_ROOT /var/lib/git
+#ScriptAlias /git/ /usr/libexec/git-core/git-http-backend/
+
+# Allow executing git-http-backend
+<Directory /usr/libexec/git-core>
+  <Files "git-http-backend">
+    Options +ExecCGI
+    Require all granted
+  </Files>
+</Directory>
+
+# Serve static files directly
+AliasMatch ^/git/(.*/objects/[0-9a-f]{2}/[0-9a-f]{38})$          /var/lib/git/$1
+AliasMatch ^/git/(.*/objects/pack/pack-[0-9a-f]{40}.(pack|idx))$ /var/lib/git/$1
+
+# Serve repository objects with Git HTTP backend
+ScriptAliasMatch \
+        "(?x)^/git/(.*/(HEAD | \
+                        info/refs | \
+                        objects/info/[^/]+ | \
+                        git-(upload|receive)-pack))$" \
+        /usr/libexec/git-core/git-http-backend/$1
+
+# Serve browsers with GitWeb
+Alias /git /var/www/git
+
+<Directory /var/www/git>
+  Options +ExecCGI
+  AddHandler cgi-script .cgi
+  DirectoryIndex gitweb.cgi
+</Directory>
+EOF
+systemctl restart httpd.service
+
+6) Configure users
+
+usermod -a -G git testuser
+
+7) Add new repos
+
+/usr/local/sbin/newrepo mynewrepo

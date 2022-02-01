@@ -1,0 +1,154 @@
+#!/bin/bash
+#
+# A simple script to create new Git repos
+#
+
+#
+# Config
+#
+GROUP=git
+GITDIR=/var/lib/git
+SERVER=$(hostname)
+MAILINGLIST=
+DOCPAGE=
+
+#
+# Functions
+#
+function msg() {
+  echo -e "$1"
+}
+
+#
+# Main
+#
+if [ $# -ne 1 ]; then
+  echo "usage: $0 <newrepo>" 1>&2
+  exit 1
+fi
+
+if [ -r /etc/sysconfig/git ]; then
+  . /etc/sysconfig/git
+fi
+
+cd $GITDIR
+repo=${1%%.git}.git
+msg "Adding repository: $repo."
+
+if [ -d $repo ]; then
+  msg "Repo already exists, aborting!" 1>&2
+  exit 2
+fi
+
+mkdir $repo || exit 3
+chmod 2775 $repo
+chown $USER:$GROUP $repo
+
+msg "Creating and configuring bare git repo..."
+cd $repo
+git --bare init > /dev/null
+
+git config core.sharedrepository true
+if [ -n "$MAILINGLIST" ]; then
+  git config hooks.announcelist $MAILINGLIST
+  git config hooks.mailinglist $MAILINGLIST
+fi
+git config hooks.showrev "t=%s; echo; echo 'http://${SERVER}/git/?p=${repo};commitdiff;h='\$t; echo; git show -C \$t; echo"
+git config http.receivepack false
+
+if [ -n "$MAILINGLIST" ]; then
+  echo '#!/bin/sh' > hooks/post-receive
+  echo '. /usr/share/git-core/contrib/hooks/post-receive-email' >> hooks/post-receive
+  chmod 0775 hooks/post-receive
+fi
+
+touch git-daemon-export-ok
+echo git://${SERVER}/$repo >> cloneurl
+echo http://${SERVER}/git/$repo >> cloneurl
+echo ssh://${SERVER}$GITDIR/$repo >> cloneurl
+
+msg "Adding GitWeb entry..."
+msg "Enter new owner (Firstname Lastname) and press enter."
+read -p"> " owner
+echo -e "$repo\t\t$owner" | sed -e 's, ,+,g' >> ../conf/gitweb-projects
+sort -u ../conf/gitweb-projects > ../conf/gitweb-projects.tmp
+mv ../conf/gitweb-projects.tmp ../conf/gitweb-projects
+chmod 0664 ../conf/gitweb-projects
+msg "Gitweb entry done with owner: $owner."
+
+msg "Adding the Git description line for repository..."
+msg "Enter new text without trailing period and press enter."
+read -p"> " descr
+echo $descr > description
+msg "Description is now:"
+msg ">$(cat description)<"
+
+cd $GITDIR
+chown -R $USER:$GROUP $repo
+chmod -R g+w $repo
+
+cat << EOM > /tmp/.newrepo.$$
+
+A new git repository has been created:
+
+         name: $repo
+        owner: $owner
+  description: $descr
+   created by: $USER
+       server: $SERVER
+         path: $GITDIR/$repo
+       gitweb: http://$SERVER/git/?p=$repo
+    ro access: git://$SERVER/$repo
+    ro access: http://$SERVER/git/$repo
+    rw access: ssh://$SERVER$GITDIR/$repo
+
+Example commands:
+
+    git clone ssh://$SERVER$GITDIR/$repo $repo
+
+    cd $repo
+    vi <files>
+    git add <files>
+    git commit -av
+    git push origin master
+
+Next pushes can be done with plain:
+
+    git push
+
+Other repositories:
+
+    http://$SERVER/git
+
+EOM
+
+if [ -n "$DOCPAGE" ]; then
+  cat << EOM >> /tmp/.newrepo.$$
+More site specific instructions:
+
+    $DOCPAGE
+
+EOM
+fi
+
+if [ -n "$MAILINGLIST" ]; then
+  msg "Mailing to $MAILINGLIST..."
+  mail -s "[SCM] New Git Repository $repo Created by $USER" $MAILINGLIST < /tmp/.newrepo.$$
+  msg "Message sent."
+else
+  cat /tmp/.newrepo.$$
+fi
+rm -f /tmp/.newrepo.$$
+
+msg "Repository created."
+msg "------------------------------------------------------------------------"
+msg "This new repository can be cloned at client end with command:"
+echo
+msg "    git clone ssh://$SERVER$GITDIR/$repo $repo"
+echo
+msg "Check the web interface: http://$SERVER/git"
+if [ -n "$DOCPAGE" ]; then
+  msg "Check the instructions:  $DOCPAGE"
+fi
+msg "------------------------------------------------------------------------"
+echo

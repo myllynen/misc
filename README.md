@@ -13,6 +13,8 @@ Nothing but random stuff here.
   * Ansible playbook to initialize a Fedora system after installation
 * [qcow2-to-box](qcow2-to-box)
   * A simple script to create Vagrant boxes from Qcow2 images
+* [git-setup](git-setup)
+  * Basic steps to setup local (test) Git repo infra
 * [rhel-7-base.ks](rhel-7-base.ks)
   * RHEL 7 base installation kickstart example (see below)
 * [rhel-8-base.ks](rhel-8-base.ks)

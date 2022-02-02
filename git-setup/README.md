@@ -10,8 +10,8 @@ Basic steps to setup local (test) Git repo infra.
 The following has been tested on RHEL 8 02/2022, it may or may not work
 on other distributions or even on RHEL 8 anymore, you have been warned!
 
-Everyone is allow to clone read-only repositories over the Git and HTTP
-protocols, push (write) access is allowed over SSH only. The setup
+Everyone is allowed to clone read-only repositories over the Git and
+HTTP protocols, push (write) access is allowed over SSH only. The setup
 expects mostly small and trusted environment so further securing and
 design review is strongly recommended for larger and hostile
 environments.

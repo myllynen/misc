@@ -8,7 +8,7 @@
 #
 GROUP=git
 GITDIR=/var/lib/git
-SERVER=$(hostname)
+SERVER=$(hostname | tr '[:upper:]' '[:lower:]')
 MAILINGLIST=
 DOCPAGE=
 

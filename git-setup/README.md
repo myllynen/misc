@@ -24,15 +24,15 @@ yum install -y firewalld git git-daemon gitweb highlight httpd
 
 ### Configure and Enable Services
 
-Port _9418/tcp_ is needed for the Git protocol and is optional, like the
-_http_ service which is to allow read-only cloning over HTTP.
+The _git_ and _http_ services are enabled below to allow read-only
+cloning over the Git and HTTP protocols, however they are optional.
 
 ```
 systemctl enable --now firewalld.service
 systemctl enable --now httpd.service
 systemctl enable --now git.socket
-firewall-cmd --zone=public --add-port=9418/tcp
 firewall-cmd --zone=public --add-service=http
+firewall-cmd --zone=public --add-service=git
 firewall-cmd --runtime-to-permanent
 ```
 
@@ -58,7 +58,7 @@ sed -i -e 's,git_project_search_form(,#git_project_search_form(,' /var/www/git/g
 ### Add git User and Create Server git Directory Structure
 
 ```
-useradd -c "Git User" -m -u 4441 git
+groupadd -g 4441 git
 mkdir -p /var/lib/git/conf
 touch /var/lib/git/conf/gitweb-projects
 chown -R root:git /var/lib/git

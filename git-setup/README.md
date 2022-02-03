@@ -62,6 +62,8 @@ groupadd -g 4441 git
 mkdir -p /var/lib/git/conf
 touch /var/lib/git/conf/gitweb-projects
 chown -R root:git /var/lib/git
+chmod 2775 /var/lib/git /var/lib/git/conf
+chmod 0664 /var/lib/git/conf/gitweb-projects
 restorecon -Rv /var/lib/git
 ```
 

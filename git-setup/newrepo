@@ -9,7 +9,7 @@
 GROUP=git
 GITDIR=/var/lib/git
 SERVER=$(hostname | tr '[:upper:]' '[:lower:]')
-MAILINGLIST=
+MAILTO=
 DOCPAGE=
 
 #
@@ -49,14 +49,14 @@ cd $repo
 git --bare init > /dev/null
 
 git config core.sharedrepository true
-if [ -n "$MAILINGLIST" ]; then
-  git config hooks.announcelist $MAILINGLIST
-  git config hooks.mailinglist $MAILINGLIST
+if [ -n "$MAILTO" ]; then
+  git config hooks.announcelist $MAILTO
+  git config hooks.MAILTO $MAILTO
 fi
 git config hooks.showrev "t=%s; echo; echo 'http://${SERVER}/git/?p=${repo};commitdiff;h='\$t; echo; git show -C \$t; echo"
 git config http.receivepack false
 
-if [ -n "$MAILINGLIST" ]; then
+if [ -n "$MAILTO" ]; then
   echo '#!/bin/sh' > hooks/post-receive
   echo '. /usr/share/git-core/contrib/hooks/post-receive-email' >> hooks/post-receive
   chmod 0775 hooks/post-receive
@@ -131,9 +131,9 @@ More site specific instructions:
 EOM
 fi
 
-if [ -n "$MAILINGLIST" ]; then
-  msg "Mailing to $MAILINGLIST..."
-  mail -s "[SCM] New Git Repository $repo Created by $USER" $MAILINGLIST < /tmp/.newrepo.$$
+if [ -n "$MAILTO" ]; then
+  msg "Mailing to $MAILTO..."
+  mail -s "[SCM] New Git Repository $repo Created by $USER" $MAILTO < /tmp/.newrepo.$$
   msg "Message sent."
 else
   cat /tmp/.newrepo.$$

@@ -51,7 +51,7 @@ git --bare init > /dev/null
 git config core.sharedrepository true
 if [ -n "$MAILTO" ]; then
   git config hooks.announcelist $MAILTO
-  git config hooks.MAILTO $MAILTO
+  git config hooks.mailinglist $MAILTO
 fi
 git config hooks.showrev "t=%s; echo; echo 'http://${SERVER}/git/?p=${repo};commitdiff;h='\$t; echo; git show -C \$t; echo"
 git config http.receivepack false

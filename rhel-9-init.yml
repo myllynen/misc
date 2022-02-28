@@ -58,7 +58,7 @@
     when: adjust_boot_parameters.rc == 0
 
   - name: Adjust boot parameters
-    command: grubby --remove-args "rhgb" --args="quiet systemd.show_status=yes" --update-kernel=ALL
+    command: grubby --remove-args="rhgb" --args="quiet systemd.show_status=yes" --update-kernel=ALL
     when: adjust_boot_parameters.rc == 0
 
   - name: Detect rescue images
@@ -370,7 +370,7 @@
     changed_when: false
 
   - name: Ensure correct boot parameters
-    command: grubby --remove-args "rhgb" --args="quiet systemd.show_status=yes" --update-kernel=ALL
+    command: grubby --remove-args="rhgb" --args="quiet systemd.show_status=yes" --update-kernel=ALL
     when: rhgb_used.rc == 0
 
   - name: Disable unhelpful services

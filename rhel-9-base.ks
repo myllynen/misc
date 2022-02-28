@@ -51,31 +51,22 @@ poweroff
 # --ignoremissing
 # --nocore
 bash-completion
-#bind-utils
+bind-utils
 bzip2
 #cloud-init
 #cloud-utils-growpart
 glibc-minimal-langpack
 #insights-client
-# TBR
-kbd-legacy
 man-pages
-#mlocate
 nano
-#pciutils
 policycoreutils-python-utils
 python3-libselinux
 setools-console
 #sos
-#strace
 tar
-#tcpdump
-#telnet
-#tmux
 tuned
 #unzip
-util-linux-user
-vim-enhanced
+#vim-enhanced
 yum-utils
 zsh
 
@@ -124,7 +115,7 @@ zsh
 #-tuned
 %end
 
-%post --erroronfail
+%post
 # GRUB / console
 #sed -i -e 's,GRUB_TERMINAL.*,GRUB_TERMINAL="serial console",' /etc/default/grub
 #sed -i -e '/GRUB_SERIAL_COMMAND/d' -e '$ i GRUB_SERIAL_COMMAND="serial --speed=115200"' /etc/default/grub
@@ -145,27 +136,27 @@ if [ -d /sys/firmware/efi ]; then
 fi
 
 # Modules
-echo blacklist floppy >> /etc/modprobe.d/blacklist.conf
 echo blacklist pcspkr >> /etc/modprobe.d/blacklist.conf
 
 # Networking
-#netuuid=$(uuidgen)
-#sed -i -e "s,^uuid=.*,uuid=$netuuid," /etc/NetworkManager/system-connections/net0.nmconnection
 sed -i -e '/cockpit/d' /etc/firewalld/zones/public.xml
 rm -f /etc/firewalld/zones/public.xml.old
 
 # IPv6
 grep -q ipv6.disable=1 /etc/default/grub && ipv6=no || ipv6=yes
 if [ "$ipv6" = "no" ]; then
+  for netconf in $(ls -1 /etc/NetworkManager/system-connections/*.nmconnection); do
+    sed -i -e '/^\[ipv6\]$/,/^\[/ s/method=.*/method=disabled/' $netconf
+  done
   sed -i -e '/^::1/d' /etc/hosts
+  echo "AddressFamily inet" > /etc/ssh/sshd_config.d/50-ipv6.conf
   sed -i -e 's,^OPTIONS=",OPTIONS="-4 ,g' -e 's, ",",' /etc/sysconfig/chronyd
   sed -i -e 's,^IPv6_rpfilter=yes,IPv6_rpfilter=no,' /etc/firewalld/firewalld.conf
   sed -i -e '/dhcpv6-client/d' /etc/firewalld/zones/public.xml
 fi
 
 # ssh/d
-# https://lists.centos.org/pipermail/centos-devel/2016-July/014981.html
-echo "OPTIONS=-u0" >> /etc/sysconfig/sshd
+#sed -Ei -e 's,^(#|)PermitRootLogin .*,PermitRootLogin yes,' /etc/ssh/sshd_config
 mkdir -m 0700 -p /root/.ssh
 #echo "ssh-rsa ..." > /root/.ssh/authorized_keys
 restorecon -R /root/.ssh > /dev/null 2>&1
@@ -181,23 +172,17 @@ if [ ! -f /etc/centos-release ]; then
     rm -f /etc/yum.repos.d/$repofile
 fi
 
-# Packages - keys
-rpm --import /etc/pki/rpm-gpg/RPM-GPG-KEY-redhat-release > /dev/null 2>&1 || :
+# Import Red Hat RPM GPG key
+rpm --import /etc/pki/rpm-gpg/RPM-GPG-KEY-redhat-release
 
-# Packages - trimming
+# Packages trimming
 echo "%_install_langs en_US" > /etc/rpm/macros.install-langs-conf
 #echo "%_excludedocs 1" > /etc/rpm/macros.excludedocs-conf
 #echo "install_weak_deps=False" >> /etc/dnf/dnf.conf
 #dnf -C -y remove linux-firmware > /dev/null 2>&1 || :
 
-# Packages - EPEL
-#dnf -y install epel-release
-
-# Packages - update
+# Update to latest packages
 #dnf -y update
-#if [ $(rpm -q kernel-core | wc -l) -gt 1 ]; then
-#  dnf remove -C --oldinstallonly -y || :
-#fi
 
 # Services
 systemctl disable dnf-makecache.timer nis-domainname.service remote-fs.target
@@ -226,9 +211,6 @@ if [ -f /etc/cloud/cloud.cfg ]; then
   /bin/rm -rf /var/lib/cloud/* > /dev/null 2>&1
 fi
 
-# Make sure rescue image is not built without a configuration change
-echo dracut_rescue_image=no > /etc/dracut.conf.d/no-rescue.conf
-
 # Remove machine identification and state
 #for netdev in $(nmcli -t dev | cut -d: -f1 | grep -v lo); do
 #  sed -i -e '/uuid=/d' /etc/NetworkManager/system-connections/$netdev.nmconnection
@@ -243,23 +225,24 @@ truncate -s 0 /etc/machine-id /etc/resolv.conf
 # Clear caches, files, and logs
 /bin/rm -rf /root/* /tmp/* /tmp/.[a-zA-Z]* /var/tmp/*
 /bin/rm -rf /etc/*- /etc/*.bak /etc/*~ /etc/sysconfig/*~
-/bin/rm -rf /var/cache/dnf/* /var/cache/yum/*
+/bin/rm -rf /var/cache/dnf/* /var/cache/yum/* /var/log/rhsm/*
 /bin/rm -rf /var/lib/dnf/* /var/lib/yum/repos/* /var/lib/yum/yumdb/*
 /bin/rm -rf /var/lib/NetworkManager/* /var/lib/unbound/*.key
 /bin/rm -rf /var/log/*debug /var/log/anaconda /var/log/dmesg*
 /bin/rm -rf /var/lib/cloud/* /var/log/cloud-init*.log
-#truncate -s 0 /var/log/cron /var/log/rhsm/rhsmcertd.log /var/log/tuned/tuned.log
+#truncate -s 0 /var/log/cron /var/log/tuned/tuned.log
 #truncate -s 0 /var/log/audit/audit.log /var/log/messages /var/log/secure
 #truncate -s 0 /var/log/btmp /var/log/wtmp /var/log/lastlog
 
 # Update initramfs
 dracut -f --regenerate-all
 
-# Create kdump initramfs for the newest kernel
-kver_latest=$(rpm -q --qf "%{version}-%{release}.%{arch}\n" kernel | sort -V | tail -n 1)
-sed -i -e "s,^KDUMP_KERNELVER=.*,KDUMP_KERNELVER=$kver_latest," /etc/sysconfig/kdump
-kdumpctl rebuild
-sed -i -e 's,^KDUMP_KERNELVER=.*,KDUMP_KERNELVER="",' /etc/sysconfig/kdump
+# Create kdump initramfs for all kernels
+for kver in $(rpm -q --qf "%{version}-%{release}.%{arch}\n" kernel); do
+  sed -i -e "s,^KDUMP_KERNELVER=.*,KDUMP_KERNELVER=$kver," /etc/sysconfig/kdump
+  kdumpctl rebuild
+  sed -i -e 's,^KDUMP_KERNELVER=.*,KDUMP_KERNELVER="",' /etc/sysconfig/kdump
+done
 
 # Ensure everything is written to the disk
 sync ; echo 3 > /proc/sys/vm/drop_caches ;

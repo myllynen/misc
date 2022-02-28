@@ -8,7 +8,7 @@
 #   --network network=default --graphics vnc --sound none --noreboot \
 #   --location /VirtualMachines/boot/rhel-server-7.9-x86_64-dvd.iso \
 #   --initrd-inject /VirtualMachines/boot/ks/rhel-7-base.ks \
-#   --extra-args "ip=dhcp inst.ks=file:/rhel-7-base.ks inst.geoloc=0 inst.nosave=all console=tty0 console=ttyS0,115200 biosdevname=0 net.ifnames=0 ipv6.disable=0 quiet systemd.show_status=yes" \
+#   --extra-args "ip=dhcp inst.ks=file:/rhel-7-base.ks inst.geoloc=0 inst.nosave=all console=tty0 console=ttyS0,115200 net.ifnames=0 ipv6.disable=0 quiet systemd.show_status=yes" \
 #   --noautoconsole
 #
 # Post-process:
@@ -20,7 +20,7 @@ install
 cmdline
 zerombr
 clearpart --all --initlabel
-bootloader --timeout 1 --append "console=tty0 console=ttyS0,115200 biosdevname=0 net.ifnames=0 ipv6.disable=0 quiet systemd.show_status=yes"
+bootloader --timeout 1 --append "console=tty0 console=ttyS0,115200 net.ifnames=0 ipv6.disable=0 quiet systemd.show_status=yes"
 reqpart
 #part /boot --fstype xfs --asprimary --size 1024
 #part swap --fstype swap --asprimary --size 1024
@@ -49,36 +49,24 @@ poweroff
 # --ignoremissing
 @Core
 bash-completion
-#bind-utils
+bind-utils
 bzip2
 chrony
 #cloud-init
 #cloud-utils-growpart
-#deltarpm
 #insights-client
-#iotop
 libselinux-python
 man-pages
-#mlocate
 nano
-#net-tools
-openssh-clients
-#pciutils
 policycoreutils-python
 psmisc
-#screen
 setools-console
 #sos
-#strace
 tar
-#tcpdump
-#telnet
 tuned
 #unzip
-vim-enhanced
+#vim-enhanced
 virt-what
-#wget
-#yum-plugin-priorities
 yum-utils
 zsh
 
@@ -88,17 +76,16 @@ zsh
 #openscap-scanner
 #scap-security-guide
 
+-a*firmware*
 -biosdevname
 -btrfs-progs
 -dracut-config-rescue
--*firmware*
--iprutils
--NetworkManager*
--NetworkManager-config-server
+-i*firmware*
+-NetworkManager-team
+-NetworkManager-tui
 -parted
 -plymouth
 #-python-rhsm
--rdma
 -Red_Hat_Enterprise_Linux-Release_Notes-7-en-US
 -redhat-support-tool
 -rhc
@@ -122,7 +109,7 @@ zsh
 #-tuned
 %end
 
-%post --erroronfail
+%post
 # GRUB / console
 #sed -i -e 's,GRUB_TERMINAL.*,GRUB_TERMINAL="serial console",' /etc/default/grub
 #sed -i -e '/GRUB_SERIAL_COMMAND/d' -e '$ i GRUB_SERIAL_COMMAND="serial --speed=115200"' /etc/default/grub
@@ -173,16 +160,15 @@ rm -f /etc/firewalld/zones/public.xml.old
 if [ "$ipv6" = "no" ]; then
   sed -i -e '/^::1/d' /etc/hosts
   sed -i -e 's,^OPTIONS=",OPTIONS="-4 ,g' -e 's, ",",' /etc/sysconfig/chronyd
+  sed -Ei -e 's,^(#|)AddressFamily .*,AddressFamily inet,' /etc/ssh/sshd_config
   sed -i -e 's,^inet_protocols = all,inet_protocols = ipv4,' /etc/postfix/main.cf
   sed -i -e 's,^IPv6_rpfilter=yes,IPv6_rpfilter=no,' /etc/firewalld/firewalld.conf
   sed -i -e '/dhcpv6-client/d' /etc/firewalld/zones/public.xml
 fi
 
 # ssh/d
-#sed -i -e 's,^PermitRootLogin no,PermitRootLogin yes,' /etc/ssh/sshd_config
+#sed -Ei -e 's,^(#|)PermitRootLogin .*,PermitRootLogin yes,' /etc/ssh/sshd_config
 sed -i -e 's,^#UseDNS.*,UseDNS no,' /etc/ssh/sshd_config
-# https://lists.centos.org/pipermail/centos-devel/2016-July/014981.html
-echo "OPTIONS=-u0" >> /etc/sysconfig/sshd
 mkdir -m 0700 -p /root/.ssh
 #echo "ssh-rsa ..." > /root/.ssh/authorized_keys
 restorecon -R /root/.ssh > /dev/null 2>&1
@@ -198,27 +184,21 @@ if [ ! -f /etc/centos-release ]; then
     rm -f /etc/yum.repos.d/$repofile
 fi
 
-# Packages - keys
-rpm --import /etc/pki/rpm-gpg/RPM-GPG-KEY-redhat-release > /dev/null 2>&1 || :
+# Import Red Hat RPM GPG key
+rpm --import /etc/pki/rpm-gpg/RPM-GPG-KEY-redhat-release
 
-# Packages - trimming
+# Packages trimming
 echo "%_install_langs en_US" > /etc/rpm/macros.install-langs-conf
 #echo "%_excludedocs 1" > /etc/rpm/macros.excludedocs-conf
 #yum -C -y remove linux-firmware > /dev/null 2>&1 || :
 
-# Packages - EPEL
-#yum -y install epel-release
-
-# Packages - update
+# Update to latest packages
 #yum -y update
-#if [ $(rpm -q kernel | wc -l) -gt 1 ]; then
-#  package-cleanup --oldkernels --count=1 -y || :
-#fi
 
 # Services
 systemctl disable remote-fs.target
 systemctl disable systemd-readahead-collect.service systemd-readahead-drop.service systemd-readahead-replay.service
-rpm -q NetworkManager > /dev/null 2>&1 || systemctl enable network.service
+rpm -q NetworkManager > /dev/null 2>&1 && systemctl disable network || systemctl enable network
 
 # Watchdog
 sed -i -e 's,^#RuntimeWatchdogSec=0,RuntimeWatchdogSec=60s,' /etc/systemd/system.conf
@@ -244,9 +224,6 @@ if [ -f /etc/cloud/cloud.cfg ]; then
   /bin/rm -rf /var/lib/cloud/* > /dev/null 2>&1
 fi
 
-# Make sure rescue image is not built without a configuration change
-echo dracut_rescue_image=no > /etc/dracut.conf.d/no-rescue.conf
-
 # Remove machine identification and state
 #for netdev in $(nmcli -t dev | cut -d: -f1 | grep -v lo); do
 #  sed -i -e '/HWADDR=/d' /etc/sysconfig/network-scripts/ifcfg-$netdev
@@ -259,24 +236,25 @@ truncate -s 0 /etc/machine-id /etc/resolv.conf
 # Clear caches, files, and logs
 /bin/rm -rf /root/* /tmp/* /tmp/.[a-zA-Z]* /var/tmp/*
 /bin/rm -rf /etc/*- /etc/*.bak /etc/*~ /etc/sysconfig/*~
-/bin/rm -rf /var/cache/dnf/* /var/cache/yum/*
+/bin/rm -rf /var/cache/dnf/* /var/cache/yum/* /var/log/rhsm/*
 /bin/rm -rf /var/lib/dnf/* /var/lib/yum/repos/* /var/lib/yum/yumdb/*
 /bin/rm -rf /var/lib/NetworkManager/* /var/lib/unbound/*.key
 /bin/rm -rf /var/log/*debug /var/log/anaconda /var/log/dmesg*
 /bin/rm -rf /var/log/grubby /var/log/grubby_prune_debug
 /bin/rm -rf /var/lib/cloud/* /var/log/cloud-init*.log
-#truncate -s 0 /var/log/cron /var/log/rhsm/rhsmcertd.log /var/log/tuned/tuned.log
+#truncate -s 0 /var/log/cron /var/log/tuned/tuned.log
 #truncate -s 0 /var/log/audit/audit.log /var/log/messages /var/log/secure
 #truncate -s 0 /var/log/btmp /var/log/wtmp /var/log/lastlog
 
 # Update initramfs
 dracut -f --regenerate-all
 
-# Create kdump initramfs for the newest kernel
-kver_latest=$(rpm -q --qf "%{version}-%{release}.%{arch}\n" kernel | sort -V | tail -n 1)
-sed -i -e "s,^KDUMP_KERNELVER=.*,KDUMP_KERNELVER=$kver_latest," /etc/sysconfig/kdump
-kdumpctl rebuild
-sed -i -e 's,^KDUMP_KERNELVER=.*,KDUMP_KERNELVER="",' /etc/sysconfig/kdump
+# Create kdump initramfs for all kernels
+for kver in $(rpm -q --qf "%{version}-%{release}.%{arch}\n" kernel); do
+  sed -i -e "s,^KDUMP_KERNELVER=.*,KDUMP_KERNELVER=$kver," /etc/sysconfig/kdump
+  kdumpctl rebuild
+  sed -i -e 's,^KDUMP_KERNELVER=.*,KDUMP_KERNELVER="",' /etc/sysconfig/kdump
+done
 
 # Ensure everything is written to the disk
 sync ; echo 3 > /proc/sys/vm/drop_caches ;

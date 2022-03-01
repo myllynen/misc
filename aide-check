@@ -9,11 +9,11 @@
 
 # ID string for log messages
 name=aide-check
-# Initialize new aide database if needed, yes or no.
+# Initialize new aide database if needed, yes or no
 init_db=yes
-# Update aide database after check, yes or no.
+# Update aide database after check, yes or no
 update_db=yes
-# Verbose if check ok, yes or no.
+# Verbose if check ok, yes or no
 ok_verbose=no
 # Temp file path
 tempfile=/tmp/.aide-check.$$
@@ -57,9 +57,9 @@ if [ "$init_db" = "yes" -a ! -f /var/lib/aide/aide.db.gz ]; then
   rm -f $tempfile
 fi
 
-log_msg info "Running aide check..."
 rc=0
 [ "$update_db" = "yes" ] && param=--update || param=--check
+log_msg info "Running aide check with $param command..."
 aide $param > $tempfile 2>&1
 rc=$((rc+$?))
 
@@ -86,6 +86,7 @@ if [ "$update_db" = "yes" -a $rc -ne 0 ]; then
     rm -f $tempfile
     exit 1
   fi
+  rm -f $tempfile
 else
   rm -f /var/lib/aide/aide.db.new.gz
   log_msg info "Not updating aide database."

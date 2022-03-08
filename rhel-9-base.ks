@@ -92,6 +92,8 @@ zsh
 -i*firmware*
 -langpacks-*
 -lib*firmware*
+-linux-firmware
+-n*firmware*
 -NetworkManager-team
 -NetworkManager-tui
 -parted

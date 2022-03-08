@@ -55,6 +55,7 @@ bind-utils
 bzip2
 #cloud-init
 #cloud-utils-growpart
+glibc-minimal-langpack
 #insights-client
 man-pages
 nano

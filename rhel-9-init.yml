@@ -271,12 +271,11 @@
       - bash-completion
       - bc
       - bind-utils
-      - bzip2
       #- cloud-init
       #- cloud-utils-growpart
-      #- insights-client
       #- ethtool
       - glibc-minimal-langpack
+      #- insights-client
       #- iotop
       - irqbalance
       #- ltrace

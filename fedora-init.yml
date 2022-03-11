@@ -227,7 +227,6 @@
       - bash-completion
       - bc
       - bind-utils
-      - bzip2
       - deltarpm
       - dnf-utils
       - drpm

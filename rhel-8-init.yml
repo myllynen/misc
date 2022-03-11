@@ -271,7 +271,6 @@
       - bash-completion
       - bc
       - bind-utils
-      - bzip2
       - drpm
       - ethtool
       - glibc-minimal-langpack

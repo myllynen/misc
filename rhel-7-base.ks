@@ -50,7 +50,6 @@ poweroff
 @Core
 bash-completion
 bind-utils
-bzip2
 chrony
 #cloud-init
 #cloud-utils-growpart

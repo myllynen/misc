@@ -204,6 +204,9 @@ fi
 # Import Red Hat RPM GPG key
 rpm --import /etc/pki/rpm-gpg/RPM-GPG-KEY-redhat-release
 
+# Remote execution directory if tmp dirs are noexec
+mkdir -p -m 0700 /var/lib/exec
+
 # Packages trimming
 echo "%_install_langs en_US" > /etc/rpm/macros.install-langs-conf
 #echo "%_excludedocs 1" > /etc/rpm/macros.excludedocs-conf

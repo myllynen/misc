@@ -47,26 +47,29 @@
         tuned_profile: "{{ 'virtual-guest' if ansible_facts.virtualization_role == 'guest' else 'throughput-performance' }}"
 
     - name: Use distribution specific variable to install packages
-      vars:
-        selinux_packages_rhel_7:
-          - libselinux-python
-          - libsemanage-python
-          - policycoreutils-python
-          - selinux-policy-targeted
-          - setools-console
-        selinux_packages_rhel_8:
-          - python3-libselinux
-          - python3-libsemanage
-          - policycoreutils-python-utils
-          - selinux-policy-targeted
-          - setools-console
-        selinux_packages: "{{ lookup('vars', 'selinux_packages_rhel_' + ansible_facts.distribution_major_version) }}"
+        vars:
+          selinux_package_lists:
+            rhel7:
+              - libselinux-python
+              - libsemanage-python
+              - policycoreutils-python
+              - selinux-policy-targeted
+              - setools-console
+            default:
+              - python3-libselinux
+              - python3-libsemanage
+              - policycoreutils-python-utils
+              - selinux-policy-targeted
+              - setools-console
+          distro_id: "{{ 'rhel' + ansible_facts.distribution_major_version }}"
+          package_set: "{{ 'default' if distro_id not in selinux_package_lists else distro_id }}"
+          selinux_packages: "{{ selinux_package_lists[package_set] }}"
       yum:
         name: "{{ selinux_packages }}"
         state: present
       when: false
 
-    # Example of restarting service in case configuration was changed below
+    # Example of configuring and re/starting a service below
     - name: Disallow zone drifting
       replace:
         dest: /etc/firewalld/firewalld.conf
@@ -75,10 +78,25 @@
       register: firewalld_config
       when: false
 
+    - name: Enable firewalld service
+      service:
+        name: firewalld
+        enabled: true
+      when: false
+
     - name: Start firewalld service
       service:
         name: firewalld
-        state: "{{ 'restarted' if firewalld_config is changed else 'started' }}"
-        enabled: yes
+        state: started
+      register: service_start
       when: false
-    # Example of restarting service in case configuration was changed above
+
+    - name: Apply firewalld configuration changes
+      service:
+        name: firewalld
+        state: reloaded
+      when:
+        - service_start is not changed
+        - firewalld_config is changed
+        - false
+    # Example of configuring and re/starting a service above

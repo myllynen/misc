@@ -221,7 +221,7 @@ systemctl disable dnf-makecache.timer loadmodules.service nis-domainname.service
 rpm -q NetworkManager > /dev/null 2>&1 || systemctl enable network.service
 
 # Watchdog
-sed -i -e 's,^#RuntimeWatchdogSec=0,RuntimeWatchdogSec=60s,' /etc/systemd/system.conf
+sed -i -e 's,^#RuntimeWatchdogSec=.*,RuntimeWatchdogSec=60s,' /etc/systemd/system.conf
 
 # cloud-init
 #dnf -y install cloud-init cloud-utils-growpart

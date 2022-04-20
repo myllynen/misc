@@ -192,7 +192,7 @@ echo "%_install_langs en_US" > /etc/rpm/macros.install-langs-conf
 systemctl disable dnf-makecache.timer nis-domainname.service remote-fs.target
 
 # Watchdog
-sed -i -e 's,^#RuntimeWatchdogSec=0,RuntimeWatchdogSec=60s,' /etc/systemd/system.conf
+sed -i -e 's,^#RuntimeWatchdogSec=.*,RuntimeWatchdogSec=60s,' /etc/systemd/system.conf
 
 # cloud-init
 #dnf -y install cloud-init cloud-utils-growpart

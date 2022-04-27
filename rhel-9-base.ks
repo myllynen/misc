@@ -58,7 +58,11 @@ glibc-minimal-langpack
 #insights-client
 man-pages
 nano
+NetworkManager-config-server
 policycoreutils-python-utils
+prefixdevname
+psmisc
+python3
 python3-libselinux
 setools-console
 #sos

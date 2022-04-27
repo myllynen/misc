@@ -57,6 +57,7 @@ chrony
 libselinux-python
 man-pages
 nano
+NetworkManager-config-server
 policycoreutils-python
 psmisc
 setools-console

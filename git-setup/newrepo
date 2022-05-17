@@ -31,7 +31,7 @@ if [ -r /etc/sysconfig/git ]; then
   . /etc/sysconfig/git
 fi
 
-cd $GITDIR
+cd $GITDIR || exit 2
 repo=${1%%.git}.git
 msg "Adding repository: $repo."
 
@@ -45,7 +45,7 @@ chmod 2775 $repo
 chown $USER:$GROUP $repo
 
 msg "Creating and configuring bare git repo..."
-cd $repo
+cd $repo || exit 2
 git --bare init > /dev/null
 
 git config core.sharedrepository true
@@ -83,7 +83,7 @@ echo $descr > description
 msg "Description is now:"
 msg ">$(cat description)<"
 
-cd $GITDIR
+cd $GITDIR || exit 2
 chown -R $USER:$GROUP $repo
 chmod -R g+w $repo
 

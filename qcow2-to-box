@@ -26,7 +26,7 @@ fi
 
 # Real work ahead
 
-cd "$dir"
+cd "$dir" || exit 1
 echo "Creating $box, this will take a few minutes..."
 
 echo "Running virt-sysprep..."

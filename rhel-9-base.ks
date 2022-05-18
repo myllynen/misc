@@ -6,7 +6,7 @@
 #   --vcpus 2 --cpu host --ram 2048 --os-type linux --os-variant rhel9.0 \
 #   --disk pool=default,format=qcow2,cache=none,io=native,size=8 \
 #   --network network=default --graphics vnc --sound none --noreboot \
-#   --location /VirtualMachines/boot/rhel-9.0-x86_64-dvd.iso \
+#   --location /VirtualMachines/boot/rhel-baseos-9.0-x86_64-dvd.iso \
 #   --initrd-inject /VirtualMachines/boot/ks/rhel-9-base.ks \
 #   --extra-args "ip=dhcp inst.ks=file:/rhel-9-base.ks inst.geoloc=0 inst.nosave=all console=tty0 console=ttyS0,115200 net.ifnames.prefix=net ipv6.disable=0 quiet systemd.show_status=yes" \
 #   --noautoconsole

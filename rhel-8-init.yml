@@ -1,15 +1,11 @@
----
 # Usage:
 # 1) Copy the accompanying ansible.cfg as ~/.ansible.cfg
 # 2) Install Ansible
 # 3) Adjust and run the playbook
-#    - For example: ansible-playbook -c local -i localhost, fedora-init.yml
-#    - Make sure no existing user with the given UID exists if creating user
 # 4) Set password for the new user and reboot
-#
+---
 - hosts: all
   become: true
-  remote_user: root
   vars:
     create_user: false
     console_keymap: fi

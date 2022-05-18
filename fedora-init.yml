@@ -1,10 +1,9 @@
----
 # Usage:
 # 1) Copy the accompanying ansible.cfg as ~/.ansible.cfg
 # 2) Install Ansible
-# 3) Adjust vars and run the playbook
+# 3) Adjust and run the playbook
 # 4) Set password for the new user and reboot
-
+---
 - hosts: all
   become: true
   vars:

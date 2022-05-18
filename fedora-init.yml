@@ -234,7 +234,6 @@
       - keychain
       - ltrace
       - man-pages
-      - mlocate
       - nano
       - nmap-ncat
       - numactl
@@ -242,6 +241,7 @@
       - pcp-doc
       - pcp-system-tools
       #- perf
+      - plocate
       - policycoreutils-python-utils
       - psmisc
       - setools-console

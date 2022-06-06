@@ -91,8 +91,8 @@ is removed by the kickstart `%post` script but in case of kernel update
 it will be installed again, even if not needed on VMs.
 
 See also [this RFE](https://bugzilla.redhat.com/show_bug.cgi?id=1657204)
-for discussion to possibly change RHEL firmware packages as [weak
-dependencies](https://fedoraproject.org/wiki/Packaging:WeakDependencies)
+for discussion to possibly change RHEL firmware packages as
+[weak dependencies](https://fedoraproject.org/wiki/Packaging:WeakDependencies)
 for RHEL 8 kernel.
 
 | Variant    |    1   |    2   |    3   |    4   |    5   |

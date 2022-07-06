@@ -26,7 +26,7 @@ part /boot     --fstype xfs      --size 1024
 #part swap      --fstype swap     --size 1024
 part /         --fstype xfs      --size 1024 --grow
 selinux --enforcing
-authselect --useshadow --passalgo sha512
+authselect select minimal without-nullok with-pamaccess
 rootpw --plaintext foobar
 #network --device net0 --bootproto dhcp --onboot yes --hostname test.example.com
 #--noipv6
@@ -238,6 +238,7 @@ truncate -s 0 /etc/machine-id /etc/resolv.conf
 /bin/rm -rf /var/lib/NetworkManager/* /var/lib/unbound/*.key
 /bin/rm -rf /var/log/*debug /var/log/anaconda /var/log/dmesg*
 /bin/rm -rf /var/lib/cloud/* /var/log/cloud-init*.log
+/bin/rm -rf /var/lib/authselect/backups/*
 #truncate -s 0 /var/log/cron /var/log/tuned/tuned.log
 #truncate -s 0 /var/log/audit/audit.log /var/log/messages /var/log/secure
 #truncate -s 0 /var/log/btmp /var/log/wtmp /var/log/lastlog

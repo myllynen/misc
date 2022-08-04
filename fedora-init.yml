@@ -119,7 +119,7 @@
       state: absent
       autoremove: yes
       name:
-      - 'a*firmware*'
+      #- 'a*firmware*'
       - 'i*firmware*'
       - 'lib*firmware*'
       - 'z*firmware'
@@ -142,6 +142,7 @@
       state: absent
       autoremove: yes
       name:
+      - 'hyper*'
       - open-vm-tools
       - virtualbox-guest-additions
     when: ansible_virtualization_type == "kvm"
@@ -151,6 +152,7 @@
       state: absent
       autoremove: yes
       name:
+      - 'hyper*'
       - open-vm-tools
       - qemu-guest-agent
       - spice-vdagent
@@ -161,6 +163,7 @@
       state: absent
       autoremove: yes
       name:
+      - 'hyper*'
       - qemu-guest-agent
       - spice-vdagent
       - virtualbox-guest-additions
@@ -181,22 +184,21 @@
       name:
       - NetworkManager-adsl
       - NetworkManager-openconnect
-      - NetworkManager-openvpn
       - NetworkManager-pptp
       - NetworkManager-team
       - NetworkManager-tui
-      - NetworkManager-vpnc
       - NetworkManager-wwan
-      - 'PackageKit*'
+      #- 'PackageKit*'
       - 'abrt*'
       - anaconda
       - 'b43*'
+      - cifs-utils
+      - cockpit
       - dracut-config-rescue
       - dracut-live
       - evolution
       - 'foomatic*'
-      - gnome-getting-started-docs
-      - gnome-online-miners
+      - gnome-tour
       - gnome-user-docs
       - 'gutenprint*'
       - '*hangul*'
@@ -206,12 +208,15 @@
       - kexec-tools
       - '*kkc*'
       - '*libreoffice*'
+      - nfs-utils
       - orca
       - ostree
       - pam_krb5
       - perl-Mozilla-CA
       - '*pinyin*'
+      - qgnomeplatform
       - realmd
+      - 'sane*'
       - teamd
       - trousers
       - '*zhuyin*'
@@ -224,22 +229,21 @@
       - bc
       - bind-utils
       - deltarpm
-      - dnf-utils
       - drpm
       - ethtool
       - glibc-minimal-langpack
       - gpm
-      - iotop
+      #- iotop
       - irqbalance
       - keychain
-      - ltrace
+      #- ltrace
       - man-pages
       - nano
-      - nmap-ncat
-      - numactl
+      #- nmap-ncat
+      #- numactl
       - openssh-clients
-      - pcp-doc
-      - pcp-system-tools
+      #- pcp-doc
+      #- pcp-system-tools
       #- perf
       - plocate
       - policycoreutils-python-utils
@@ -248,12 +252,14 @@
       - strace
       - tar
       - tcpdump
-      - telnet
+      #- telnet
       - tmux
       - tuned
       - unzip
       - util-linux-user
+      - yum-utils
       - zsh
+      - zstd
 
   - name: Install helpful packages (langpacks)
     dnf: name="glibc-langpack-{{ langpacks | join(',glibc-langpack-') }}" state=present
@@ -265,22 +271,22 @@
       - GraphicsMagick
       - dconf-editor
       - ffmpeg
-      - fuse-sshfs
+      #- fuse-sshfs
       - git-core
       - gnome-tweaks
       - gstreamer1-libav
       - gstreamer1-plugins-good-gtk
+      - libavc1394
       - ntfsprogs
       - patch
-      - powertop
+      #- powertop
       - seahorse
       - totem
-      - vlc
-      - wodim
-      - x264
+      #- vlc
       - xauth
       - xclip
       - xorg-x11-fonts-misc
+      - xorriso
       - youtube-dl
     when: workstation | bool
 
@@ -316,12 +322,11 @@
     - cups.service
     - dmraid-activation.service
     - dnf-makecache.timer
-    - flatpak-add-fedora-repos.service
     - lvm2-monitor.service
     - mcelog.service
     - mdmonitor.service
     - multipathd.service
-    - pmie.service
+    #- pmie.service
     failed_when: false
 
   - name: Disable unhelpful services on VMs
@@ -352,21 +357,16 @@
     loop:
     - gpm.service
     - irqbalance.service
-    - pmcd.service
-    - pmlogger.service
+    #- pmcd.service
+    #- pmlogger.service
     - tuned.service
 
   - name: Install SSH daemon
     dnf: name=openssh-server state=present
     when: enable_sshd | bool
 
-  - name: Configure SSH daemon
-    replace: dest=/etc/ssh/sshd_config regexp='^#MaxAuthTries 6' replace='MaxAuthTries 10'
-    register: sshd_config
-    when: enable_sshd | bool
-
   - name: Enable SSH daemon
-    service: name=sshd enabled=yes state="{{ 'restarted' if sshd_config is changed else 'started' }}"
+    service: name=sshd enabled=yes state=started
     when: enable_sshd | bool
 
   - name: Change root shell
@@ -401,7 +401,7 @@
       mode: 0755
       path: "/home/{{ user_name }}/.config/systemd/user"
       state: directory
-    when: create_user | bool
+    when: false and create_user | bool
 
   - name: Disable tracker for the user, part II
     file:
@@ -417,20 +417,20 @@
     - tracker-miner-rss.service
     - tracker-store.service
     - tracker-writeback.service
-    when: create_user | bool
+    when: false and create_user | bool
 
   - name: Disable tracker for the user, part III
     command: restorecon -Rv "/home/{{ user_name }}/.config/systemd"
     register: restorecon
     changed_when: "'Relabeled' in restorecon.stdout"
-    when: create_user | bool
+    when: false and create_user | bool
 
   - name: Configure sudoers
     lineinfile:
       create: true
       dest: /etc/sudoers.d/{{ user_name }}
       line: '{{ user_name }} ALL=(ALL) NOPASSWD: ALL'
-      validate: 'visudo -cf %s'
+      validate: /usr/sbin/visudo -csf %s
     when: create_user | bool
 
   - name: Create Windows partition mount point
@@ -472,7 +472,6 @@
     - /root/.wget-hsts
     - /root/anaconda-ks.cfg
     - /root/original-ks.cfg
-    - /root/fedora-init.retry
     - /var/cache/PackageKit
     - /var/lib/abrt
     - /var/spool/abrt

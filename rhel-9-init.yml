@@ -119,7 +119,7 @@
     register: fusion_enabled
     failed_when: false
     changed_when: false
-    when: false and workstation | bool and use_epel | bool
+    when: use_epel | bool and workstation | bool
 
   - name: Enable RPM Fusion repository
     dnf:
@@ -128,14 +128,14 @@
       name:
       - https://download1.rpmfusion.org/free/el/rpmfusion-free-release-{{ ansible_distribution_major_version }}.noarch.rpm
       - https://download1.rpmfusion.org/nonfree/el/rpmfusion-nonfree-release-{{ ansible_distribution_major_version }}.noarch.rpm
-    when: false and workstation | bool and use_epel | bool and fusion_enabled.rc != 0
+    when: use_epel | bool and workstation | bool and fusion_enabled.rc != 0
 
   - name: Remove unneeded firmware packages
     dnf:
       state: absent
       autoremove: yes
       name:
-      - 'a*firmware*'
+      #- 'a*firmware*'
       - 'i*firmware*'
       - 'lib*firmware*'
       - 'z*firmware'
@@ -158,6 +158,7 @@
       state: absent
       autoremove: yes
       name:
+      - 'hyper*'
       - open-vm-tools
       - virtualbox-guest-additions
     when: ansible_virtualization_type == "kvm"
@@ -167,6 +168,7 @@
       state: absent
       autoremove: yes
       name:
+      - 'hyper*'
       - open-vm-tools
       - qemu-guest-agent
       - spice-vdagent
@@ -177,6 +179,7 @@
       state: absent
       autoremove: yes
       name:
+      - 'hyper*'
       - qemu-guest-agent
       - spice-vdagent
       - virtualbox-guest-additions
@@ -197,22 +200,21 @@
       name:
       - NetworkManager-adsl
       - NetworkManager-openconnect
-      - NetworkManager-openvpn
       - NetworkManager-pptp
       - NetworkManager-team
       - NetworkManager-tui
-      - NetworkManager-vpnc
       - NetworkManager-wwan
-      - 'PackageKit*'
+      #- 'PackageKit*'
       - 'abrt*'
       - anaconda
       - 'b43*'
+      - cifs-utils
+      - cockpit
       - dracut-config-rescue
       - dracut-live
       - evolution
       - 'foomatic*'
-      - gnome-getting-started-docs
-      - gnome-online-miners
+      - gnome-tour
       - gnome-user-docs
       - 'gutenprint*'
       - '*hangul*'
@@ -221,12 +223,15 @@
       - kernel-modules-extra
       - '*kkc*'
       - '*libreoffice*'
+      - nfs-utils
       - orca
       - ostree
       - pam_krb5
       - perl-Mozilla-CA
       - '*pinyin*'
+      - qgnomeplatform
       - realmd
+      - 'sane*'
       - teamd
       - trousers
       - '*zhuyin*'
@@ -240,8 +245,9 @@
       - bind-utils
       #- cloud-init
       #- cloud-utils-growpart
-      #- ethtool
+      - ethtool
       - glibc-minimal-langpack
+      #- gpm
       #- insights-client
       #- iotop
       - irqbalance
@@ -252,24 +258,24 @@
       #- nmap-ncat
       #- numactl
       - openssh-clients
-      #- pciutils
-      - pcp-doc
-      - pcp-system-tools
+      #- pcp-doc
+      #- pcp-system-tools
       #- perf
       - policycoreutils-python-utils
       - psmisc
       - setools-console
-      #- sos
-      #- strace
+      - sos
+      - strace
       - tar
-      #- tcpdump
+      - tcpdump
       #- telnet
-      #- tmux
+      - tmux
       - tuned
-      #- unzip
+      - unzip
       - util-linux-user
       - yum-utils
       - zsh
+      - zstd
 
   - name: Install helpful packages (langpacks)
     dnf: name="glibc-langpack-{{ langpacks | join(',glibc-langpack-') }}" state=present
@@ -280,7 +286,7 @@
       name:
       - epel-release
       #- keychain
-      #- xclip
+      - xclip
     when: use_epel | bool
 
   - name: Install helpful packages (workstation)
@@ -292,15 +298,16 @@
       - gnome-tweaks
       - gstreamer1-plugins-good-gtk
       - patch
-      - powertop
+      #- powertop
       - seahorse
       - totem
       - xauth
       - xorg-x11-fonts-misc
+      - xorriso
     when: workstation | bool
 
   - name: Install helpful packages (workstation langpacks)
-    dnf: name="langpacks-{{ langpacks | join(',langpacks-') }}" state=present
+    dnf: name="langpacks-core-{{ langpacks | join(',langpacks-') }}" state=present
     when: workstation | bool
 
   - name: Install helpful packages (workstation from EPEL)
@@ -309,13 +316,13 @@
       name:
       - GraphicsMagick
       - ffmpeg
-      - fuse-sshfs
+      #- fuse-sshfs
       - gstreamer1-libav
-      - ntfsprogs
-      - vlc
-      - x264
+      - libavc1394
+      #- ntfsprogs
+      #- vlc
       - youtube-dl
-    when: false and workstation | bool and use_epel | bool
+    when: workstation | bool and use_epel | bool
 
   - name: Remove unhelpful packages ('all' langpacks)
     dnf:
@@ -349,6 +356,7 @@
     - mcelog.service
     - mdmonitor.service
     - multipathd.service
+    #- pmie.service
     failed_when: false
 
   - name: Disable unhelpful services on VMs
@@ -376,9 +384,10 @@
   - name: Enable helpful services
     service: name={{ item }} enabled=yes state=started
     loop:
+    #- gpm.service
     - irqbalance.service
-    - pmcd.service
-    - pmlogger.service
+    #- pmcd.service
+    #- pmlogger.service
     - tuned.service
 
   - name: Install SSH daemon
@@ -421,7 +430,7 @@
       mode: 0755
       path: "/home/{{ user_name }}/.config/systemd/user"
       state: directory
-    when: create_user | bool
+    when: false and create_user | bool
 
   - name: Disable tracker for the user, part II
     file:
@@ -437,20 +446,20 @@
     - tracker-miner-rss.service
     - tracker-store.service
     - tracker-writeback.service
-    when: create_user | bool
+    when: false and create_user | bool
 
   - name: Disable tracker for the user, part III
     command: restorecon -Rv "/home/{{ user_name }}/.config/systemd"
     register: restorecon
     changed_when: "'Relabeled' in restorecon.stdout"
-    when: create_user | bool
+    when: false and create_user | bool
 
   - name: Configure sudoers
     lineinfile:
       create: true
       dest: /etc/sudoers.d/{{ user_name }}
       line: '{{ user_name }} ALL=(ALL) NOPASSWD: ALL'
-      validate: 'visudo -cf %s'
+      validate: /usr/sbin/visudo -csf %s
     when: create_user | bool
 
   - name: Block unwanted user monitoring
@@ -468,9 +477,9 @@
     - /root/.lesshst
     - /root/.local/share/ibus-typing-booster
     - /root/.rnd
+    - /root/.wget-hsts
     - /root/anaconda-ks.cfg
     - /root/original-ks.cfg
-    - /root/rhel-{{ ansible_distribution_major_version }}-init.retry
     - /var/cache/PackageKit
     - /var/lib/abrt
     - /var/spool/abrt

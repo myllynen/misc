@@ -7,13 +7,13 @@
 - hosts: all
   become: true
   vars:
-    create_user: false
     console_keymap: fi
     console_font: eurlatgr
     langpacks: ['en', 'fi']
     system_locale: en_US.UTF-8
     system_timezone: Europe/Helsinki
     root_shell: /bin/zsh
+    create_user: false
     user_uid: 1000
     user_name: mm
     user_group: users
@@ -119,7 +119,7 @@
       state: absent
       autoremove: yes
       name:
-      #- 'a*firmware*'
+      - 'at*firmware*'
       - 'i*firmware*'
       - 'lib*firmware*'
       - 'z*firmware'
@@ -187,7 +187,6 @@
       - NetworkManager-pptp
       - NetworkManager-team
       - NetworkManager-tui
-      - NetworkManager-wwan
       #- 'PackageKit*'
       - 'abrt*'
       - anaconda
@@ -202,19 +201,20 @@
       - gnome-user-docs
       - 'gutenprint*'
       - '*hangul*'
-      - hplip
+      - 'hplip*'
       - 'java*'
       - kernel-modules-extra
       - kexec-tools
       - '*kkc*'
       - '*libreoffice*'
+      - mediawriter
       - nfs-utils
       - orca
-      - ostree
       - pam_krb5
       - perl-Mozilla-CA
       - '*pinyin*'
       - qgnomeplatform
+      - 'qt*'
       - realmd
       - 'sane*'
       - teamd
@@ -232,7 +232,7 @@
       - drpm
       - ethtool
       - glibc-minimal-langpack
-      - gpm
+      #- gpm
       #- iotop
       - irqbalance
       - keychain
@@ -355,7 +355,7 @@
   - name: Enable helpful services
     service: name={{ item }} enabled=yes state=started
     loop:
-    - gpm.service
+    #- gpm.service
     - irqbalance.service
     #- pmcd.service
     #- pmlogger.service
@@ -386,13 +386,27 @@
     - pulseaudio.service
     - pulseaudio.socket
 
-  - name: Create user
+  - name: Create user, part I
     user:
       name: "{{ user_name }}"
       shell: "{{ user_shell }}"
       group: "{{ user_group }}"
       uid: "{{ user_uid }}"
     when: create_user | bool
+
+  - name: Create user, part II
+    copy:
+      dest: /var/lib/AccountsService/users/{{ user_name }}
+      content: |
+        [User]
+        Language=
+        XSession=
+        Icon=/home/{{ user_name }}/.face
+        SystemAccount=false
+      owner: root
+      group: root
+      mode: '0600'
+    when: create_user | bool and workstation | bool
 
   - name: Disable tracker for the user, part I
     file:
@@ -464,6 +478,7 @@
     file: path={{ item }} state=absent
     loop:
     - /1
+    - /etc/rc.d/init.d/livesys
     - /root/.config/pulse
     - /root/.esd_auth
     - /root/.lesshst
@@ -472,7 +487,6 @@
     - /root/.wget-hsts
     - /root/anaconda-ks.cfg
     - /root/original-ks.cfg
-    - /var/cache/PackageKit
     - /var/lib/abrt
     - /var/spool/abrt
     - /var/tmp/abrt

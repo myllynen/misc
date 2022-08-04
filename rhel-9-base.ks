@@ -4,7 +4,9 @@
 # virt-install \
 #   --connect qemu:///system --name test --virt-type kvm --arch x86_64 \
 #   --vcpus 2 --cpu host --ram 2048 --os-type linux --os-variant rhel9.0 \
-#   --disk pool=default,format=qcow2,cache=none,io=native,size=8 \
+#   --boot uefi --boot useserial=on \
+#   --boot loader=/usr/share/edk2/ovmf/OVMF_CODE.cc.fd,loader_ro=yes,loader_type=pflash,nvram_template=/usr/share/edk2/ovmf/OVMF_VARS.fd,loader_secure=no \
+#   --disk pool=default,format=qcow2,size=8 \
 #   --network network=default --graphics vnc --sound none --noreboot \
 #   --location /VirtualMachines/boot/rhel-baseos-9.0-x86_64-dvd.iso \
 #   --initrd-inject /VirtualMachines/boot/ks/rhel-9-base.ks \

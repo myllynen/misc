@@ -211,7 +211,6 @@
       - nfs-utils
       - orca
       - pam_krb5
-      - perl-Mozilla-CA
       - '*pinyin*'
       - qgnomeplatform
       - 'qt*'

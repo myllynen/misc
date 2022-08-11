@@ -7,6 +7,8 @@ fi
 
 case "$1" in --ca) ca=ca ; csk=cert_signing_key ; shift ;; esac ;
 
+newcert=$(echo "$1" | sed -e 's,-req,-cert,')
+
 expires=$(certtool --certificate-info --infile signing-cert.pem | grep "Not After" | cut -d' ' -f3-)
 cat > cert.cfg << EOF
 expiration_date = "$expires"
@@ -17,9 +19,9 @@ EOF
 
 certtool --generate-certificate --template cert.cfg \
   --load-ca-certificate signing-cert.pem --load-ca-privkey signing-key.pem \
-  --load-request "$1" --outfile new-cert.pem
+  --load-request "$1" --outfile $newcert
 
 certtool --verify --verify-profile high \
-  --load-ca-certificate signing-cert.pem --infile new-cert.pem
+  --load-ca-certificate signing-cert.pem --infile $newcert
 
 rm -f cert.cfg

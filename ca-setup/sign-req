@@ -1,0 +1,25 @@
+#!/bin/sh
+
+if [ "$1" = "" ]; then
+  echo "Usage: $(basename $0) [--ca] <cert_req_file>" 1>&2
+  exit 1
+fi
+
+case "$1" in --ca) ca=ca ; csk=cert_signing_key ; shift ;; esac ;
+
+expires=$(certtool --certificate-info --infile signing-cert.pem | grep "Not After" | cut -d' ' -f3-)
+cat > cert.cfg << EOF
+expiration_date = "$expires"
+honor_crq_extensions
+$ca
+$csk
+EOF
+
+certtool --generate-certificate --template cert.cfg \
+  --load-ca-certificate signing-cert.pem --load-ca-privkey signing-key.pem \
+  --load-request "$1" --outfile new-cert.pem
+
+certtool --verify --verify-profile high \
+  --load-ca-certificate signing-cert.pem --infile new-cert.pem
+
+rm -f cert.cfg

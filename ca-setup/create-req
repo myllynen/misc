@@ -1,0 +1,26 @@
+#!/bin/sh
+
+if [ "$1" = "" ]; then
+  echo "Usage: $(basename $0) <host_fqdn>" 1>&2
+  exit 1
+fi
+
+HOST=$(echo "$1" | cut -d'.' -f1)
+FQDN="$1"
+
+cat > cert.cfg << EOF
+expiration_days = 3650
+cn = $FQDN
+dns_name = $HOST
+dns_name = $FQDN
+tls_www_server
+signing_key
+encryption_key
+EOF
+
+certtool --generate-privkey --template cert.cfg --outfile $FQDN-key.pem
+
+certtool --generate-request --template cert.cfg \
+  --load-privkey $FQDN-key.pem --outfile $FQDN-req.pem
+
+rm -f cert.cfg

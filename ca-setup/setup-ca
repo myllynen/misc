@@ -1,0 +1,32 @@
+#!/bin/sh
+
+if [ "$(which certtool 2> /dev/null)" != "" ]; then
+  echo "certtool is not found, install gnutls-utils" 1>&2
+  exit 1
+fi
+
+CN="Test Lab"
+
+cat > ca.cfg << EOF
+expiration_days = 3650
+cn = $CN
+ca
+cert_signing_key
+EOF
+
+certtool --generate-privkey --template ca.cfg --outfile ca-key.pem
+certtool --generate-privkey --template ca.cfg --outfile signing-key.pem
+
+sed -i -e "s,$CN.*,$CN CA Cert," ca.cfg
+certtool --generate-self-signed --template ca.cfg \
+  --load-privkey ca-key.pem --outfile ca-cert.pem
+
+sed -i -e "s,$CN.*,$CN Signing Cert," ca.cfg
+certtool --generate-certificate --template ca.cfg \
+  --load-ca-certificate ca-cert.pem --load-ca-privkey ca-key.pem \
+  --load-privkey signing-key.pem --outfile signing-cert.pem
+
+certtool --verify --verify-profile high \
+  --load-ca-certificate ca-cert.pem --infile signing-cert.pem
+
+rm -f ca.cfg

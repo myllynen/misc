@@ -10,7 +10,7 @@ case "$1" in --ca) ca=ca ; csk=cert_signing_key ; shift ;; esac ;
 newcert=$(echo "$1" | sed -e 's,-req,-cert,')
 
 expires=$(certtool --certificate-info --infile signing-cert.pem | grep "Not After" | cut -d' ' -f3-)
-cat > cert.cfg << EOF
+cat << EOF > cert.cfg
 expiration_date = "$expires"
 honor_crq_extensions
 $ca

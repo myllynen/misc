@@ -8,7 +8,7 @@ fi
 HOST=$(echo "$1" | cut -d'.' -f1)
 FQDN="$1"
 
-cat > cert.cfg << EOF
+cat << EOF > cert.cfg
 expiration_days = 3650
 cn = $FQDN
 dns_name = $HOST

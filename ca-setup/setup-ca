@@ -7,7 +7,7 @@ fi
 
 CN="Test Lab"
 
-cat > ca.cfg << EOF
+cat << EOF > ca.cfg
 expiration_days = 3650
 cn = $CN
 ca

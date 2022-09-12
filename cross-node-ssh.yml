@@ -1,0 +1,109 @@
+# Use -e keys=unique to create unique keys for each host
+# Pass --become-user=<user> to create keys for another user
+---
+- name: Create user
+  hosts: all
+  become: true
+  tasks:
+    - name: Get user id
+      setup:
+        filter: 'ansible_user_*'
+
+    - name: Create user
+      user:
+        name: "{{ ansible_user_id }}"
+        state: present
+      become: true
+      become_user: root
+
+- name: Generate user SSH keys
+  hosts: "{{ 'all' if keys | default(none) == 'unique' else 'all[0]' }}"
+  become: true
+  tasks:
+    - name: Generate user public/private SSH RSA key pair
+      user:
+        name: "{{ ansible_user_id }}"
+        generate_ssh_key: true
+        state: present
+
+    - name: Read user public SSH key
+      slurp:
+        src: "{{ ansible_user_dir }}/.ssh/id_rsa.pub"
+      register: public_key
+
+    - name: Read user private SSH key
+      slurp:
+        src: "{{ ansible_user_dir }}/.ssh/id_rsa"
+      register: private_key
+
+    - name: Set public SSH key
+      set_fact:
+        public_ssh_key="{{ public_key.content|b64decode }}"
+
+    - name: Set private SSH key
+      set_fact:
+        private_ssh_key="{{ private_key.content|b64decode }}"
+
+- name: Set shared SSH keys
+  hosts: "{{ 'all:!all[0]' if keys | default(none) != 'unique' else 'all[0]' }}"
+  tasks:
+    - name: Set shared public SSH key
+      set_fact:
+        public_ssh_key: "{{ hostvars[groups.all[0]].public_ssh_key }}"
+      when: keys | default(none) != 'unique'
+
+    - name: Set shared private SSH key
+      set_fact:
+        private_ssh_key: "{{ hostvars[groups.all[0]].private_ssh_key }}"
+      when: keys | default(none) != 'unique'
+
+- name: Distribute shared SSH key
+  hosts: "{{ 'all:!all[0]' if keys | default(none) != 'unique' else 'all[0]' }}"
+  become: true
+  tasks:
+    - name: Create user SSH directory
+      file:
+        path: "{{ ansible_user_dir }}/.ssh"
+        mode: '0700'
+        state: directory
+      when: keys | default(none) != 'unique'
+
+    - name: Create public SSH key
+      copy:
+        content: "{{ hostvars[groups.all[0]].public_ssh_key }}"
+        dest: "{{ ansible_user_dir }}/.ssh/id_rsa.pub"
+        mode: '0644'
+      when: keys | default(none) != 'unique'
+
+    - name: Create private SSH key
+      copy:
+        content: "{{ hostvars[groups.all[0]].private_ssh_key }}"
+        dest: "{{ ansible_user_dir }}/.ssh/id_rsa"
+        mode: '0600'
+      when: keys | default(none) != 'unique'
+
+- name: Enable cross-node SSH access
+  hosts: all
+  become: true
+  tasks:
+    - name: Update authorized keys
+      authorized_key:
+        user: "{{ ansible_user_id }}"
+        key: "{{ hostvars[item].public_ssh_key }}"
+      loop: "{{ ansible_play_batch }}"
+
+    - name: Update known_hosts FQDN entry
+      lineinfile:
+        path: "{{ ansible_user_dir }}/.ssh/known_hosts"
+        line: "{{ item + ',' + hostvars[item].ansible_default_ipv4.address + ' ' +
+                  'ecdsa-sha2-nistp256' + ' ' + hostvars[item].ansible_ssh_host_key_ecdsa_public }}"
+        create: true
+      loop: "{{ ansible_play_batch }}"
+
+    - name: Update known_hosts short entry
+      lineinfile:
+        path: "{{ ansible_user_dir }}/.ssh/known_hosts"
+        line: "{{ hostvars[item]['ansible_hostname'] + ',' + hostvars[item].ansible_default_ipv4.address + ' ' +
+                  'ecdsa-sha2-nistp256' + ' ' + hostvars[item].ansible_ssh_host_key_ecdsa_public }}"
+        create: true
+      loop: "{{ ansible_play_batch }}"

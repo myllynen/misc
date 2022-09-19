@@ -47,23 +47,23 @@
         tuned_profile: "{{ 'virtual-guest' if ansible_facts.virtualization_role == 'guest' else 'throughput-performance' }}"
 
     - name: Use distribution specific variable to install packages
-        vars:
-          selinux_package_lists:
-            rhel7:
-              - libselinux-python
-              - libsemanage-python
-              - policycoreutils-python
-              - selinux-policy-targeted
-              - setools-console
-            default:
-              - python3-libselinux
-              - python3-libsemanage
-              - policycoreutils-python-utils
-              - selinux-policy-targeted
-              - setools-console
-          distro_id: "{{ 'rhel' + ansible_facts.distribution_major_version }}"
-          package_set: "{{ 'default' if distro_id not in selinux_package_lists else distro_id }}"
-          selinux_packages: "{{ selinux_package_lists[package_set] }}"
+      vars:
+        selinux_package_lists:
+          rhel7:
+            - libselinux-python
+            - libsemanage-python
+            - policycoreutils-python
+            - selinux-policy-targeted
+            - setools-console
+          default:
+            - python3-libselinux
+            - python3-libsemanage
+            - policycoreutils-python-utils
+            - selinux-policy-targeted
+            - setools-console
+        distro_id: "{{ 'rhel' + ansible_facts.distribution_major_version }}"
+        package_set: "{{ 'default' if distro_id not in selinux_package_lists else distro_id }}"
+        selinux_packages: "{{ selinux_package_lists[package_set] }}"
       yum:
         name: "{{ selinux_packages }}"
         state: present
@@ -98,5 +98,4 @@
       when:
         - service_start is not changed
         - firewalld_config is changed
-        - false
     # Example of configuring and re/starting a service above

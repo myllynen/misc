@@ -104,7 +104,7 @@
     - name: Update known_hosts short entry
       lineinfile:
         path: "{{ ansible_user_dir }}/.ssh/known_hosts"
-        line: "{{ hostvars[item]['ansible_hostname'] + ',' + hostvars[item].ansible_default_ipv4.address + ' ' +
+        line: "{{ hostvars[item].ansible_hostname + ',' + hostvars[item].ansible_default_ipv4.address + ' ' +
                   'ecdsa-sha2-nistp256' + ' ' + hostvars[item].ansible_ssh_host_key_ecdsa_public }}"
         create: true
         mode: '0600'

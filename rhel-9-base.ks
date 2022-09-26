@@ -10,7 +10,7 @@
 #   --network network=default --graphics vnc --sound none --noreboot \
 #   --location /VirtualMachines/boot/rhel-baseos-9.0-x86_64-dvd.iso \
 #   --initrd-inject /VirtualMachines/boot/ks/rhel-9-base.ks \
-#   --extra-args "ip=dhcp inst.ks=file:/rhel-9-base.ks inst.geoloc=0 inst.nosave=all console=tty0 console=ttyS0,115200 net.ifnames.prefix=net ipv6.disable=0 quiet systemd.show_status=yes" \
+#   --extra-args "ip=dhcp inst.ks=file:/rhel-9-base.ks inst.geoloc=0 inst.nosave=all console=tty0 console=ttyS0,115200 net.ifnames.prefix=net quiet systemd.show_status=yes" \
 #   --noautoconsole
 #
 # Post-process:
@@ -21,7 +21,7 @@
 cmdline
 zerombr
 clearpart --all --initlabel --disklabel gpt
-bootloader --timeout 1 --append "console=tty0 console=ttyS0,115200 net.ifnames.prefix=net ipv6.disable=0 quiet systemd.show_status=yes"
+bootloader --timeout 1 --append "console=tty0 console=ttyS0,115200 net.ifnames.prefix=net quiet systemd.show_status=yes"
 part biosboot  --fstype biosboot --size 1
 part /boot/efi --fstype efi      --size 63
 part /boot     --fstype xfs      --size 1024
@@ -56,6 +56,7 @@ bash-completion
 bind-utils
 #cloud-init
 #cloud-utils-growpart
+glibc-langpack-en
 glibc-minimal-langpack
 #insights-client
 man-pages
@@ -69,7 +70,6 @@ python3-libselinux
 setools-console
 #sos
 tar
-tuned
 #unzip
 #vim-enhanced
 yum-utils
@@ -85,10 +85,11 @@ zsh
 #shim-x64
 
 # For security profile
-#aide
 #openscap
 #openscap-scanner
 #scap-security-guide
+
+tuned
 
 -a*firmware*
 -dracut-config-rescue
@@ -103,10 +104,9 @@ zsh
 -NetworkManager-tui
 -parted
 -plymouth
--rhc
+-rhc*
 -sqlite
 -sssd*
-#-subs*
 
 # Ultra lean
 #-audit
@@ -146,12 +146,15 @@ fi
 echo blacklist pcspkr >> /etc/modprobe.d/blacklist.conf
 
 # Networking
+ipv6=no
 sed -i -e '/cockpit/d' /etc/firewalld/zones/public.xml
 rm -f /etc/firewalld/zones/public.xml.old
 
 # IPv6
-grep -q ipv6.disable=1 /etc/default/grub && ipv6=no || ipv6=yes
 if [ "$ipv6" = "no" ]; then
+  echo "net.ipv6.conf.all.disable_ipv6 = 1" > /etc/sysctl.d/50-ipv6.conf
+  echo "net.ipv6.conf.default.disable_ipv6 = 1" >> /etc/sysctl.d/50-ipv6.conf
+  echo "net.ipv6.conf.lo.disable_ipv6 = 1" >> /etc/sysctl.d/50-ipv6.conf
   for netconf in $(ls -1 /etc/NetworkManager/system-connections/*.nmconnection); do
     sed -i -e '/^\[ipv6\]$/,/^\[/ s/method=.*/method=disabled/' $netconf
   done

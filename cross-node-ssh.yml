@@ -64,8 +64,8 @@
     - name: Create user SSH directory
       file:
         path: "{{ ansible_user_dir }}/.ssh"
-        mode: '0700'
         state: directory
+        mode: '0700'
       when: keys | default(none) != 'unique'
 
     - name: Create public SSH key

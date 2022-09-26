@@ -411,8 +411,8 @@
 
     - name: Disable pulseaudio for root, part II
       file:
-        src: /dev/null
         dest: /root/.config/systemd/user/{{ item }}
+        src: /dev/null
         state: link
       loop:
         - pulseaudio.service
@@ -442,20 +442,20 @@
 
     - name: Disable tracker for the user, part I
       file:
+        path: "/home/{{ user_name }}/.config/systemd/user"
+        state: directory
         owner: "{{ user_name }}"
         group: "{{ user_group }}"
         mode: 0755
-        path: "/home/{{ user_name }}/.config/systemd/user"
-        state: directory
       when: false and create_user | bool
 
     - name: Disable tracker for the user, part II
       file:
+        dest: "/home/{{ user_name }}/.config/systemd/user/{{ item }}"
+        src: /dev/null
+        state: link
         owner: "{{ user_name }}"
         group: "{{ user_group }}"
-        src: /dev/null
-        dest: "/home/{{ user_name }}/.config/systemd/user/{{ item }}"
-        state: link
       loop:
         - tracker-extract.service
         - tracker-miner-apps.service
@@ -473,16 +473,16 @@
 
     - name: Configure sudoers
       lineinfile:
-        create: true
-        dest: /etc/sudoers.d/{{ user_name }}
+        path: /etc/sudoers.d/{{ user_name }}
         line: '{{ user_name }} ALL=(ALL) NOPASSWD: ALL'
-        validate: /usr/sbin/visudo -csf %s
+        create: true
         mode: '0440'
+        validate: /usr/sbin/visudo -csf %s
       when: create_user | bool
 
     - name: Block unwanted user monitoring
       lineinfile:
-        dest: /etc/hosts
+        path: /etc/hosts
         line: 127.0.0.2 musicbrainz.org
       when: workstation | bool
 

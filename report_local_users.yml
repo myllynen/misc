@@ -1,0 +1,111 @@
+---
+- name: Create local users CSV file
+  hosts: all
+  order: sorted
+  gather_facts: false
+  #max_fail_percentage: 0
+  vars:
+    csv_output_file: '/tmp/local-users-TIMESTAMP.csv'
+    timestamp_fmt: '+%Y-%m-%d-%H-%M-%S'
+    #timestamp_fmt: '+%Y-%m-%d'
+    consecutive_entries: true
+    log_user_names: true
+    display_file: true
+  tasks:
+    - name: Get date on control node
+      set_fact:
+        timestamp: "{{ lookup('pipe', 'date ' + timestamp_fmt) }}"
+      run_once: true
+
+    - name: Set output CSV file name
+      set_fact:
+        output_file: "{{ csv_output_file | replace('TIMESTAMP', timestamp) }}"
+      run_once: true
+
+    - name: Get days since Unix epoch
+      set_fact:
+        epoch_days: "{{ (lookup('pipe', 'date +%s') | int / 86400) | int }}"
+      run_once: true
+
+    - name: Read passwd database
+      getent:
+        database: passwd
+      register: user_entries
+
+    - name: Read shadow database
+      become: true
+      getent:
+        database: shadow
+      register: shadow_entries
+
+    # Create potentially large data structure before the loop below
+    - name: Set combined database
+      set_fact:
+        combined_entries: "{{ user_entries.ansible_facts.getent_passwd |
+                              combine(shadow_entries.ansible_facts.getent_shadow,
+                                      list_merge='append') }}"
+      run_once: true
+
+    - name: Create CSV file and header
+      lineinfile:
+        path: "{{ output_file }}"
+        line: "hostname,username,uid,gid,hashtype,last_pw_change,max_pw_age,account_exp"
+        create: true
+        mode: '0600'
+        state: present
+      delegate_to: localhost
+      run_once: true
+
+    - name: Populate CSV file
+      vars:
+        hash_types:
+          '$0$': des
+          '$1$': md5
+          '$2$': blowfish
+          '$5$': sha256
+          '$6$': sha512
+          '$7$': yescrypt
+          '$y$': yescrypt
+        hash_id: "{{ item.value[6][0:3] | replace('2a', '2') | replace('2y', 'y') }}"
+        hash_type: "{{ 'unknown' if hash_id not in hash_types else hash_types[hash_id] }}"
+        password_age: "{{ epoch_days | int - item.value[7] | int }}"
+        password_expires: "{{ item.value[9] | int - epoch_days | int
+                              if item.value[9] | int < 99999 else -1 }}"
+        account_last_day: "{{ item.value[12] | default(99999, true) }}"
+        account_expires: "{{ account_last_day | int - epoch_days | int
+                             if account_last_day | int < 99999 else -1 }}"
+      lineinfile:
+        path: "{{ output_file }}"
+        line: "{{ inventory_hostname + ',' +
+                  item.key + ',' +
+                  item.value[1] + ',' +
+                  item.value[2] + ',' +
+                  hash_type + ',' +
+                  password_age + ',' +
+                  password_expires + ',' +
+                  account_expires }}"
+        insertafter: EOF
+        state: present
+      delegate_to: localhost
+      no_log: "{{ not log_user_names | bool }}"
+      throttle: "{{ '1' if consecutive_entries | bool else '99999' }}"
+      loop: "{{ combined_entries | dict2items }}"
+      loop_control:
+        label: "{{ item.key }}"
+      when: item.value[6].startswith('$') or
+            item.value[6] == ''
+
+    - name: Read created CSV file
+      slurp:
+        src: "{{ output_file }}"
+      register: csv_file
+      delegate_to: localhost
+      run_once: true
+      when: display_file | bool
+
+    - name: Display CSV file content
+      debug:
+        msg: "{{ csv_file.content | b64decode }}"
+      delegate_to: localhost
+      run_once: true
+      when: display_file | bool

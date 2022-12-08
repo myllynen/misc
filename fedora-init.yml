@@ -7,6 +7,7 @@
 - name: Initialize Fedora
   hosts: all
   become: true
+  gather_facts: true
   vars:
     console_keymap: fi
     console_font: eurlatgr
@@ -35,7 +36,7 @@
       when: basics.rc != 0
 
     - name: Create target remote_tmp
-      file: path={{ ansible_env.HOME }}/.ansible/tmp mode=0700 state=directory
+      file: path={{ ansible_facts.env.HOME }}/.ansible/tmp mode=0700 state=directory
 
     - name: Detect boot parameters
       command: grep -q TIMEOUT=5 /etc/default/grub
@@ -57,7 +58,7 @@
       when: adjust_boot_parameters.rc == 0
 
     - name: Detect rescue images
-      find: paths=/boot,/boot/loader/entries patterns=*rescue*
+      find: paths=/boot,/boot/loader/entries patterns='*rescue*'
       register: rescue_images
 
     - name: Remove rescue images
@@ -95,7 +96,7 @@
 
     - name: Check RPM Fusion repository
       command: >
-        rpm -q rpmfusion-free-release-{{ ansible_distribution_major_version }} rpmfusion-nonfree-release-{{ ansible_distribution_major_version }} warn=false
+        rpm -q rpmfusion-free-release-{{ ansible_facts.distribution_major_version }} rpmfusion-nonfree-release-{{ ansible_facts.distribution_major_version }} warn=false
       register: fusion_enabled
       failed_when: false
       changed_when: false
@@ -104,8 +105,8 @@
     - name: Enable RPM Fusion repository
       dnf:
         name:
-          - https://download1.rpmfusion.org/free/fedora/rpmfusion-free-release-{{ ansible_distribution_major_version }}.noarch.rpm
-          - https://download1.rpmfusion.org/nonfree/fedora/rpmfusion-nonfree-release-{{ ansible_distribution_major_version }}.noarch.rpm
+          - https://download1.rpmfusion.org/free/fedora/rpmfusion-free-release-{{ ansible_facts.distribution_major_version }}.noarch.rpm
+          - https://download1.rpmfusion.org/nonfree/fedora/rpmfusion-nonfree-release-{{ ansible_facts.distribution_major_version }}.noarch.rpm
         disable_gpg_check: true
         state: present
       when: workstation | bool and fusion_enabled.rc != 0
@@ -120,7 +121,7 @@
         autoremove: true
         cacheonly: true
         state: absent
-      when: ansible_virtualization_role == "guest"
+      when: ansible_facts.virtualization_role == "guest"
 
     - name: Remove unhelpful packages on VM
       dnf:
@@ -133,7 +134,7 @@
         autoremove: true
         cacheonly: true
         state: absent
-      when: ansible_virtualization_role == "guest"
+      when: ansible_facts.virtualization_role == "guest"
 
     - name: Remove unneeded packages on KVM
       dnf:
@@ -144,7 +145,7 @@
         autoremove: true
         cacheonly: true
         state: absent
-      when: ansible_virtualization_type == "kvm"
+      when: ansible_facts.virtualization_type == "kvm"
 
     - name: Remove unneeded packages on VirtualBox
       dnf:
@@ -156,7 +157,7 @@
         autoremove: true
         cacheonly: true
         state: absent
-      when: ansible_virtualization_type == "virtualbox"
+      when: ansible_facts.virtualization_type == "virtualbox"
 
     - name: Remove unneeded packages on VMware
       dnf:
@@ -168,7 +169,7 @@
         autoremove: true
         cacheonly: true
         state: absent
-      when: ansible_virtualization_type == "VMware"
+      when: ansible_facts.virtualization_type == "VMware"
 
     - name: Remove unneeded Plymouth packages
       dnf:
@@ -339,7 +340,7 @@
         - switcheroo-control
         - upower.service
       failed_when: false
-      when: ansible_virtualization_role == "guest"
+      when: ansible_facts.virtualization_role == "guest"
 
     - name: Disable unhelpful network services
       service: name={{ item }} enabled=false state=stopped
@@ -499,7 +500,7 @@
     - name: Cleaning up, part II
       find:
         paths: /tmp
-        patterns: "ks-script*"
+        patterns: 'ks-script*'
       register: tmp_files
 
     - name: Cleaning up, part III

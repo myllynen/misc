@@ -1,51 +1,45 @@
 # Use -e keys=unique to create unique keys for each host
-# Pass --become-user=<user> to create keys for another user
 ---
-- name: Create user
-  hosts: all
-  become: true
-  tasks:
-    - name: Get user id
-      setup:
-        filter: 'ansible_user_*'
-
-    - name: Create user
-      user:
-        name: "{{ ansible_user_id }}"
-        state: present
-      become: true
-      become_user: root
-
 - name: Generate user SSH keys
   hosts: "{{ 'all' if keys | default(none) == 'unique' else 'all[0]' }}"
-  become: true
+  gather_facts: false
   tasks:
+    - name: Gather needed facts
+      setup:
+        gather_subset:
+          - '!all'
+          - '!min'
+          - user
+      when: ansible_facts.user_dir is not defined or
+            ansible_facts.user_id is not defined
+
     - name: Generate user public/private SSH RSA key pair
       user:
-        name: "{{ ansible_user_id }}"
+        name: "{{ ansible_facts.user_id }}"
         generate_ssh_key: true
         state: present
 
     - name: Read user public SSH key
       slurp:
-        src: "{{ ansible_user_dir }}/.ssh/id_rsa.pub"
+        src: "{{ ansible_facts.user_dir }}/.ssh/id_rsa.pub"
       register: public_key
 
     - name: Read user private SSH key
       slurp:
-        src: "{{ ansible_user_dir }}/.ssh/id_rsa"
+        src: "{{ ansible_facts.user_dir }}/.ssh/id_rsa"
       register: private_key
 
     - name: Set public SSH key
       set_fact:
-        public_ssh_key="{{ public_key.content|b64decode }}"
+        public_ssh_key: "{{ public_key.content | b64decode }}"
 
     - name: Set private SSH key
       set_fact:
-        private_ssh_key="{{ private_key.content|b64decode }}"
+        private_ssh_key: "{{ private_key.content | b64decode }}"
 
 - name: Set shared SSH keys
   hosts: "{{ 'all:!all[0]' if keys | default(none) != 'unique' else 'all[0]' }}"
+  gather_facts: false
   tasks:
     - name: Set shared public SSH key
       set_fact:
@@ -59,11 +53,19 @@
 
 - name: Distribute shared SSH key
   hosts: "{{ 'all:!all[0]' if keys | default(none) != 'unique' else 'all[0]' }}"
-  become: true
+  gather_facts: false
   tasks:
+    - name: Gather needed facts
+      setup:
+        gather_subset:
+          - '!all'
+          - '!min'
+          - user
+      when: ansible_facts.user_dir is not defined
+
     - name: Create user SSH directory
       file:
-        path: "{{ ansible_user_dir }}/.ssh"
+        path: "{{ ansible_facts.user_dir }}/.ssh"
         state: directory
         mode: '0700'
       when: keys | default(none) != 'unique'
@@ -71,41 +73,60 @@
     - name: Create public SSH key
       copy:
         content: "{{ hostvars[groups.all[0]].public_ssh_key }}"
-        dest: "{{ ansible_user_dir }}/.ssh/id_rsa.pub"
+        dest: "{{ ansible_facts.user_dir }}/.ssh/id_rsa.pub"
         mode: '0644'
       when: keys | default(none) != 'unique'
 
     - name: Create private SSH key
       copy:
         content: "{{ hostvars[groups.all[0]].private_ssh_key }}"
-        dest: "{{ ansible_user_dir }}/.ssh/id_rsa"
+        dest: "{{ ansible_facts.user_dir }}/.ssh/id_rsa"
         mode: '0600'
       when: keys | default(none) != 'unique'
 
 - name: Enable cross-node SSH access
   hosts: all
-  become: true
+  gather_facts: false
   tasks:
+    - name: Gather needed facts
+      setup:
+        gather_subset:
+          - '!all'
+          - '!min'
+          - network
+          - ssh_host_key_ed25519_public
+          - user
+      when: ansible_facts.user_dir is not defined or
+            ansible_facts.user_id is not defined or
+            ansible_facts.fqdn is not defined or
+            ansible_facts.hostname is not defined or
+            ansible_facts.default_ipv4 is not defined or
+            ansible_facts.ssh_host_key_ed25519_public is not defined
+
     - name: Update authorized keys
       authorized_key:
-        user: "{{ ansible_user_id }}"
+        user: "{{ ansible_facts.user_id }}"
         key: "{{ hostvars[item].public_ssh_key }}"
       loop: "{{ ansible_play_batch }}"
 
     - name: Update known_hosts FQDN entry
       lineinfile:
-        path: "{{ ansible_user_dir }}/.ssh/known_hosts"
-        line: "{{ item + ',' + hostvars[item].ansible_default_ipv4.address + ' ' +
-                  'ecdsa-sha2-nistp256' + ' ' + hostvars[item].ansible_ssh_host_key_ecdsa_public }}"
+        path: "{{ ansible_facts.user_dir }}/.ssh/known_hosts"
+        line: "{{ hostvars[item].ansible_facts.fqdn + ',' +
+                  hostvars[item].ansible_facts.default_ipv4.address + ' ' +
+                  'ssh-ed25519' + ' ' +
+                  hostvars[item].ansible_facts.ssh_host_key_ed25519_public }}"
         create: true
         mode: '0600'
       loop: "{{ ansible_play_batch }}"
 
     - name: Update known_hosts short entry
       lineinfile:
-        path: "{{ ansible_user_dir }}/.ssh/known_hosts"
-        line: "{{ hostvars[item].ansible_hostname + ',' + hostvars[item].ansible_default_ipv4.address + ' ' +
-                  'ecdsa-sha2-nistp256' + ' ' + hostvars[item].ansible_ssh_host_key_ecdsa_public }}"
+        path: "{{ ansible_facts.user_dir }}/.ssh/known_hosts"
+        line: "{{ hostvars[item].ansible_facts.hostname + ',' +
+                  hostvars[item].ansible_facts.default_ipv4.address + ' ' +
+                  'ssh-ed25519' + ' ' +
+                  hostvars[item].ansible_facts.ssh_host_key_ed25519_public }}"
         create: true
         mode: '0600'
       loop: "{{ ansible_play_batch }}"

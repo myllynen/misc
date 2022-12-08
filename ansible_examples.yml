@@ -1,5 +1,5 @@
 # https://docs.ansible.com/ansible/latest/user_guide/playbooks_filters.html
-# https://jinja.palletsprojects.com/en/2.9.x/templates/#list-of-builtin-filters
+# https://jinja.palletsprojects.com/en/3.0.x/templates/#list-of-builtin-filters
 # https://docs.ansible.com/ansible/latest/user_guide/complex_data_manipulation.html
 ---
 - name: Miscellaneous Ansible examples
@@ -91,7 +91,7 @@
       register: service_start
       when: false
 
-    - name: Apply firewalld configuration changes
+    - name: Reload firewalld to apply configuration changes
       service:
         name: firewalld
         state: reloaded

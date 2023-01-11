@@ -1,0 +1,25 @@
+#!/bin/sh
+
+# Config
+BASE_DIR=$HOME
+PYTHON_BIN=python
+VERSIONS="2.9 2.12 2.14"
+
+# Main
+mkdir -p $BASE_DIR || exit 1
+cd $BASE_DIR || exit 2
+for ver in $VERSIONS; do
+  community_version=$(expr $(echo $ver | cut -d. -f2) - 7)
+  version_limit=$(expr $(echo $community_version) + 1)
+  if [ "$ver" = "2.9" ]; then
+    version_limit="2.10"
+  fi
+  echo Setting up Ansible venv for ansible-core $ver...
+  if [ ! -d ansible-$ver ]; then
+    mkdir -p ansible-$ver || exit 3
+    $PYTHON_BIN -m venv ansible-$ver || exit 4
+  fi
+  . $BASE_DIR/ansible-$ver/bin/activate
+  $PYTHON_BIN -m pip install --upgrade pip wheel
+  $PYTHON_BIN -m pip install --upgrade 'ansible<'$version_limit
+done

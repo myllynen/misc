@@ -2,12 +2,17 @@
 
 # Config
 BASE_DIR=$HOME
-PYTHON_BIN=python
+PYTHON_BIN=python3
 VERSIONS="2.9 2.12 2.14"
 
 # Main
-mkdir -p $BASE_DIR || exit 1
-cd $BASE_DIR || exit 2
+if ! command -v $PYTHON_BIN > /dev/null 2>&1 ; then
+  echo "Python executable $PYTHON_BIN not found!" 1>&2
+  exit 1
+fi
+
+mkdir -p $BASE_DIR || exit 2
+cd $BASE_DIR || exit 3
 for ver in $VERSIONS; do
   community_version=$(expr $(echo $ver | cut -d. -f2) - 7)
   version_limit=$(expr $(echo $community_version) + 1)
@@ -16,8 +21,8 @@ for ver in $VERSIONS; do
   fi
   echo Setting up Ansible venv for ansible-core $ver...
   if [ ! -d ansible-$ver ]; then
-    mkdir -p ansible-$ver || exit 3
-    $PYTHON_BIN -m venv ansible-$ver || exit 4
+    mkdir -p ansible-$ver || exit 4
+    $PYTHON_BIN -m venv ansible-$ver || exit 5
   fi
   . $BASE_DIR/ansible-$ver/bin/activate
   $PYTHON_BIN -m pip install --upgrade pip wheel

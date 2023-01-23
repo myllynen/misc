@@ -1,24 +1,29 @@
 #!/bin/sh
 
+# https://docs.ansible.com/ansible/latest/installation_guide/intro_installation.html#node-requirement-summary
+
 # Config
 BASE_DIR=$HOME
-PYTHON_BIN=python3
+PYTHON_BIN=python3.9
 VERSIONS="2.9 2.12 2.14"
 
 # Main
-if ! command -v $PYTHON_BIN > /dev/null 2>&1 ; then
-  echo "Python executable $PYTHON_BIN not found!" 1>&2
-  exit 1
-fi
-
 mkdir -p $BASE_DIR || exit 2
 cd $BASE_DIR || exit 3
 for ver in $VERSIONS; do
   community_version=$(expr $(echo $ver | cut -d. -f2) - 7)
   version_limit=$(expr $(echo $community_version) + 1)
+
   if [ "$ver" = "2.9" ]; then
     version_limit="2.10"
+    #PYTHON_BIN=python3.8
   fi
+
+  if ! command -v $PYTHON_BIN > /dev/null 2>&1 ; then
+    echo "Python executable $PYTHON_BIN not found!" 1>&2
+    exit 1
+  fi
+
   echo Setting up Ansible venv for ansible-core $ver...
   if [ ! -d ansible-$ver ]; then
     mkdir -p ansible-$ver || exit 4

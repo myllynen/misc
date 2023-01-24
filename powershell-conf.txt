@@ -1,0 +1,22 @@
+* Cursor Size:
+ - Small
+
+* Edit Options:
+ - QuickEdit Mode
+ - Insert Mode
+  - Enable Ctrl key shortcuts
+  - Filter clipboard contents on paste
+ - Use Ctrl+Shift+C/V as Copy/Paste
+
+Font:
+ - Consolas 14
+
+Screen Background:
+ - 30/30/30
+
+Terminal Colors:
+ - 242/242/242
+ - 12/12/12
+
+Cursor Shape:
+ - Use Legacy Style

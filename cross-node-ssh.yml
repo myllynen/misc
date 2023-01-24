@@ -109,6 +109,18 @@
         key: "{{ hostvars[item].public_ssh_key }}"
       loop: "{{ ansible_play_batch }}"
 
+    - name: Update known_hosts localhost entry
+      lineinfile:
+        path: "{{ ansible_facts.user_dir }}/.ssh/known_hosts"
+        line: "{{ 'localhost' + ',' +
+                  '127.0.0.1' + ' ' +
+                  'ssh-ed25519' + ' ' +
+                  hostvars[inventory_hostname].ansible_facts.ssh_host_key_ed25519_public }}"
+        create: true
+        mode: '0600'
+      loop:
+        - localhost
+
     - name: Update known_hosts FQDN entry
       lineinfile:
         path: "{{ ansible_facts.user_dir }}/.ssh/known_hosts"

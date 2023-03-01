@@ -5,8 +5,8 @@
 - name: Miscellaneous Ansible examples
   hosts: localhost
   connection: local
-  gather_facts: true
   become: false
+  gather_facts: true
   tasks:
     - name: Display variable names
       debug:

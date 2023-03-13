@@ -39,7 +39,7 @@
 
     - name: Test distribution major version
       debug:
-        msg: ansible_facts.distribution_major_version | int >= 8 is true
+        msg: "{{ ansible_facts.distribution_major_version | int >= 8 is true }}"
       when: ansible_facts.distribution_major_version | int >= 8
 
     - name: Set fact based on condition

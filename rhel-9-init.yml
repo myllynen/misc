@@ -34,6 +34,7 @@
 
     - name: Prepare target basics
       raw: dnf -y install python3 python3-dnf python3-libselinux
+      changed_when: true
       when: basics.rc != 0
 
     - name: Create target remote_tmp
@@ -56,6 +57,7 @@
 
     - name: Adjust boot parameters
       command: grubby --remove-args="rhgb" --args="quiet systemd.show_status=yes" --update-kernel=ALL
+      changed_when: true
       when: adjust_boot_parameters.rc == 0
 
     - name: Detect rescue images
@@ -68,6 +70,7 @@
 
     - name: Update GRUB configuration
       command: grub2-mkconfig -o /boot/grub2/grub.cfg
+      changed_when: true
       when: adjust_boot_parameters.rc == 0
 
     - name: Detect LUKS configuration
@@ -93,10 +96,11 @@
         mode: '0644'
 
     - name: Set timezone
-      timezone: name="{{ system_timezone }}"
+      community.general.timezone: name="{{ system_timezone }}"
 
     - name: Check EPEL repository
-      command: rpm -q epel-release-{{ ansible_facts.distribution_major_version }} warn=false
+      # noqa: command-instead-of-module
+      command: rpm -q epel-release-{{ ansible_facts.distribution_major_version }}
       register: epel_enabled
       failed_when: false
       changed_when: false
@@ -111,8 +115,9 @@
       when: use_epel | bool and epel_enabled.rc != 0
 
     - name: Check RPM Fusion repository
+      # noqa: command-instead-of-module
       command: >
-        rpm -q rpmfusion-free-release-{{ ansible_facts.distribution_major_version }} rpmfusion-nonfree-release-{{ ansible_facts.distribution_major_version }} warn=false
+        rpm -q rpmfusion-free-release-{{ ansible_facts.distribution_major_version }} rpmfusion-nonfree-release-{{ ansible_facts.distribution_major_version }}
       register: fusion_enabled
       failed_when: false
       changed_when: false
@@ -152,10 +157,22 @@
         state: absent
       when: ansible_facts.virtualization_role == "guest"
 
+    - name: Remove unneeded packages on Hyper-V
+      dnf:
+        name:
+          - open-vm-tools
+          - qemu-guest-agent
+          - spice-vdagent
+          - virtualbox-guest-additions
+        autoremove: true
+        cacheonly: true
+        state: absent
+      when: ansible_facts.virtualization_type == "VirtualPC"
+
     - name: Remove unneeded packages on KVM
       dnf:
         name:
-          - 'hyper*'
+          - 'hyperv*'
           - open-vm-tools
           - virtualbox-guest-additions
         autoremove: true
@@ -166,7 +183,7 @@
     - name: Remove unneeded packages on VirtualBox
       dnf:
         name:
-          - 'hyper*'
+          - 'hyperv*'
           - open-vm-tools
           - qemu-guest-agent
           - spice-vdagent
@@ -178,7 +195,7 @@
     - name: Remove unneeded packages on VMware
       dnf:
         name:
-          - 'hyper*'
+          - 'hyperv*'
           - qemu-guest-agent
           - spice-vdagent
           - virtualbox-guest-additions
@@ -226,6 +243,7 @@
           - nfs-utils
           - orca
           - pam_krb5
+          - 'perl*'
           - '*pinyin*'
           - qgnomeplatform
           - 'qt*'
@@ -247,6 +265,7 @@
           #- cloud-init
           #- cloud-utils-growpart
           - ethtool
+          - git-core
           - glibc-minimal-langpack
           #- gpm
           #- insights-client
@@ -279,6 +298,19 @@
           - zstd
         state: present
 
+    - name: Install helpful packages (guest agent)
+      vars:
+        agent_packages:
+          kvm: qemu-guest-agent
+          VirtualPC: 'hyperv*'
+          VMware: open-vm-tools
+      dnf:
+        name: "{{ agent_packages[ansible_facts.virtualization_type] }}"
+        state: present
+      when:
+        - ansible_facts.virtualization_role == "guest"
+        - ansible_facts.virtualization_type in agent_packages
+
     - name: Install helpful packages (langpacks)
       dnf: name="glibc-langpack-{{ langpacks | join(',glibc-langpack-') }}" state=present
 
@@ -286,7 +318,7 @@
       dnf:
         name:
           - epel-release
-          #- keychain
+          - keychain
           - xclip
         state: present
       when: use_epel | bool
@@ -295,7 +327,6 @@
       dnf:
         name:
           - dconf-editor
-          - git-core
           - gnome-tweaks
           - gstreamer1-plugins-good-gtk
           - patch
@@ -336,10 +367,11 @@
         state: absent
 
     - name: Update all packages
+      # noqa: package-latest
       dnf: name='*' update_cache=true state=latest
 
     - name: Check current boot parameters
-      shell: cat /proc/cmdline | grep -q rhgb
+      shell: set -o pipefail ; cat /proc/cmdline | grep -q rhgb
       check_mode: false
       register: rhgb_used
       failed_when: false
@@ -347,6 +379,7 @@
 
     - name: Ensure correct boot parameters
       command: grubby --remove-args="rhgb" --args="quiet systemd.show_status=yes" --update-kernel=ALL
+      changed_when: true
       when: rhgb_used.rc == 0
 
     - name: Disable unhelpful services
@@ -447,7 +480,7 @@
         state: directory
         owner: "{{ user_name }}"
         group: "{{ user_group }}"
-        mode: 0755
+        mode: '0755'
       when: false and create_user | bool
 
     - name: Disable tracker for the user, part II

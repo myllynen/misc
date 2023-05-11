@@ -104,7 +104,7 @@
             ansible_facts.ssh_host_key_ed25519_public is not defined
 
     - name: Update authorized keys
-      authorized_key:
+      ansible.posix.authorized_key:
         user: "{{ ansible_facts.user_id }}"
         key: "{{ hostvars[item].public_ssh_key }}"
       loop: "{{ ansible_play_batch }}"

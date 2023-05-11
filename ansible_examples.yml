@@ -30,7 +30,7 @@
 
     - name: Create dict from items
       set_fact:
-        a_dict: "{{ a_dict | default({}) | combine({item: ansible_facts.distribution }) }}"
+        a_dict: "{{ a_dict | default({}) | combine({item: ansible_facts.distribution}) }}"
       loop: "{{ ansible_play_batch + ansible_run_tags }}"
 
     - name: Display dict from items

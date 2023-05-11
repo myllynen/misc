@@ -15,16 +15,19 @@
     - name: Get date on control node
       set_fact:
         timestamp: "{{ lookup('pipe', 'date ' + timestamp_fmt) }}"
+      # noqa: run-once[task]
       run_once: true
 
     - name: Set output CSV file name
       set_fact:
         output_file: "{{ csv_output_file | replace('TIMESTAMP', timestamp) }}"
+      # noqa: run-once[task]
       run_once: true
 
     - name: Get days since Unix epoch
       set_fact:
         epoch_days: "{{ (lookup('pipe', 'date +%s') | int / 86400) | int }}"
+      # noqa: run-once[task]
       run_once: true
 
     - name: Read passwd database
@@ -44,6 +47,7 @@
         combined_entries: "{{ user_entries.ansible_facts.getent_passwd |
                               combine(shadow_entries.ansible_facts.getent_shadow,
                                       list_merge='append') }}"
+      # noqa: run-once[task]
       run_once: true
 
     - name: Create CSV file and header
@@ -54,6 +58,7 @@
         mode: '0600'
         state: present
       delegate_to: localhost
+      # noqa: run-once[task]
       run_once: true
 
     - name: Populate CSV file
@@ -100,6 +105,7 @@
         src: "{{ output_file }}"
       register: csv_file
       delegate_to: localhost
+      # noqa: run-once[task]
       run_once: true
       when: display_file | bool
 
@@ -107,5 +113,6 @@
       debug:
         msg: "{{ csv_file.content | b64decode }}"
       delegate_to: localhost
+      # noqa: run-once[task]
       run_once: true
       when: display_file | bool

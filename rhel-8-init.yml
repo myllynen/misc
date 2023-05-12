@@ -35,7 +35,7 @@
 
     - name: Prepare target basics
       raw: dnf -y install platform-python python3-dnf python3-libselinux
-      changed_when: false
+      changed_when: true
       when: basics.rc != 0
 
     - name: Create target remote_tmp
@@ -58,7 +58,7 @@
 
     - name: Adjust boot parameters
       command: grubby --remove-args="rhgb LANG" --args="quiet systemd.show_status=yes" --update-kernel=ALL
-      changed_when: false
+      changed_when: true
       when: adjust_boot_parameters.rc == 0
 
     - name: Detect rescue images
@@ -79,7 +79,7 @@
       vars:
         boot_config: "{{ '/boot/efi/EFI/{{ ansible_facts.distribution | lower }}/grub.cfg' if efi_grub.stat.exists else '/boot/grub2/grub.cfg' }}"
       command: grub2-mkconfig -o {{ boot_config }}
-      changed_when: false
+      changed_when: true
       when: adjust_boot_parameters.rc == 0
 
     - name: Detect LUKS configuration
@@ -412,7 +412,7 @@
 
     - name: Ensure correct boot parameters
       command: grubby --remove-args="rhgb LANG" --args="quiet systemd.show_status=yes" --update-kernel=ALL
-      changed_when: false
+      changed_when: true
       when: rhgb_used.rc == 0
 
     - name: Disable unhelpful services

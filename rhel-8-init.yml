@@ -175,11 +175,24 @@
           - 'a*firmware*'
           - 'i*firmware*'
           - 'lib*firmware*'
-          - 'z*firmware'
+          - 'n*firmware'
         autoremove: true
         cacheonly: true
         state: absent
       when: ansible_facts.virtualization_role == "guest"
+
+    - name: Remove all virtual guest packages
+      dnf:
+        name:
+          - 'hyperv*'
+          - open-vm-tools
+          - qemu-guest-agent
+          - spice-vdagent
+          - WALinuxAgent
+        autoremove: true
+        cacheonly: true
+        state: absent
+      when: ansible_facts.virtualization_role != "guest"
 
     - name: Remove unhelpful packages on VM
       dnf:
@@ -194,40 +207,31 @@
         state: absent
       when: ansible_facts.virtualization_role == "guest"
 
-    - name: Remove unneeded packages on Hyper-V
+    - name: Remove unneeded packages on Azure/Hyper-V
       dnf:
         name:
           - open-vm-tools
           - qemu-guest-agent
           - spice-vdagent
-          - virtualbox-guest-additions
         autoremove: true
         cacheonly: true
         state: absent
-      when: ansible_facts.virtualization_type == "VirtualPC"
+      when:
+        - ansible_facts.virtualization_role == "guest"
+        - ansible_facts.virtualization_type == "VirtualPC"
 
     - name: Remove unneeded packages on KVM
       dnf:
         name:
           - 'hyperv*'
           - open-vm-tools
-          - virtualbox-guest-additions
+          - WALinuxAgent
         autoremove: true
         cacheonly: true
         state: absent
-      when: ansible_facts.virtualization_type == "kvm"
-
-    - name: Remove unneeded packages on VirtualBox
-      dnf:
-        name:
-          - 'hyperv*'
-          - open-vm-tools
-          - qemu-guest-agent
-          - spice-vdagent
-        autoremove: true
-        cacheonly: true
-        state: absent
-      when: ansible_facts.virtualization_type == "virtualbox"
+      when:
+        - ansible_facts.virtualization_role == "guest"
+        - ansible_facts.virtualization_type == "kvm"
 
     - name: Remove unneeded packages on VMware
       dnf:
@@ -235,11 +239,28 @@
           - 'hyperv*'
           - qemu-guest-agent
           - spice-vdagent
-          - virtualbox-guest-additions
+          - WALinuxAgent
         autoremove: true
         cacheonly: true
         state: absent
-      when: ansible_facts.virtualization_type == "VMware"
+      when:
+        - ansible_facts.virtualization_role == "guest"
+        - ansible_facts.virtualization_type == "VMware"
+
+    - name: Remove unneeded packages on other VMs
+      dnf:
+        name:
+          - 'hyperv*'
+          - open-vm-tools
+          - qemu-guest-agent
+          - spice-vdagent
+          - WALinuxAgent
+        autoremove: true
+        cacheonly: true
+        state: absent
+      when:
+        - ansible_facts.virtualization_role == "guest"
+        - ansible_facts.virtualization_type not in ['kvm', 'VirtualPC', 'VMware']
 
     - name: Remove unneeded Plymouth packages
       dnf:
@@ -334,7 +355,9 @@
       vars:
         agent_packages:
           kvm: qemu-guest-agent
-          VirtualPC: 'hyperv*'
+          VirtualPC:
+            - hyperv-daemons
+            - WALinuxAgent
           VMware: open-vm-tools
       dnf:
         name: "{{ agent_packages[ansible_facts.virtualization_type] }}"
@@ -342,6 +365,21 @@
       when:
         - ansible_facts.virtualization_role == "guest"
         - ansible_facts.virtualization_type in agent_packages
+
+    - name: Enable virtual guest agent service
+      vars:
+        agent_services:
+          kvm: qemu-guest-agent.service
+          VirtualPC: waagent.service
+          VMware: vmtoolsd.service
+      service:
+        name: "{{ agent_services[ansible_facts.virtualization_type] }}"
+        enabled: true
+        state: started
+      when:
+        - ansible_facts.virtualization_role == "guest"
+        - ansible_facts.virtualization_type in agent_services
+        - ansible_facts.virtualization_type in ['kvm', 'VirtualPC', 'VMware']
 
     - name: Install helpful packages (langpacks)
       dnf: name="glibc-langpack-{{ langpacks | join(',glibc-langpack-') }}" state=present

@@ -98,7 +98,7 @@
       loop_control:
         label: "{{ item.key }}"
       when: item.value[6].startswith('$') or
-            item.value[6] == ''
+            not item.value[6]
 
     - name: Read created CSV file
       slurp:

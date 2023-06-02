@@ -5,7 +5,7 @@
 # Config
 BASE_DIR=$HOME
 PYTHON_BIN=python3.9
-VERSIONS="2.9 2.12 2.14"
+VERSIONS="2.9 2.13 2.15"
 
 # Main
 mkdir -p $BASE_DIR || exit 2
@@ -17,6 +17,8 @@ for ver in $VERSIONS; do
   if [ "$ver" = "2.9" ]; then
     version_limit="2.10"
     #PYTHON_BIN=python3.8
+  else
+    want_lint="ansible-lint"
   fi
 
   if ! command -v $PYTHON_BIN > /dev/null 2>&1 ; then
@@ -31,5 +33,5 @@ for ver in $VERSIONS; do
   fi
   . $BASE_DIR/ansible-$ver/bin/activate
   $PYTHON_BIN -m pip install --upgrade pip wheel
-  $PYTHON_BIN -m pip install --upgrade 'ansible<'$version_limit
+  $PYTHON_BIN -m pip install --upgrade 'ansible<'$version_limit $want_lint passlib
 done

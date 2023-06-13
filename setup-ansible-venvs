@@ -3,7 +3,7 @@
 # https://docs.ansible.com/ansible/latest/installation_guide/intro_installation.html#node-requirement-summary
 
 # Config
-BASE_DIR=$HOME
+BASE_DIR=$HOME/ansible
 PYTHON_BIN=python3.9
 VERSIONS="2.9 2.13 2.15"
 

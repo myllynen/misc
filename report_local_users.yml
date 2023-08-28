@@ -79,6 +79,8 @@
         account_last_day: "{{ item.value[12] | default(99999, true) }}"
         account_expires: "{{ account_last_day | int - epoch_days | int
                              if account_last_day | int < 99999 else -1 }}"
+      no_log: "{{ not log_user_names | bool }}"
+      throttle: "{{ '1' if consecutive_entries | bool else '99999' }}"
       lineinfile:
         path: "{{ output_file }}"
         line: "{{ inventory_hostname + ',' +
@@ -92,8 +94,6 @@
         insertafter: EOF
         state: present
       delegate_to: localhost
-      no_log: "{{ not log_user_names | bool }}"
-      throttle: "{{ '1' if consecutive_entries | bool else '99999' }}"
       loop: "{{ combined_entries | dict2items }}"
       loop_control:
         label: "{{ item.key }}"

@@ -6,20 +6,21 @@
  * Edit Options
   + QuickEdit Mode
   + Insert Mode
-  + Enable Ctrl key shortcuts
-  + Filter clipboard contents on paste
+  - Enable Ctrl key shortcuts
+  - Filter clipboard contents on paste
   + Use Ctrl+Shift+C/V as Copy/Paste
 
 * Font:
  * Size 14
  * Font Consolas
 
-* Colors
- * Selected Color Values 30/30/30
+* Layout
+ * Screen Buffer Size
+  * Height 5000
 
 * Terminal
  * Terminal Colors
-  * Use Separate Foreground 242/242/242
-  * Use Separate Background 12/12/12
+  * Use Separate Foreground 255/255/255
+  * Use Separate Background 30/30/30
  * Cursor Shape
   + Use Legacy Style

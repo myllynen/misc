@@ -18,9 +18,10 @@
  * Screen Buffer Size
   * Height 5000
 
+* Colors
+ * Screen Text 255/255/255
+ * Screen Background 30/30/30
+
 * Terminal
- * Terminal Colors
-  * Use Separate Foreground 255/255/255
-  * Use Separate Background 30/30/30
  * Cursor Shape
   + Use Legacy Style

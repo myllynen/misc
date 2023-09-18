@@ -7,24 +7,32 @@ Nothing but random stuff here.
 
 ## Contents
 
-* [ansible.cfg](ansible.cfg)
-  * Example Ansible configuration with optimizations
-* [fedora-init.yml](fedora-init.yml)
-  * Ansible playbook to initialize a Fedora system after installation
-* [qcow2-to-box](qcow2-to-box)
-  * A simple script to create Vagrant boxes from Qcow2 images
+* [ca-setup](ca-setup)
+  * Simple scripts to setup self-signed CA and certs
 * [git-setup](git-setup)
   * Basic steps to setup local (test) Git repo infra
+* [ansible.cfg](ansible.cfg)
+  * Ansible configuration file with most relevant settings
+* [cross_node_ssh.yml](cross_node_ssh.yml)
+  * Ansible playbook to configure cross-node SSH key authentication
+* [fedora_init.yml](fedora_init.yml)
+  * Ansible playbook to initialize a Fedora system after installation
+* [qcow2-to-box](qcow2-to-box)
+  * Simple script to create Vagrant boxes from Qcow2 images
+* [report_local_users.yml](report_local_users.yml)
+  * Ansible playbook to report local users from systems
 * [rhel-7-base.ks](rhel-7-base.ks)
   * RHEL 7 base installation kickstart example (see below)
 * [rhel-8-base.ks](rhel-8-base.ks)
   * RHEL 8 base installation kickstart example (see below)
-* [rhel-8-init.yml](rhel-8-init.yml)
-  * Ansible playbook to initialize a RHEL 8 system after installation
 * [rhel-9-base.ks](rhel-8-base.ks)
   * RHEL 9 base installation kickstart example (see below)
-* [rhel-9-init.yml](rhel-9-init.yml)
+* [rhel_8_init.yml](rhel_8_init.yml)
+  * Ansible playbook to initialize a RHEL 8 system after installation
+* [rhel_9_init.yml](rhel_9_init.yml)
   * Ansible playbook to initialize a RHEL 9 system after installation
+* [setup-ansible-venvs](setup-ansible-venvs)
+  * Script to set up Ansible/Python venvs for many Ansible versions
 * [vagrant.ks](vagrant.ks)
   * Kickstart snippet to make Fedora/RHEL installation Vagrant-ready
 

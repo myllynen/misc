@@ -3,6 +3,8 @@
 - name: Generate user SSH keys
   hosts: "{{ 'all' if keys | default(none) == 'unique' else 'all[0]' }}"
   gather_facts: false
+  vars:
+    ssh_key_type: ed25519
   tasks:
     - name: Gather needed facts
       setup:
@@ -13,20 +15,21 @@
       when: ansible_facts.user_dir is not defined or
             ansible_facts.user_id is not defined
 
-    - name: Generate user public/private SSH RSA key pair
+    - name: Generate user public/private SSH key pair
       user:
         name: "{{ ansible_facts.user_id }}"
         generate_ssh_key: true
+        ssh_key_type: "{{ ssh_key_type }}"
         state: present
 
     - name: Read user public SSH key
       slurp:
-        src: "{{ ansible_facts.user_dir }}/.ssh/id_rsa.pub"
+        src: "{{ ansible_facts.user_dir }}/.ssh/id_{{ ssh_key_type }}.pub"
       register: public_key
 
     - name: Read user private SSH key
       slurp:
-        src: "{{ ansible_facts.user_dir }}/.ssh/id_rsa"
+        src: "{{ ansible_facts.user_dir }}/.ssh/id_{{ ssh_key_type }}"
       register: private_key
 
     - name: Set public SSH key
@@ -73,14 +76,14 @@
     - name: Create public SSH key
       copy:
         content: "{{ hostvars[groups.all[0]].public_ssh_key }}"
-        dest: "{{ ansible_facts.user_dir }}/.ssh/id_rsa.pub"
+        dest: "{{ ansible_facts.user_dir }}/.ssh/id_{{ ssh_key_type }}.pub"
         mode: '0644'
       when: keys | default(none) != 'unique'
 
     - name: Create private SSH key
       copy:
         content: "{{ hostvars[groups.all[0]].private_ssh_key }}"
-        dest: "{{ ansible_facts.user_dir }}/.ssh/id_rsa"
+        dest: "{{ ansible_facts.user_dir }}/.ssh/id_{{ ssh_key_type }}"
         mode: '0600'
       when: keys | default(none) != 'unique'
 

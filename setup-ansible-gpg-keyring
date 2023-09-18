@@ -1,0 +1,20 @@
+#!/bin/sh
+
+# https://docs.ansible.com/ansible/latest/collections_guide/collections_installing.html#installing-collections-with-signature-verification
+# https://docs.ansible.com/ansible/latest/collections_guide/collections_verifying.html#verifying-signed-collections
+# https://console.redhat.com/ansible/automation-hub/token
+# https://access.redhat.com/security/team/key
+
+# Config
+ANS_DIR=./.ansible
+GPG_DIR=$ANS_DIR/gnupg
+
+# Setup Ansible GPG keyring with Red Hat public collections key
+curl -sO https://access.redhat.com/security/data/8a828aad.txt
+mkdir -m 0700 -p $GPG_DIR
+# NB. It's safe to ignore the "invalid armor header" warning
+gpg --homedir $GPG_DIR --import ./8a828aad.txt
+rm -rf $GPG_DIR/private-keys-v1.d $GPG_DIR/pubring.kbx~ $GPG_DIR/trustdb.gpg
+rm -f ./8a828aad.txt
+
+echo "Now set 'gpg_keyring = $GPG_DIR/pubring.kbx' in the [galaxy] section of ansible.cfg."

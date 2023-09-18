@@ -31,6 +31,8 @@ Nothing but random stuff here.
   * Ansible playbook to initialize a RHEL 8 system after installation
 * [rhel_9_init.yml](rhel_9_init.yml)
   * Ansible playbook to initialize a RHEL 9 system after installation
+* [setup-ansible-gpg-keyring](setup-ansible-gpg-keyring)
+  * Script to set up Ansible GPG keyring for RH collection signatures
 * [setup-ansible-venvs](setup-ansible-venvs)
   * Script to set up Ansible/Python venvs for many Ansible versions
 * [vagrant.ks](vagrant.ks)

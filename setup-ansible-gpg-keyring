@@ -14,7 +14,9 @@ curl -sO https://access.redhat.com/security/data/8a828aad.txt
 mkdir -m 0700 -p $GPG_DIR
 # NB. It's safe to ignore the "invalid armor header" warning
 gpg --homedir $GPG_DIR --import ./8a828aad.txt
-rm -rf $GPG_DIR/private-keys-v1.d $GPG_DIR/pubring.kbx~ $GPG_DIR/trustdb.gpg
+rm -rf $GPG_DIR/private-keys-v1.d $GPG_DIR/pubring.kbx~
 rm -f ./8a828aad.txt
 
 echo "Now set 'gpg_keyring = $GPG_DIR/pubring.kbx' in the [galaxy] section of ansible.cfg."
+echo "Optionally, export GNUPGHOME=$GPG_DIR before running ansible-galaxy collection,"
+echo "this would ensure that ~/.gnupg will not be used in any way with ansible-galaxy."

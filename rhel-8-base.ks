@@ -8,7 +8,7 @@
 #   --network network=default --graphics vnc --sound none --noreboot \
 #   --location /VirtualMachines/boot/rhel-8.6-x86_64-dvd.iso \
 #   --initrd-inject /VirtualMachines/boot/ks/rhel-8-base.ks \
-#   --extra-args "ip=dhcp inst.ks=file:/rhel-8-base.ks inst.geoloc=0 inst.nosave=all console=tty0 console=ttyS0,115200 net.ifnames.prefix=net quiet systemd.show_status=yes" \
+#   --extra-args "inst.ks=file:/rhel-8-base.ks inst.geoloc=0 inst.nosave=all ip=dhcp console=tty0 console=ttyS0,115200 net.ifnames.prefix=net quiet" \
 #   --noautoconsole
 #
 # Post-process:
@@ -19,7 +19,7 @@
 cmdline
 zerombr
 clearpart --all --initlabel --disklabel gpt
-bootloader --timeout 1 --append "console=tty0 console=ttyS0,115200 net.ifnames.prefix=net quiet systemd.show_status=yes"
+bootloader --timeout 1 --append "console=tty0 console=ttyS0,115200 net.ifnames.prefix=net quiet"
 part biosboot  --fstype biosboot --size 1
 part /boot/efi --fstype efi      --size 63
 part /boot     --fstype xfs      --size 1024

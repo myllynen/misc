@@ -8,7 +8,7 @@
 #   --network network=default --graphics vnc --sound none --noreboot \
 #   --location /VirtualMachines/boot/rhel-server-7.9-x86_64-dvd.iso \
 #   --initrd-inject /VirtualMachines/boot/ks/rhel-7-base.ks \
-#   --extra-args "ip=dhcp inst.ks=file:/rhel-7-base.ks inst.geoloc=0 inst.nosave=all console=tty0 console=ttyS0,115200 net.ifnames=0 ipv6.disable=0 quiet systemd.show_status=yes" \
+#   --extra-args "inst.ks=file:/rhel-7-base.ks inst.geoloc=0 inst.nosave=all ip=dhcp console=tty0 console=ttyS0,115200 net.ifnames=0 quiet ipv6.disable=0" \
 #   --noautoconsole
 #
 # Post-process:
@@ -20,7 +20,7 @@ install
 cmdline
 zerombr
 clearpart --all --initlabel
-bootloader --timeout 1 --append "console=tty0 console=ttyS0,115200 net.ifnames=0 ipv6.disable=0 quiet systemd.show_status=yes"
+bootloader --timeout 1 --append "console=tty0 console=ttyS0,115200 net.ifnames=0 quiet ipv6.disable=0"
 reqpart
 #part /boot --fstype xfs --asprimary --size 1024
 #part swap --fstype swap --asprimary --size 1024

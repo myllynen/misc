@@ -176,7 +176,6 @@
           - 'i*firmware*'
           - 'lib*firmware*'
           - 'n*firmware'
-        autoremove: true
         cacheonly: true
         state: absent
       when: ansible_facts.virtualization_role == "guest"
@@ -189,7 +188,6 @@
           - qemu-guest-agent
           - spice-vdagent
           - WALinuxAgent
-        autoremove: true
         cacheonly: true
         state: absent
       when: ansible_facts.virtualization_role != "guest"
@@ -202,7 +200,6 @@
           - 'libvirt*'
           - 'pcsc*'
           - thermald
-        autoremove: true
         cacheonly: true
         state: absent
       when: ansible_facts.virtualization_role == "guest"
@@ -213,7 +210,6 @@
           - open-vm-tools
           - qemu-guest-agent
           - spice-vdagent
-        autoremove: true
         cacheonly: true
         state: absent
       when:
@@ -226,7 +222,6 @@
           - 'hyperv*'
           - open-vm-tools
           - WALinuxAgent
-        autoremove: true
         cacheonly: true
         state: absent
       when:
@@ -240,7 +235,6 @@
           - qemu-guest-agent
           - spice-vdagent
           - WALinuxAgent
-        autoremove: true
         cacheonly: true
         state: absent
       when:
@@ -255,7 +249,6 @@
           - qemu-guest-agent
           - spice-vdagent
           - WALinuxAgent
-        autoremove: true
         cacheonly: true
         state: absent
       when:
@@ -266,7 +259,6 @@
       dnf:
         name:
           - 'plymouth*'
-        autoremove: true
         cacheonly: true
         state: absent
       when: not luks_in_use.rc == 0
@@ -433,7 +425,6 @@
         name:
           - gawk-all-langpacks
           - glibc-all-langpacks
-        autoremove: true
         cacheonly: true
         state: absent
 

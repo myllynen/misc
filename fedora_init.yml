@@ -12,7 +12,7 @@
     console_keymap: fi
     console_font: eurlatgr
     langpacks: ['en', 'fi']
-    system_locale: en_US.UTF-8
+    system_locale: C.UTF-8
     system_timezone: Europe/Helsinki
     root_shell: /bin/zsh
     create_user: false

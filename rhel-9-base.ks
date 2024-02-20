@@ -94,7 +94,6 @@ tuned
 -a*firmware*
 -dracut-config-rescue
 -gawk-all-langpacks
--glibc-gconv-extra
 -i*firmware*
 -langpacks-*
 -lib*firmware*

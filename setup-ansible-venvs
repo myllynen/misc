@@ -45,5 +45,6 @@ for ver in $VERSIONS; do
   fi
   . $BASE_DIR/$ansible_dir/bin/activate
   $py_bin -m pip install --upgrade pip wheel
-  $py_bin -m pip install --upgrade $flavor$ver_limit $want_lint passlib
+  $py_bin -m pip install --upgrade $flavor$ver_limit $want_lint passlib pywinrm
+  deactivate
 done

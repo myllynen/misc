@@ -12,7 +12,7 @@
     console_keymap: fi
     console_font: eurlatgr
     langpacks: ['en', 'fi']
-    system_locale: en_US.UTF-8
+    system_locale: C.UTF-8
     system_timezone: Europe/Helsinki
     root_shell: /bin/zsh
     create_user: false
@@ -26,8 +26,8 @@
     use_epel: false
   tasks:
     - name: Check target basics
-      raw: rpm -q python3 python3-dnf python3-libselinux
       check_mode: false
+      raw: rpm -q python3 python3-dnf python3-libselinux
       register: basics
       failed_when: false
       changed_when: false
@@ -38,21 +38,29 @@
       when: basics.rc != 0
 
     - name: Create target remote_tmp
-      file: path={{ ansible_facts.env.HOME }}/.ansible/tmp mode=0700 state=directory
+      file:
+        state: directory
+        path: "{{ ansible_facts.env.HOME }}/.ansible/tmp"
+        mode: '0700'
 
     - name: Detect boot parameters
-      command: grep -q TIMEOUT=5 /etc/default/grub
       check_mode: false
+      command: grep -q TIMEOUT=5 /etc/default/grub
       register: adjust_boot_parameters
       failed_when: false
       changed_when: false
 
     - name: Install grubby
-      dnf: name=grubby state=present
+      dnf:
+        state: present
+        name: grubby
       when: adjust_boot_parameters.rc == 0
 
     - name: Adjust boot timeout
-      replace: dest=/etc/default/grub regexp='^GRUB_TIMEOUT=.*' replace='GRUB_TIMEOUT=1'
+      replace:
+        dest: /etc/default/grub
+        regexp: '^GRUB_TIMEOUT=.*'
+        replace: 'GRUB_TIMEOUT=1'
       when: adjust_boot_parameters.rc == 0
 
     - name: Adjust boot parameters
@@ -61,11 +69,18 @@
       when: adjust_boot_parameters.rc == 0
 
     - name: Detect rescue images
-      find: paths=/boot,/boot/loader/entries patterns='*rescue*'
+      find:
+        paths:
+          - /boot
+          - /boot/loader/entries
+        patterns:
+          - '*rescue*'
       register: rescue_images
 
     - name: Remove rescue images
-      file: path="{{ item }}" state=absent
+      file:
+        state: absent
+        path: "{{ item }}"
       loop: "{{ rescue_images.files | map(attribute='path') | list }}"
 
     - name: Update GRUB configuration
@@ -74,8 +89,8 @@
       when: adjust_boot_parameters.rc == 0
 
     - name: Detect LUKS configuration
-      command: grep -q mapper/luks /etc/fstab
       check_mode: false
+      command: grep -q mapper/luks /etc/fstab
       register: luks_in_use
       failed_when: false
       changed_when: false
@@ -96,7 +111,8 @@
         mode: '0644'
 
     - name: Set timezone
-      community.general.timezone: name="{{ system_timezone }}"
+      community.general.timezone:
+        name: "{{ system_timezone }}"
 
     - name: Check EPEL repository
       # noqa: command-instead-of-module
@@ -108,10 +124,10 @@
 
     - name: Enable EPEL repository
       dnf:
+        state: present
         name:
           - https://dl.fedoraproject.org/pub/epel/epel-release-latest-{{ ansible_facts.distribution_major_version }}.noarch.rpm
         disable_gpg_check: true
-        state: present
       when: use_epel | bool and epel_enabled.rc != 0
 
     - name: Check RPM Fusion repository
@@ -121,30 +137,31 @@
       register: fusion_enabled
       failed_when: false
       changed_when: false
-      when: use_epel | bool and workstation | bool
+      when: workstation | bool and use_epel | bool
 
     - name: Enable RPM Fusion repository
       dnf:
+        state: present
         name:
           - https://download1.rpmfusion.org/free/el/rpmfusion-free-release-{{ ansible_facts.distribution_major_version }}.noarch.rpm
           - https://download1.rpmfusion.org/nonfree/el/rpmfusion-nonfree-release-{{ ansible_facts.distribution_major_version }}.noarch.rpm
         disable_gpg_check: true
-        state: present
-      when: use_epel | bool and workstation | bool and fusion_enabled.rc != 0
+      when: workstation | bool and use_epel | bool and fusion_enabled.rc != 0
 
     - name: Remove unneeded firmware packages
       dnf:
+        state: absent
         name:
           - 'a*firmware*'
           - 'i*firmware*'
           - 'lib*firmware*'
           - 'n*firmware'
         cacheonly: true
-        state: absent
       when: ansible_facts.virtualization_role == "guest"
 
     - name: Remove all virtual guest packages
       dnf:
+        state: absent
         name:
           - 'hyperv*'
           - open-vm-tools
@@ -152,11 +169,11 @@
           - spice-vdagent
           - WALinuxAgent
         cacheonly: true
-        state: absent
       when: ansible_facts.virtualization_role != "guest"
 
     - name: Remove unhelpful packages on VM
       dnf:
+        state: absent
         name:
           - akmods
           - 'dmraid*'
@@ -164,48 +181,48 @@
           - 'pcsc*'
           - thermald
         cacheonly: true
-        state: absent
       when: ansible_facts.virtualization_role == "guest"
 
     - name: Remove unneeded packages on Azure/Hyper-V
       dnf:
+        state: absent
         name:
           - open-vm-tools
           - qemu-guest-agent
           - spice-vdagent
         cacheonly: true
-        state: absent
       when:
         - ansible_facts.virtualization_role == "guest"
         - ansible_facts.virtualization_type == "VirtualPC"
 
     - name: Remove unneeded packages on KVM
       dnf:
+        state: absent
         name:
           - 'hyperv*'
           - open-vm-tools
           - WALinuxAgent
         cacheonly: true
-        state: absent
       when:
         - ansible_facts.virtualization_role == "guest"
         - ansible_facts.virtualization_type == "kvm"
 
     - name: Remove unneeded packages on VMware
       dnf:
+        state: absent
         name:
           - 'hyperv*'
           - qemu-guest-agent
           - spice-vdagent
           - WALinuxAgent
         cacheonly: true
-        state: absent
       when:
         - ansible_facts.virtualization_role == "guest"
         - ansible_facts.virtualization_type == "VMware"
 
     - name: Remove unneeded packages on other VMs
       dnf:
+        state: absent
         name:
           - 'hyperv*'
           - open-vm-tools
@@ -213,21 +230,21 @@
           - spice-vdagent
           - WALinuxAgent
         cacheonly: true
-        state: absent
       when:
         - ansible_facts.virtualization_role == "guest"
         - ansible_facts.virtualization_type not in ['kvm', 'VirtualPC', 'VMware']
 
     - name: Remove unneeded Plymouth packages
       dnf:
+        state: absent
         name:
           - 'plymouth*'
         cacheonly: true
-        state: absent
       when: not luks_in_use.rc == 0
 
     - name: Remove unhelpful packages
       dnf:
+        state: absent
         name:
           - NetworkManager-adsl
           - NetworkManager-openconnect
@@ -267,10 +284,10 @@
           - '*zhuyin*'
         autoremove: true
         cacheonly: true
-        state: absent
 
     - name: Install helpful packages (common)
       dnf:
+        state: present
         name:
           - bash-completion
           - bc
@@ -309,7 +326,6 @@
           - yum-utils
           - zsh
           - zstd
-        state: present
 
     - name: Install helpful packages (guest agent)
       vars:
@@ -320,8 +336,8 @@
             - WALinuxAgent
           VMware: open-vm-tools
       dnf:
-        name: "{{ agent_packages[ansible_facts.virtualization_type] }}"
         state: present
+        name: "{{ agent_packages[ansible_facts.virtualization_type] }}"
       when:
         - ansible_facts.virtualization_role == "guest"
         - ansible_facts.virtualization_type in agent_packages
@@ -333,28 +349,31 @@
           VirtualPC: waagent.service
           VMware: vmtoolsd.service
       service:
-        name: "{{ agent_services[ansible_facts.virtualization_type] }}"
         enabled: true
         state: started
+        name: "{{ agent_services[ansible_facts.virtualization_type] }}"
       when:
         - ansible_facts.virtualization_role == "guest"
         - ansible_facts.virtualization_type in agent_services
         - ansible_facts.virtualization_type in ['kvm', 'VirtualPC', 'VMware']
 
     - name: Install helpful packages (langpacks)
-      dnf: name="glibc-langpack-{{ langpacks | join(',glibc-langpack-') }}" state=present
+      dnf:
+        state: present
+        name: glibc-langpack-{{ langpacks | join(',glibc-langpack-') }}
 
     - name: Install helpful packages (common from EPEL)
       dnf:
+        state: present
         name:
           - epel-release
           - keychain
           - xclip
-        state: present
       when: use_epel | bool
 
     - name: Install helpful packages (workstation)
       dnf:
+        state: present
         name:
           - dconf-editor
           - gnome-tweaks
@@ -366,15 +385,17 @@
           - xauth
           - xorg-x11-fonts-misc
           - xorriso
-        state: present
       when: workstation | bool
 
     - name: Install helpful packages (workstation langpacks)
-      dnf: name="langpacks-core-{{ langpacks | join(',langpacks-') }}" state=present
+      dnf:
+        state: present
+        name: langpacks-core-{{ langpacks | join(',langpacks-') }}
       when: workstation | bool
 
     - name: Install helpful packages (workstation from EPEL)
       dnf:
+        state: present
         name:
           - GraphicsMagick
           - ffmpeg
@@ -384,24 +405,26 @@
           #- ntfsprogs
           #- vlc
           - youtube-dl
-        state: present
       when: workstation | bool and use_epel | bool
 
     - name: Remove unhelpful packages ('all' langpacks)
       dnf:
+        state: absent
         name:
           - gawk-all-langpacks
           - glibc-all-langpacks
         cacheonly: true
-        state: absent
 
     - name: Update all packages
       # noqa: package-latest
-      dnf: name='*' update_cache=true state=latest
+      dnf:
+        state: latest
+        name: '*'
+        update_cache: true
 
     - name: Check current boot parameters
-      shell: set -o pipefail ; cat /proc/cmdline | grep -q rhgb
       check_mode: false
+      shell: set -o pipefail ; cat /proc/cmdline | grep -q rhgb
       register: rhgb_used
       failed_when: false
       changed_when: false
@@ -412,7 +435,9 @@
       when: rhgb_used.rc == 0
 
     - name: Disable unhelpful services
-      service: name={{ item }} enabled=false
+      service:
+        enabled: false
+        name: "{{ item }}"
       loop:
         - cups.service
         - dmraid-activation.service
@@ -425,7 +450,9 @@
       failed_when: false
 
     - name: Disable unhelpful services on VMs
-      service: name={{ item }} enabled=false
+      service:
+        enabled: false
+        name: "{{ item }}"
       loop:
         - raid-check.timer
         - switcheroo-control
@@ -434,7 +461,9 @@
       when: ansible_facts.virtualization_role == "guest"
 
     - name: Disable unhelpful network services
-      service: name={{ item }} enabled=false state=stopped
+      service:
+        enabled: false
+        name: "{{ item }}"
       loop:
         - bluetooth.service
         - iscsi.service
@@ -447,7 +476,9 @@
       when: disable_network_services | bool
 
     - name: Enable helpful services
-      service: name={{ item }} enabled=true state=started
+      service:
+        enabled: true
+        name: "{{ item }}"
       loop:
         #- gpm.service
         - irqbalance.service
@@ -456,27 +487,34 @@
         - tuned.service
 
     - name: Install SSH daemon
-      dnf: name=openssh-server state=present
+      dnf:
+        state: present
+        name: openssh-server
       when: enable_sshd | bool
 
     - name: Enable SSH daemon
-      service: name=sshd enabled=true state=started
+      service:
+        enabled: true
+        state: started
+        name: sshd
       when: enable_sshd | bool
 
     - name: Change root shell
-      user: name=root shell={{ root_shell }}
+      user:
+        name: root
+        shell: "{{ root_shell }}"
 
     - name: Disable pulseaudio for root, part I
       file:
-        path: /root/.config/systemd/user
         state: directory
+        path: /root/.config/systemd/user
         mode: '0755'
 
     - name: Disable pulseaudio for root, part II
       file:
-        dest: /root/.config/systemd/user/{{ item }}
-        src: /dev/null
         state: link
+        src: /dev/null
+        dest: /root/.config/systemd/user/{{ item }}
       loop:
         - pulseaudio.service
         - pulseaudio.socket
@@ -484,29 +522,29 @@
     - name: Create user, part I
       user:
         name: "{{ user_name }}"
-        shell: "{{ user_shell }}"
-        group: "{{ user_group }}"
         uid: "{{ user_uid }}"
+        group: "{{ user_group }}"
+        shell: "{{ user_shell }}"
       when: create_user | bool
 
     - name: Create user, part II
       copy:
-        dest: /var/lib/AccountsService/users/{{ user_name }}
         content: |
           [User]
           Language=
           XSession=
           Icon=/home/{{ user_name }}/.face
           SystemAccount=false
+        dest: /var/lib/AccountsService/users/{{ user_name }}
         owner: root
         group: root
         mode: '0600'
-      when: create_user | bool and workstation | bool
+      when: workstation | bool and create_user | bool
 
     - name: Disable tracker for the user, part I
       file:
-        path: "/home/{{ user_name }}/.config/systemd/user"
         state: directory
+        path: /home/{{ user_name }}/.config/systemd/user
         owner: "{{ user_name }}"
         group: "{{ user_group }}"
         mode: '0755'
@@ -514,9 +552,9 @@
 
     - name: Disable tracker for the user, part II
       file:
-        dest: "/home/{{ user_name }}/.config/systemd/user/{{ item }}"
-        src: /dev/null
         state: link
+        src: /dev/null
+        dest: /home/{{ user_name }}/.config/systemd/user/{{ item }}
         owner: "{{ user_name }}"
         group: "{{ user_group }}"
       loop:
@@ -543,14 +581,10 @@
         validate: /usr/sbin/visudo -csf %s
       when: create_user | bool
 
-    - name: Block unwanted user monitoring
-      lineinfile:
-        path: /etc/hosts
-        line: 127.0.0.2 musicbrainz.org
-      when: workstation | bool
-
-    - name: Cleaning up, part I
-      file: path={{ item }} state=absent
+    - name: Clean up, part I
+      file:
+        state: absent
+        path: "{{ item }}"
       loop:
         - /1
         - /etc/rc.d/init.d/livesys
@@ -566,14 +600,16 @@
         - /var/spool/abrt
         - /var/tmp/abrt
 
-    - name: Cleaning up, part II
+    - name: Clean up, part II
       find:
-        paths: /tmp
-        patterns: 'ks-script*'
+        paths:
+          - /tmp
+        patterns:
+          - 'ks-script*'
       register: tmp_files
 
-    - name: Cleaning up, part III
+    - name: Clean up, part III
       file:
-        path: "{{ item }}"
         state: absent
+        path: "{{ item }}"
       loop: "{{ tmp_files.files | map(attribute='path') | list }}"

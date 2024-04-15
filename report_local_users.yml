@@ -52,11 +52,11 @@
 
     - name: Create CSV file and header
       lineinfile:
+        state: present
         path: "{{ output_file }}"
         line: "hostname,username,uid,gid,hashtype,last_pw_change,max_pw_age,account_exp"
         create: true
         mode: '0600'
-        state: present
       delegate_to: localhost
       # noqa: run-once[task]
       run_once: true
@@ -82,6 +82,7 @@
       no_log: "{{ not log_user_names | bool }}"
       throttle: "{{ '1' if consecutive_entries | bool else '99999' }}"
       lineinfile:
+        state: present
         path: "{{ output_file }}"
         line: "{{ inventory_hostname + ',' +
                   item.key + ',' +
@@ -92,7 +93,6 @@
                   password_expires + ',' +
                   account_expires }}"
         insertafter: EOF
-        state: present
       delegate_to: localhost
       loop: "{{ combined_entries | dict2items }}"
       loop_control:

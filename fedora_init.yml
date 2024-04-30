@@ -163,7 +163,7 @@
         name:
           - akmods
           - 'dmraid*'
-          - 'libvirt*'
+          #- 'libvirt*'
           - 'pcsc*'
           - thermald
         cacheonly: true
@@ -279,10 +279,10 @@
           - nfs-utils
           - orca
           - pam_krb5
-          - 'perl*'
+          #- 'perl*'
           - '*pinyin*'
           - qgnomeplatform
-          - 'qt*'
+          #- 'qt*'
           - realmd
           - 'sane*'
           - teamd

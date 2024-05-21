@@ -7,31 +7,17 @@
 ANSIBLE_FLAVOR=ansible-core
 BASE_DIR=$HOME/ansible
 PYTHON_BIN=python3.11
-VERSIONS="2.9 2.14 2.15 2.16"
+VERSIONS="2.14 2.15 2.16 2.17"
 
 # Main
 mkdir -p $BASE_DIR || exit 2
 cd $BASE_DIR || exit 3
 for ver in $VERSIONS; do
-  ansible_dir=ansible-$ver
+  inst_dir=ansible-$ver
   flavor=$ANSIBLE_FLAVOR
-  full_ver=$(expr $(echo $ver | cut -d. -f2) - 7)
-  full_ver_limit=$(expr $(echo $full_ver) + 1)
   py_bin=$PYTHON_BIN
 
-  if [ "$ver" = "2.9" ]; then
-    flavor=ansible
-    full_ver_limit="2.10"
-    py_bin=python3.9
-  else
-    want_lint="ansible-lint"
-  fi
-
-  if [ "$flavor" = "ansible-core" ]; then
-    ver_limit="==$ver.*"
-  else
-    ver_limit="<$full_ver_limit"
-  fi
+  ver_limit="==$ver.*"
 
   if ! command -v $py_bin > /dev/null 2>&1 ; then
     echo "Python executable $py_bin not found!" 1>&2
@@ -39,12 +25,12 @@ for ver in $VERSIONS; do
   fi
 
   echo Setting up $py_bin venv for $flavor-$ver...
-  if [ ! -d $ansible_dir ]; then
-    mkdir -p $ansible_dir || exit 4
-    $py_bin -m venv $ansible_dir || exit 5
+  if [ ! -d $inst_dir ]; then
+    mkdir -p $inst_dir || exit 4
+    $py_bin -m venv $inst_dir || exit 5
   fi
-  . $BASE_DIR/$ansible_dir/bin/activate
+  . $BASE_DIR/$inst_dir/bin/activate
   $py_bin -m pip install --upgrade pip wheel
-  $py_bin -m pip install --upgrade $flavor$ver_limit $want_lint passlib pypsrp pywinrm
+  $py_bin -m pip install --upgrade $flavor$ver_limit ansible-lint passlib pypsrp pywinrm
   deactivate
 done

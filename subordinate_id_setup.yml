@@ -1,0 +1,26 @@
+---
+- name: Configure subordinate user and group IDs
+  hosts: all
+  become: true
+  gather_facts: false
+  vars:
+    subordinate_id_users:
+      - alice
+      - bob
+      - carol
+    subordinate_id_range_init: 100000
+    subordinate_id_range_size: 65536
+  tasks:
+    - name: Create subordinate ID configuration files
+      vars:
+        file_content: |-
+          {% for user in subordinate_id_users | default([], true) | sort %}
+          {{ user }}:{{ subordinate_id_range_init + subordinate_id_range_size * loop.index0 + loop.index0 }}:{{ subordinate_id_range_size }}
+          {% endfor %}
+      ansible.builtin.copy:
+        content: "{{ file_content }}"
+        dest: "{{ item }}"
+        mode: '0644'
+      loop:
+        - /etc/subuid
+        - /etc/subgid

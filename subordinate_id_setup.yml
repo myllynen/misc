@@ -13,6 +13,8 @@
     subordinate_id_range_init: 100000
     subordinate_id_range_size: 65536
   tasks:
+    # File format is:
+    # user:start-of-id-range:size-of-id-range
     - name: Create subordinate ID configuration files
       vars:
         file_content: |-

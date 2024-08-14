@@ -27,6 +27,8 @@ collections:
     source: redhat_validated
   - name: infra.controller_configuration
     source: redhat_validated
+  - name: infra.eda_configuration
+    source: redhat_validated
   - name: infra.ee_utilities
     source: redhat_validated
 

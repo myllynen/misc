@@ -1,0 +1,91 @@
+---
+# This an example how to start long-running tasks on target hosts,
+# then monitor them for possible failures for a predefined period of
+# time, and in case no early failures let the tasks complete as usual.
+#
+# For example, when setting up a cluster the tasks may be expected to
+# run for an hour or more and most typically fail during the first few
+# minutes of their execution. Instead of waiting for hours only to see
+# that a host failed soon after the task started, we monitor the tasks
+# for early failures and in case the tasks continue running normally
+# we then wait for them to complete with the usual polling mechanism.
+#
+# There seems to be no mechanism as of Ansible 2.17 to monitor tasks
+# for both failures and successful completion and immediately break
+# out of the loop in case of a task failure.
+#
+- name: Run long tasks and monitor them for early failures
+  hosts: all
+  become: false
+  gather_facts: false
+  vars:
+    # Task status check interval, in seconds
+    check_interval: 2
+    # Monitoring period for early failures, in seconds
+    early_period: 10
+    # Timeout for tasks running normally, in seconds
+    task_timeout: 60
+    # Mark host failed in case the task failed early and fail the play
+    # immediately, not cleaning up or terminating other tasks running.
+    host_fail_on_task_fail: false
+  any_errors_fatal: true
+  tasks:
+    - name: Start a long-running background task on all hosts
+      ansible.builtin.command:
+        chdir: /home/admin
+        cmd: ./long_task
+      register: bg_job
+      async: "{{ task_timeout }}"
+      poll: 0
+
+    - name: Monitor the tasks for early failures
+      vars:
+        host_count: "{{ ansible_play_hosts | length }}"
+        task_failed: "{{ task_status.rc | default(0) == 1 }}"
+        loop_pause: "{{ 0 if task_failed else check_interval }}"
+      ansible.builtin.async_status:
+        jid: "{{ hostvars[groups.all[item % (host_count | int)]].bg_job.ansible_job_id }}"
+      register: task_status
+      failed_when:
+        - task_failed
+        - host_fail_on_task_fail
+      loop: "{{ range(0, (early_period / check_interval + 0.5) | int) }}"
+      delegate_to: "{{ groups.all[item % (host_count | int)] }}"
+      run_once: true
+      when:
+        - not task_failed
+        - lookup('pipe', 'sleep ' + loop_pause) | default(true, true)
+
+    # This must be customized and tested to avoid collateral damage
+    - name: Terminate remaining processes after a task failure
+      ansible.builtin.command:
+        cmd: killall -9 long_task
+      register: killall_status
+      failed_when: false
+      changed_when: killall_status.rc == 0
+      when: 1 in task_status.results | map(attribute='rc', default=0)
+
+    - name: Monitor running tasks and clean up
+      block:
+        - name: Monitor the tasks for normal completion
+          ansible.builtin.async_status:
+            jid: "{{ bg_job.ansible_job_id }}"
+          register: wait_status
+          until: wait_status.finished
+          retries: "{{ task_timeout - early_period }}"
+          delay: "{{ check_interval }}"
+          when: 1 not in task_status.results | map(attribute='rc', default=0)
+
+      always:
+        - name: Clean up async file
+          ansible.builtin.async_status:
+            jid: "{{ bg_job.ansible_job_id }}"
+            mode: cleanup
+
+    - name: Fail remaining hosts in case of failures
+      ansible.builtin.fail:
+        msg: Some tasks failed, see the earlier messages for details.
+      when: >
+        1 in task_status.results | map(attribute='rc', default=0) or
+        1 in ansible_play_hosts_all | map('extract', hostvars, 'wait_status') | map(attribute='failed', default='0') or
+        1 in ansible_play_hosts_all | map('extract', hostvars, 'killall_status') | map(attribute='failed', default='0')

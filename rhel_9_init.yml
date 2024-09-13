@@ -81,7 +81,7 @@
       file:
         state: absent
         path: "{{ item }}"
-      loop: "{{ rescue_images.files | map(attribute='path') | list }}"
+      loop: "{{ rescue_images.files | map(attribute='path') }}"
 
     - name: Update GRUB configuration
       command: grub2-mkconfig -o /boot/grub2/grub.cfg
@@ -612,4 +612,4 @@
       file:
         state: absent
         path: "{{ item }}"
-      loop: "{{ tmp_files.files | map(attribute='path') | list }}"
+      loop: "{{ tmp_files.files | map(attribute='path') }}"

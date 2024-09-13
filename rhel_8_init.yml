@@ -82,7 +82,7 @@
       file:
         state: absent
         path: "{{ item }}"
-      loop: "{{ rescue_images.files | map(attribute='path') | list }}"
+      loop: "{{ rescue_images.files | map(attribute='path') }}"
 
     - name: Check GRUB configuration path
       stat:
@@ -641,4 +641,4 @@
       file:
         state: absent
         path: "{{ item }}"
-      loop: "{{ tmp_files.files | map(attribute='path') | list }}"
+      loop: "{{ tmp_files.files | map(attribute='path') }}"

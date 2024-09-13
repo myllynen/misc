@@ -64,7 +64,7 @@
         distro_id: "{{ 'rhel' + ansible_facts.distribution_major_version }}"
         package_set: "{{ 'default' if distro_id not in selinux_package_lists else distro_id }}"
         selinux_packages: "{{ selinux_package_lists[package_set] }}"
-      yum:
+      dnf:
         state: present
         name: "{{ selinux_packages }}"
       when: false

@@ -19,7 +19,7 @@ environments.
 ### Install Packages
 
 ```
-yum install -y firewalld git git-daemon gitweb highlight httpd
+dnf install -y firewalld git git-daemon gitweb highlight httpd
 ```
 
 ### Configure and Enable Services

@@ -31,6 +31,6 @@ for ver in $VERSIONS; do
   fi
   . $BASE_DIR/$inst_dir/bin/activate
   $py_bin -m pip install --upgrade pip wheel
-  $py_bin -m pip install --upgrade $flavor$ver_limit ansible-lint passlib pypsrp pywinrm
+  $py_bin -m pip install --upgrade $flavor$ver_limit ansible-lint passlib pypsrp pywinrm requests-credssp
   deactivate
 done

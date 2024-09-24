@@ -190,7 +190,7 @@ fi
 # ssh/d
 #sed -Ei -e 's,^(#|)PermitRootLogin .*,PermitRootLogin yes,' /etc/ssh/sshd_config
 mkdir -m 0700 -p /root/.ssh
-#echo "ssh-rsa ..." > /root/.ssh/authorized_keys
+#echo "ssh-ed25519 ..." > /root/.ssh/authorized_keys
 restorecon -R /root/.ssh > /dev/null 2>&1
 
 # Repositories

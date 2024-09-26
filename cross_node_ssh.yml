@@ -17,9 +17,9 @@
 
     - name: Generate user public/private SSH key pair
       user:
+        name: "{{ ansible_facts.user_id }}"
         state: present
         generate_ssh_key: true
-        name: "{{ ansible_facts.user_id }}"
         ssh_key_type: "{{ ssh_key_type }}"
 
     - name: Read user public SSH key
@@ -68,8 +68,8 @@
 
     - name: Create user SSH directory
       file:
-        state: directory
         path: "{{ ansible_facts.user_dir }}/.ssh"
+        state: directory
         mode: '0700'
       when: keys | default(false) != 'unique'
 

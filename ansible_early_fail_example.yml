@@ -32,8 +32,8 @@
   tasks:
     - name: Start a long-running background task on all hosts
       ansible.builtin.command:
-        chdir: /home/admin
         cmd: ./long_task
+        chdir: /home/admin
       register: bg_job
       async: "{{ task_timeout }}"
       poll: 0

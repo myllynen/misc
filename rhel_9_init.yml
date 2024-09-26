@@ -39,8 +39,8 @@
 
     - name: Create target remote_tmp
       file:
-        state: directory
         path: "{{ ansible_facts.env.HOME }}/.ansible/tmp"
+        state: directory
         mode: '0700'
 
     - name: Detect boot parameters
@@ -52,8 +52,8 @@
 
     - name: Install grubby
       dnf:
-        state: present
         name: grubby
+        state: present
       when: adjust_boot_parameters.rc == 0
 
     - name: Adjust boot timeout
@@ -79,8 +79,8 @@
 
     - name: Remove rescue images
       file:
-        state: absent
         path: "{{ item }}"
+        state: absent
       loop: "{{ rescue_images.files | map(attribute='path') }}"
 
     - name: Update GRUB configuration
@@ -124,9 +124,9 @@
 
     - name: Enable EPEL repository
       dnf:
-        state: present
         name:
           - https://dl.fedoraproject.org/pub/epel/epel-release-latest-{{ ansible_facts.distribution_major_version }}.noarch.rpm
+        state: present
         disable_gpg_check: true
       when: use_epel | bool and epel_enabled.rc != 0
 
@@ -141,55 +141,55 @@
 
     - name: Enable RPM Fusion repository
       dnf:
-        state: present
         name:
           - https://download1.rpmfusion.org/free/el/rpmfusion-free-release-{{ ansible_facts.distribution_major_version }}.noarch.rpm
           - https://download1.rpmfusion.org/nonfree/el/rpmfusion-nonfree-release-{{ ansible_facts.distribution_major_version }}.noarch.rpm
+        state: present
         disable_gpg_check: true
       when: workstation | bool and use_epel | bool and fusion_enabled.rc != 0
 
     - name: Remove unneeded firmware packages
       dnf:
-        state: absent
         name:
           - 'a*firmware*'
           - 'i*firmware*'
           - 'lib*firmware*'
           - 'n*firmware'
+        state: absent
         cacheonly: true
       when: ansible_facts.virtualization_role == "guest"
 
     - name: Remove all virtual guest packages
       dnf:
-        state: absent
         name:
           - 'hyperv*'
           - open-vm-tools
           - qemu-guest-agent
           - spice-vdagent
           - WALinuxAgent
+        state: absent
         cacheonly: true
       when: ansible_facts.virtualization_role != "guest"
 
     - name: Remove unhelpful packages on VM
       dnf:
-        state: absent
         name:
           - akmods
           - 'dmraid*'
           - 'libvirt*'
           - 'pcsc*'
           - thermald
+        state: absent
         cacheonly: true
       when: ansible_facts.virtualization_role == "guest"
 
     - name: Remove unneeded packages on Azure/Hyper-V
       dnf:
-        state: absent
         name:
           - open-vm-tools
           - qemu-guest-agent
           - spice-vdagent
+        state: absent
         cacheonly: true
       when:
         - ansible_facts.virtualization_role == "guest"
@@ -197,11 +197,11 @@
 
     - name: Remove unneeded packages on KVM
       dnf:
-        state: absent
         name:
           - 'hyperv*'
           - open-vm-tools
           - WALinuxAgent
+        state: absent
         cacheonly: true
       when:
         - ansible_facts.virtualization_role == "guest"
@@ -209,12 +209,12 @@
 
     - name: Remove unneeded packages on VMware
       dnf:
-        state: absent
         name:
           - 'hyperv*'
           - qemu-guest-agent
           - spice-vdagent
           - WALinuxAgent
+        state: absent
         cacheonly: true
       when:
         - ansible_facts.virtualization_role == "guest"
@@ -222,13 +222,13 @@
 
     - name: Remove unneeded packages on other VMs
       dnf:
-        state: absent
         name:
           - 'hyperv*'
           - open-vm-tools
           - qemu-guest-agent
           - spice-vdagent
           - WALinuxAgent
+        state: absent
         cacheonly: true
       when:
         - ansible_facts.virtualization_role == "guest"
@@ -236,15 +236,14 @@
 
     - name: Remove unneeded Plymouth packages
       dnf:
-        state: absent
         name:
           - 'plymouth*'
+        state: absent
         cacheonly: true
       when: not luks_in_use.rc == 0
 
     - name: Remove unhelpful packages
       dnf:
-        state: absent
         name:
           - NetworkManager-adsl
           - NetworkManager-openconnect
@@ -282,12 +281,12 @@
           - teamd
           - trousers
           - '*zhuyin*'
+        state: absent
         autoremove: true
         cacheonly: true
 
     - name: Install helpful packages (common)
       dnf:
-        state: present
         name:
           - bash-completion
           - bc
@@ -326,6 +325,7 @@
           - yum-utils
           - zsh
           - zstd
+        state: present
 
     - name: Install helpful packages (guest agent)
       vars:
@@ -336,8 +336,8 @@
             - WALinuxAgent
           VMware: open-vm-tools
       dnf:
-        state: present
         name: "{{ agent_packages[ansible_facts.virtualization_type] }}"
+        state: present
       when:
         - ansible_facts.virtualization_role == "guest"
         - ansible_facts.virtualization_type in agent_packages
@@ -349,9 +349,9 @@
           VirtualPC: waagent.service
           VMware: vmtoolsd.service
       service:
-        enabled: true
-        state: started
         name: "{{ agent_services[ansible_facts.virtualization_type] }}"
+        state: started
+        enabled: true
       when:
         - ansible_facts.virtualization_role == "guest"
         - ansible_facts.virtualization_type in agent_services
@@ -359,21 +359,20 @@
 
     - name: Install helpful packages (langpacks)
       dnf:
-        state: present
         name: glibc-langpack-{{ langpacks | join(',glibc-langpack-') }}
+        state: present
 
     - name: Install helpful packages (common from EPEL)
       dnf:
-        state: present
         name:
           - epel-release
           - keychain
           - xclip
+        state: present
       when: use_epel | bool
 
     - name: Install helpful packages (workstation)
       dnf:
-        state: present
         name:
           - dconf-editor
           - gnome-tweaks
@@ -385,17 +384,17 @@
           - xauth
           - xorg-x11-fonts-misc
           - xorriso
+        state: present
       when: workstation | bool
 
     - name: Install helpful packages (workstation langpacks)
       dnf:
-        state: present
         name: langpacks-core-{{ langpacks | join(',langpacks-') }}
+        state: present
       when: workstation | bool
 
     - name: Install helpful packages (workstation from EPEL)
       dnf:
-        state: present
         name:
           - GraphicsMagick
           - ffmpeg
@@ -405,21 +404,22 @@
           #- ntfsprogs
           #- vlc
           - youtube-dl
+        state: present
       when: workstation | bool and use_epel | bool
 
     - name: Remove unhelpful packages ('all' langpacks)
       dnf:
-        state: absent
         name:
           - gawk-all-langpacks
           - glibc-all-langpacks
+        state: absent
         cacheonly: true
 
     - name: Update all packages
       # noqa: package-latest
       dnf:
-        state: latest
         name: '*'
+        state: latest
         update_cache: true
 
     - name: Check current boot parameters
@@ -436,8 +436,8 @@
 
     - name: Disable unhelpful services
       service:
-        enabled: false
         name: "{{ item }}"
+        enabled: false
       loop:
         - cups.service
         - dmraid-activation.service
@@ -451,8 +451,8 @@
 
     - name: Disable unhelpful services on VMs
       service:
-        enabled: false
         name: "{{ item }}"
+        enabled: false
       loop:
         - raid-check.timer
         - switcheroo-control
@@ -462,8 +462,8 @@
 
     - name: Disable unhelpful network services
       service:
-        enabled: false
         name: "{{ item }}"
+        enabled: false
       loop:
         - bluetooth.service
         - iscsi.service
@@ -477,8 +477,8 @@
 
     - name: Enable helpful services
       service:
-        enabled: true
         name: "{{ item }}"
+        enabled: true
       loop:
         #- gpm.service
         - irqbalance.service
@@ -488,15 +488,15 @@
 
     - name: Install SSH daemon
       dnf:
-        state: present
         name: openssh-server
+        state: present
       when: enable_sshd | bool
 
     - name: Enable SSH daemon
       service:
-        enabled: true
-        state: started
         name: sshd
+        state: started
+        enabled: true
       when: enable_sshd | bool
 
     - name: Change root shell
@@ -506,8 +506,8 @@
 
     - name: Disable pulseaudio for root, part I
       file:
-        state: directory
         path: /root/.config/systemd/user
+        state: directory
         mode: '0755'
 
     - name: Disable pulseaudio for root, part II
@@ -543,8 +543,8 @@
 
     - name: Disable tracker for the user, part I
       file:
-        state: directory
         path: /home/{{ user_name }}/.config/systemd/user
+        state: directory
         owner: "{{ user_name }}"
         group: "{{ user_group }}"
         mode: '0755'
@@ -583,8 +583,8 @@
 
     - name: Clean up, part I
       file:
-        state: absent
         path: "{{ item }}"
+        state: absent
       loop:
         - /1
         - /etc/rc.d/init.d/livesys
@@ -610,6 +610,6 @@
 
     - name: Clean up, part III
       file:
-        state: absent
         path: "{{ item }}"
+        state: absent
       loop: "{{ tmp_files.files | map(attribute='path') }}"

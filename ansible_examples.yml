@@ -65,8 +65,8 @@
         package_set: "{{ 'default' if distro_id not in selinux_package_lists else distro_id }}"
         selinux_packages: "{{ selinux_package_lists[package_set] }}"
       dnf:
-        state: present
         name: "{{ selinux_packages }}"
+        state: present
       when: false
 
     # Example of configuring and re/starting a service below
@@ -80,21 +80,21 @@
 
     - name: Enable firewalld service
       service:
-        enabled: true
         name: firewalld
+        enabled: true
       when: false
 
     - name: Start firewalld service
       service:
-        state: started
         name: firewalld
+        state: started
       register: service_start
       when: false
 
     - name: Reload firewalld to apply configuration changes
       service:
-        state: reloaded
         name: firewalld
+        state: reloaded
       when:
         - service_start is not changed
         - firewalld_config is changed

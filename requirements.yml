@@ -11,6 +11,8 @@ collections:
     source: redhat_certified
   - name: kubernetes.core
     source: redhat_certified
+  - name: microsoft.ad
+    source: redhat_certified
   - name: redhat.rhel_idm
     source: redhat_certified
   - name: redhat.rhel_system_roles

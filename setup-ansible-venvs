@@ -33,7 +33,7 @@ for ver in $VERSIONS; do
   $py_bin -m pip install --upgrade pip wheel
   $py_bin -m pip install --upgrade $flavor$ver_limit ansible-lint passlib
   $py_bin -m pip install --upgrade pypsrp pywinrm requests-credssp
-  rpm -q krb5-devel ${py_bin}-devel > /dev/null 2>&1 &&
+  rpm -q gcc krb5-devel ${py_bin}-devel > /dev/null 2>&1 &&
     $py_bin -m pip install --upgrade pykerberos
   deactivate
 done

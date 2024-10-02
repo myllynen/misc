@@ -3,41 +3,62 @@ collections:
   # Red Hat certified collections
   - name: ansible.controller
     source: redhat_certified
+
   - name: ansible.eda
     source: redhat_certified
+
+  - name: ansible.hub
+    source: redhat_certified
+
+  - name: ansible.platform
+    source: redhat_certified
+
   - name: ansible.posix
     source: redhat_certified
+
   - name: ansible.windows
     source: redhat_certified
+
   - name: kubernetes.core
     source: redhat_certified
+
   - name: microsoft.ad
     source: redhat_certified
+
   - name: redhat.rhel_idm
     source: redhat_certified
+
   - name: redhat.rhel_system_roles
     source: redhat_certified
+
   - name: redhat.satellite
     source: redhat_certified
+
   - name: redhat.satellite_operations
     source: redhat_certified
 
   # Red Hat validated collections
   - name: infra.aap_utilities
     source: redhat_validated
+
   - name: infra.ah_configuration
     source: redhat_validated
+
   - name: infra.controller_configuration
     source: redhat_validated
+
   - name: infra.eda_configuration
     source: redhat_validated
+
   - name: infra.ee_utilities
     source: redhat_validated
 
   # Ansible Galaxy community collections
   - name: community.general
     source: ansible_galaxy
+
   - name: community.windows
     source: ansible_galaxy
+
   - name: containers.podman
     source: ansible_galaxy

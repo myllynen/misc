@@ -16,6 +16,9 @@ collections:
   - name: ansible.posix
     source: redhat_certified
 
+  - name: ansible.utils
+    source: redhat_certified
+
   - name: ansible.windows
     source: redhat_certified
 
@@ -52,6 +55,9 @@ collections:
 
   - name: infra.ee_utilities
     source: redhat_validated
+
+  #- name: infra.platform_configuration
+  #  source: redhat_validated
 
   # Ansible Galaxy community collections
   - name: community.general

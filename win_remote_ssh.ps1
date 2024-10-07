@@ -30,7 +30,7 @@ if (!(Get-NetFirewallRule -Name OpenSSH-Server-In-TCP | Select-Object -Property 
 
 $keyFile = 'C:\ProgramData\ssh\administrators_authorized_keys'
 if (!(Test-Path -Path $keyFile)) {
-  New-Item -Path $keyFile
+  New-Item -Path $keyFile -ItemType File
 }
 icacls.exe $keyFile /inheritance:r /grant ""Administrators:F"" /grant ""SYSTEM:F""
 if ($publicKey.StartsWith('ssh')) {

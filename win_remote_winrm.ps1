@@ -3,10 +3,10 @@
 # This should be commented out in case profiles have been already setup
 Get-NetConnectionProfile | Set-NetConnectionProfile -NetworkCategory Private
 
-Start-Service WinRM
+Start-Service -Name WinRM
 Set-Service -Name WinRM -StartupType Automatic
 
-if (!(Get-NetFirewallRule -Name WINRM-HTTPS-In-TCP -ErrorAction SilentlyContinue | Select-Object Name, Enabled)) {
+if (!(Get-NetFirewallRule -Name WINRM-HTTPS-In-TCP -ErrorAction SilentlyContinue | Select-Object -Property Name, Enabled)) {
   New-NetFirewallRule `
     -Enabled True `
     -Name WINRM-HTTPS-In-TCP `

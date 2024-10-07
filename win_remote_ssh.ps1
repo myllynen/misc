@@ -11,10 +11,10 @@ if ($missing) {
   Add-WindowsCapability -Name $missing.Name -Online
 }
 
-Start-Service sshd
+Start-Service -Name sshd
 Set-Service -Name sshd -StartupType Automatic
 Set-ItemProperty -Path HKLM:\SOFTWARE\OpenSSH -Name DefaultShell -Value C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe
-if (!(Get-NetFirewallRule -Name OpenSSH-Server-In-TCP | Select-Object Name, Enabled)) {
+if (!(Get-NetFirewallRule -Name OpenSSH-Server-In-TCP | Select-Object -Property Name, Enabled)) {
   New-NetFirewallRule `
     -Enabled True `
     -Name OpenSSH-Server-In-TCP `
@@ -29,7 +29,9 @@ if (!(Get-NetFirewallRule -Name OpenSSH-Server-In-TCP | Select-Object Name, Enab
 }
 
 $keyFile = 'C:\ProgramData\ssh\administrators_authorized_keys'
-New-Item $keyFile
+if (!(Test-Path -Path $keyFile)) {
+  New-Item -Path $keyFile
+}
 icacls.exe $keyFile /inheritance:r /grant ""Administrators:F"" /grant ""SYSTEM:F""
 if ($publicKey.StartsWith('ssh')) {
   Add-Content -Path $keyFile -Value $publicKey

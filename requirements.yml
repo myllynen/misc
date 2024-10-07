@@ -22,6 +22,9 @@ collections:
   - name: ansible.windows
     source: redhat_certified
 
+  - name: chocolatey.chocolatey
+    source: redhat_certified
+
   - name: kubernetes.core
     source: redhat_certified
 

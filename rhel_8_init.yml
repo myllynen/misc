@@ -196,6 +196,7 @@
           - 'n*firmware'
         state: absent
         cacheonly: true
+        disablerepo: '*'
       when: ansible_facts.virtualization_role == "guest"
 
     - name: Remove all virtual guest packages
@@ -208,6 +209,7 @@
           - WALinuxAgent
         state: absent
         cacheonly: true
+        disablerepo: '*'
       when: ansible_facts.virtualization_role != "guest"
 
     - name: Remove unhelpful packages on VM
@@ -220,6 +222,7 @@
           - thermald
         state: absent
         cacheonly: true
+        disablerepo: '*'
       when: ansible_facts.virtualization_role == "guest"
 
     - name: Remove unneeded packages on Azure/Hyper-V
@@ -230,6 +233,7 @@
           - spice-vdagent
         state: absent
         cacheonly: true
+        disablerepo: '*'
       when:
         - ansible_facts.virtualization_role == "guest"
         - ansible_facts.virtualization_type == "VirtualPC"
@@ -242,6 +246,7 @@
           - WALinuxAgent
         state: absent
         cacheonly: true
+        disablerepo: '*'
       when:
         - ansible_facts.virtualization_role == "guest"
         - ansible_facts.virtualization_type == "kvm"
@@ -255,6 +260,7 @@
           - WALinuxAgent
         state: absent
         cacheonly: true
+        disablerepo: '*'
       when:
         - ansible_facts.virtualization_role == "guest"
         - ansible_facts.virtualization_type == "VMware"
@@ -269,6 +275,7 @@
           - WALinuxAgent
         state: absent
         cacheonly: true
+        disablerepo: '*'
       when:
         - ansible_facts.virtualization_role == "guest"
         - ansible_facts.virtualization_type not in ['kvm', 'VirtualPC', 'VMware']
@@ -279,6 +286,7 @@
           - 'plymouth*'
         state: absent
         cacheonly: true
+        disablerepo: '*'
       when: not luks_in_use.rc == 0
 
     - name: Remove unhelpful packages
@@ -323,6 +331,7 @@
         state: absent
         autoremove: true
         cacheonly: true
+        disablerepo: '*'
 
     - name: Install helpful packages (common)
       dnf:
@@ -449,6 +458,7 @@
           - glibc-all-langpacks
         state: absent
         cacheonly: true
+        disablerepo: '*'
 
     - name: Update all packages
       # noqa: package-latest

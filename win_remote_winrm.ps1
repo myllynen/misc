@@ -1,4 +1,5 @@
 # Configure and enable Basic-over-HTTPS WinRM on Windows 2016+
+# Configure and enable NTLM-over-HTTP/S WinRM for non-Administrator
 
 # This should be commented out in case profiles have been already setup
 Get-NetConnectionProfile | Set-NetConnectionProfile -NetworkCategory Private
@@ -6,6 +7,22 @@ Get-NetConnectionProfile | Set-NetConnectionProfile -NetworkCategory Private
 Start-Service -Name WinRM
 Set-Service -Name WinRM -StartupType Automatic
 
+# Allow NTLM for non-Administrator
+$user = 'winrm'
+$sid = (New-Object -TypeName System.Security.Principal.NTAccount -ArgumentList $user).Translate([System.Security.Principal.SecurityIdentifier])
+$sddl = (Get-Item -Path WSMan:\localhost\Service\RootSDDL).Value
+$sd = New-Object -TypeName System.Security.AccessControl.CommonSecurityDescriptor -ArgumentList $false, $false, $sddl
+$sd.DiscretionaryAcl.AddAccess(
+  [System.Security.AccessControl.AccessControlType]::Allow,
+  $sid,
+  [int]0x10000000,
+  [System.Security.AccessControl.InheritanceFlags]::None,
+  [System.Security.AccessControl.PropagationFlags]::None
+  )
+$sddl = $sd.GetSddlForm([System.Security.AccessControl.AccessControlSections]::All)
+Set-Item -Path WSMan:\localhost\Service\RootSDDL -Value $sddl -Force
+
+# Basic-over-HTTPS
 if (!(Get-NetFirewallRule -Name WINRM-HTTPS-In-TCP -ErrorAction SilentlyContinue | Select-Object -Property Name, Enabled)) {
   New-NetFirewallRule `
     -Enabled True `

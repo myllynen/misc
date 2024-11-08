@@ -26,13 +26,13 @@
   tasks:
     - name: Check target basics
       check_mode: false
-      raw: rpm -q python3 python3-dnf python3-libselinux
+      raw: rpm -q python3 python3-libdnf5 python3-libselinux
       register: basics
       failed_when: false
       changed_when: false
 
     - name: Prepare target basics
-      raw: dnf -y install python3 python3-dnf python3-libselinux
+      raw: dnf -y install python3 python3-libdnf5 python3-libselinux
       changed_when: true
       when: basics.rc != 0
 

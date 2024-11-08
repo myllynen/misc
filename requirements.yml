@@ -60,8 +60,8 @@ collections:
   - name: community.general
     source: ansible_galaxy
 
-  - name: containers.podman
+  - name: community.windows
     source: ansible_galaxy
 
-  - name: community.windows
+  - name: containers.podman
     source: ansible_galaxy

@@ -44,30 +44,24 @@ collections:
     source: redhat_certified
 
   # Red Hat validated collections
+  - name: infra.aap_configuration
+    source: redhat_validated
+
   - name: infra.aap_utilities
-    source: redhat_validated
-
-  - name: infra.ah_configuration
-    source: redhat_validated
-
-  - name: infra.controller_configuration
-    source: redhat_validated
-
-  - name: infra.eda_configuration
     source: redhat_validated
 
   - name: infra.ee_utilities
     source: redhat_validated
 
-  #- name: infra.platform_configuration
+  #- name: infra.ee_leapp
   #  source: redhat_validated
 
   # Ansible Galaxy community collections
   - name: community.general
     source: ansible_galaxy
 
-  - name: community.windows
+  - name: containers.podman
     source: ansible_galaxy
 
-  - name: containers.podman
+  - name: community.windows
     source: ansible_galaxy

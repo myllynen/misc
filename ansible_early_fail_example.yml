@@ -1,5 +1,5 @@
 ---
-# This an example how to start long-running tasks on target hosts,
+# This is an example how to start long-running tasks on target hosts,
 # then monitor them for possible failures for a predefined period of
 # time, and in case no early failures let the tasks complete as usual.
 #

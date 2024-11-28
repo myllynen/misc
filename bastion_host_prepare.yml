@@ -77,7 +77,7 @@
     service_state_enable:
       - firewalld.service
     #sshd_options:
-    #  AllowGroups: aapadmin
+    #  AllowGroups: admins
     system_hostname: "{{ ansible_facts.fqdn | lower }}"
     system_locale: auto
     system_update_reboot_policy: when_updated

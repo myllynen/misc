@@ -1,0 +1,99 @@
+---
+- name: Prepare bastion host
+  hosts: all
+  become: true
+  gather_facts: false
+  vars:
+    accounts_local_groups_create:
+      - name: admin
+        gid: 4444
+    accounts_local_users_create:
+      - name: admin
+        password: Foobar_12
+        uid: 4444
+        group: admin
+        create_home: true
+        shell: /bin/bash
+        expires: -1
+        sudo_allow_all: true
+        sudo_passwordless: true
+        authorized_keys:
+          - ssh-ed25519 ... id_ed25519.pub
+    accounts_local_password_encrypted: false
+    boot_parameters_enable:
+      - quiet
+    boot_parameters_disable:
+      - debug
+      - no_timer_check
+      - resume
+      - rhgb
+    boot_parameters_timeout: 1
+    boot_parameters_reboot: false
+    etc_hosts_self_add: true
+    etc_hosts_omit_entries: ipv6
+    guest_agent_enable: true
+    guest_agent_remove_firmware: true
+    ipv6_setup_enable: false
+    packages_install:
+      - ansible-core
+      - bash-completion
+      - bind-utils
+      - curl
+      - firewalld
+      - git-core
+      - man-pages
+      - nano
+      - openssh-clients
+      - podman
+      - psmisc
+      - sos
+      - tar
+      - zstd
+    packages_install_weak_deps: true
+    packages_install_display_results: true
+    packages_remove:
+      - gofer
+      - katello-agent
+      - puppet-agent
+      - rhn*
+      - telnet-server
+      - flashrom
+      #- fonts*
+      - gawk-all-langpacks
+      #- gcc*
+      - geolite*
+      - hwdata
+      - initscripts-rename-device
+      - i*-firmware
+      - l*-firmware*
+      - kernel-tools*
+      - NetworkManager-team
+      - NetworkManager-tui
+      - parted
+      #- sssd*
+      #- libsss*
+    packages_remove_autoremove: false
+    packages_remove_display_results: true
+    service_state_enable:
+      - firewalld.service
+    #sshd_options:
+    #  AllowGroups: aapadmin
+    system_hostname: "{{ ansible_facts.fqdn | lower }}"
+    system_locale: auto
+    system_update_reboot_policy: when_updated
+  roles:
+    - myllynen.rhel_ansible_roles.system_hostname
+    - myllynen.rhel_ansible_roles.ipv6_setup
+    - myllynen.rhel_ansible_roles.etc_hosts
+    - myllynen.rhel_ansible_roles.guest_agent
+    - myllynen.rhel_ansible_roles.packages_remove
+    - myllynen.rhel_ansible_roles.boot_parameters
+    - myllynen.rhel_ansible_roles.system_locale
+    - myllynen.rhel_ansible_roles.system_update
+    - myllynen.rhel_ansible_roles.accounts_local
+    - myllynen.rhel_ansible_roles.packages_install
+    - myllynen.rhel_ansible_roles.performance_tuning
+    - myllynen.rhel_ansible_roles.security_hardening
+    - myllynen.rhel_ansible_roles.service_state
+    - myllynen.rhel_ansible_roles.sshd_configuration
+    - myllynen.rhel_ansible_roles.system_init

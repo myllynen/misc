@@ -1,0 +1,44 @@
+---
+# https://access.redhat.com/solutions/7096304
+- name: Fix RHEL 9.5 NIC Issue
+  hosts: all
+  become: true
+  gather_facts: false
+  vars:
+    enable_fix: false
+    nic_names:
+      - eth0
+  tasks:
+    - name: Add the fix to rc.local
+      ansible.builtin.lineinfile:
+        path: /etc/rc.d/rc.local
+        line: ethtool -K {{ item }} rx-gro-hw off
+        state: present
+        owner: root
+        group: root
+        mode: '0644'
+      loop: "{{ nic_names }}"
+      when: enable_fix | bool
+
+    - name: Apply the fix
+      ansible.builtin.command:
+        cmd: ethtool -K {{ item }} rx-gro-hw off
+      loop: "{{ nic_names }}"
+      when: enable_fix | bool
+
+    - name: Remove the fix from rc.local
+      ansible.builtin.lineinfile:
+        path: /etc/rc.d/rc.local
+        line: ethtool -K {{ item }} rx-gro-hw off
+        state: absent
+        owner: root
+        group: root
+        mode: '0644'
+      loop: "{{ nic_names }}"
+      when: not enable_fix | bool
+
+    - name: Revert the fix
+      ansible.builtin.command:
+        cmd: ethtool -K {{ item }} rx-gro-hw on
+      loop: "{{ nic_names }}"
+      when: not enable_fix | bool

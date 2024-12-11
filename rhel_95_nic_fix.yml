@@ -16,7 +16,7 @@
         state: present
         owner: root
         group: root
-        mode: '0644'
+        mode: '0755'
       loop: "{{ nic_names }}"
       when: enable_fix | bool
 
@@ -33,7 +33,7 @@
         state: absent
         owner: root
         group: root
-        mode: '0644'
+        mode: '0755'
       loop: "{{ nic_names }}"
       when: not enable_fix | bool
 

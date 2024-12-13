@@ -20,6 +20,11 @@
         authorized_keys:
           - ssh-ed25519 ... id_ed25519.pub
     accounts_local_password_encrypted: false
+    #accounts_local_users_groups:
+    #  - name: aapadmin
+    #    groups:
+    #      - sshadmin
+    #    append: false
     boot_parameters_enable:
       - quiet
     boot_parameters_disable:
@@ -27,6 +32,7 @@
       - no_timer_check
       - resume
       - rhgb
+      - selinux
     boot_parameters_timeout: 1
     boot_parameters_reboot: false
     etc_hosts_self_add: true
@@ -46,6 +52,7 @@
       - openssh-clients
       - podman
       - psmisc
+      - rsync
       - sos
       - tar
       - zstd

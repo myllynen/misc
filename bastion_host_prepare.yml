@@ -21,7 +21,7 @@
           - ssh-ed25519 ... id_ed25519.pub
     accounts_local_password_encrypted: false
     #accounts_local_users_groups:
-    #  - name: aapadmin
+    #  - name: admin
     #    groups:
     #      - sshadmin
     #    append: false

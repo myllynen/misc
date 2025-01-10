@@ -51,7 +51,7 @@ cat <<EOF > /home/vagrant/.ssh/config
 Host *
   GSSAPIAuthentication no
   UserKnownHostsFile /dev/null
-  StrictHostKeyChecking no
+  StrictHostKeyChecking accept-new
 EOF
 chmod 0600 /home/vagrant/.ssh/config
 chown -R vagrant:vagrant /home/vagrant/.ssh

@@ -7,7 +7,7 @@
 ANSIBLE_FLAVOR=ansible-core
 BASE_DIR=$HOME/ansible
 PYTHON_BIN=python3.11
-VERSIONS="2.14 2.15 2.16 2.17 2.18"
+VERSIONS="2.14 2.16 2.18"
 
 # Main
 mkdir -p $BASE_DIR || exit 2

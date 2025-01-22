@@ -1,0 +1,12 @@
+---
+- name: Fail randomly
+  hosts: all
+  become: false
+  gather_facts: false
+  vars:
+    fail_one_out_of: 3
+  tasks:
+    - name: Say something and try to get away with it
+      debug:
+        msg: "Hello, World!"
+      failed_when: fail_one_out_of | random(start=1) != 1

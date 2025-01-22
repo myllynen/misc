@@ -1,0 +1,45 @@
+---
+- name: Debug playbook example
+  hosts: all
+  become: false
+  gather_facts: true
+  tasks:
+    - name: Display Ansible configuration details
+      debug:
+        msg: |
+          ansible_version: {{ ansible_version }}
+          ansible_config_file: {{ ansible_config_file }}
+          ansible_inventory_sources: {{ ansible_inventory_sources }}
+          ansible_play_hosts_all: {{ ansible_play_hosts_all }}
+          ansible_play_batch: {{ ansible_play_batch }}
+      run_once: true
+
+    - name: Display Ansible host groups
+      debug:
+        var: groups
+      run_once: true
+
+    - name: Display variable names
+      debug:
+        msg: "{{ lookup('varnames', '.+').split(',') | sort }}"
+
+    - name: Display facts
+      debug:
+        var: ansible_facts
+
+    - name: Display environment variables
+      debug:
+        msg: |
+          MY_VAR1: {{ lookup('ansible.builtin.env', 'MY_VAR1') | default('unset') }}
+          MY_VAR2: {{ lookup('ansible.builtin.env', 'MY_VAR2') | default('unset') }}
+          MY_VAR3: {{ MY_VAR3 | default('unset') }}
+          MY_VAR4: {{ MY_VAR4 | default('unset') }}
+
+    - name: Read list of installed Ansible collections
+      command: ansible-galaxy collection list
+      register: collection_list
+      changed_when: false
+
+    - name: Display list of installed Ansible collections
+      debug:
+        var: collection_list.stdout

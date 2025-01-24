@@ -1,5 +1,0 @@
----
-collections:
-  - name: https://github.com/myllynen/windows-ansible-roles
-    type: git
-    version: master

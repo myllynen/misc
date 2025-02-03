@@ -39,7 +39,11 @@
       command: ansible-galaxy collection list
       register: collection_list
       changed_when: false
+      delegate_to: localhost
+      run_once: true
 
     - name: Display list of installed Ansible collections
       debug:
         var: collection_list.stdout
+      delegate_to: localhost
+      run_once: true

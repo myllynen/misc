@@ -32,9 +32,13 @@
 
   tasks:
     - name: Check host reachable
-      ansible.windows.win_wait_for:
-        port: 5985
-        timeout: 30
+      vars:
+        ansible_connection: local
+      wait_for:
+        host: "{{ inventory_hostname }}"
+        port: "{{ ansible_winrm_port }}"
+        timeout: 10
+      delegate_to: localhost
 
     - name: Check host access
       ansible.windows.win_ping:

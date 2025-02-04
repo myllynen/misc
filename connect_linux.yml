@@ -6,9 +6,11 @@
   tasks:
     - name: Check host reachable
       wait_for:
+        host: "{{ inventory_hostname }}"
         port: 22
         search_regex: OpenSSH
-        timeout: 30
+        timeout: 10
+      delegate_to: localhost
 
     - name: Check host access
       ping:

@@ -19,7 +19,7 @@
       vars:
         file_content: |-
           {% for user in subordinate_id_users | default([], true) %}
-          {{ user }}:{{ subordinate_id_range_init + subordinate_id_range_size * loop.index0 + loop.index0 }}:{{ subordinate_id_range_size }}
+          {{ user }}:{{ subordinate_id_range_init + subordinate_id_range_size * loop.index0 }}:{{ subordinate_id_range_size }}
           {% endfor %}
       ansible.builtin.copy:
         content: "{{ file_content }}"

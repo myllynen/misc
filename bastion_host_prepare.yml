@@ -32,7 +32,6 @@
       - no_timer_check
       - resume
       - rhgb
-      - selinux
     boot_parameters_timeout: 1
     boot_parameters_reboot: false
     etc_hosts_self_add: true

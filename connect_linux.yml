@@ -4,10 +4,20 @@
   become: false
   gather_facts: false
   tasks:
+    - name: Set remote connection port
+      vars:
+        conn_port: "{{ 'ansible_' + ansible_connection + '_port' }}"
+      set_fact:
+        remote_port: "{{ lookup('env', 'ANSIBLE_REMOTE_PORT') | default(vars[conn_port], true) | default(ansible_port, true) | default('22', true) }}"
+
+    - name: Display connection target
+      debug:
+        msg: "Attempting to connect to {{ inventory_hostname }}:{{ remote_port }}"
+
     - name: Check host reachable
       wait_for:
         host: "{{ inventory_hostname }}"
-        port: 22
+        port: "{{ remote_port }}"
         search_regex: OpenSSH
         timeout: 10
       delegate_to: localhost

@@ -4,22 +4,35 @@
   become: false
   gather_facts: false
   vars:
+    admin_group: Administrators
+
     #
     # Ansible WinRM configuration
     #
-    ansible_connection: winrm
+    #ansible_connection: winrm
+    #ansible_pipelining: true
+    #ansible_winrm_port: 5985
+    #ansible_winrm_scheme: http
+    #ansible_winrm_transport: ntlm
+    #ansible_winrm_message_encryption: always
+    #ansible_winrm_server_cert_validation: ignore
+
+    #ansible_winrm_user: Administrator
+    #ansible_winrm_password: Foobar_12
+
+    #
+    # Ansible psrp configuration
+    #
+    ansible_connection: psrp
     ansible_pipelining: true
-    ansible_winrm_port: 5985
-    ansible_winrm_scheme: http
-    ansible_winrm_transport: ntlm
-    ansible_winrm_message_encryption: always
-    ansible_winrm_server_cert_validation: ignore
+    ansible_psrp_port: 5985
+    ansible_psrp_protocol: http
+    ansible_psrp_auth: ntlm
+    ansible_psrp_message_encryption: always
+    ansible_psrp_cert_validation: ignore
 
-    ansible_winrm_user: Administrator
+    ansible_psrp_user: Administrator
     ansible_winrm_password: Foobar_12
-
-    ansible_become_method: runas
-    #ansible_become_user: Administrator
 
     #
     # Ansible Windows/SSH configuration
@@ -27,16 +40,32 @@
     #ansible_user: Administrator
     #ansible_password: Foobar_12
     #ansible_shell_type: powershell
-    #ansible_become_method: runas
+    #ansible_ssh_common_args: -o GSSAPIDelegateCredentials=yes
+
+    #
+    # Common Windows connection parameters
+    #
+    ansible_become_method: runas
     #ansible_become_user: Administrator
 
   tasks:
+    - name: Set remote connection port
+      vars:
+        conn_port: "{{ 'ansible_' + ansible_connection + '_port' }}"
+      set_fact:
+        remote_port: "{{ lookup('env', 'ANSIBLE_REMOTE_PORT') | default(vars[conn_port], true) | default(ansible_port, true) | default('22', true) }}"
+
+    - name: Display connection target
+      debug:
+        msg: "Attempting to connect to {{ inventory_hostname }}:{{ remote_port }}"
+
     - name: Check host reachable
       vars:
         ansible_connection: local
+        ansible_shell_type: sh
       wait_for:
         host: "{{ inventory_hostname }}"
-        port: "{{ ansible_winrm_port }}"
+        port: "{{ remote_port }}"
         timeout: 10
       delegate_to: localhost
 
@@ -46,5 +75,22 @@
     - name: Check user privileges
       ansible.windows.win_whoami:
       register: whoami_output
-      failed_when: whoami_output.privileges.SeDebugPrivilege is not search('enabled')
-      changed_when: false
+
+    - name: Fail if user is not in group {{ admin_group }}
+      fail:
+        msg: "User is not in the group {{ admin_group }}."
+      when: admin_group not in whoami_output.groups | map(attribute='account_name')
+
+    - name: Fail if non-admin user does not have privilege SeDebugPrivilege
+      fail:
+        msg: "User does not have the privilege SeDebugPrivilege."
+      when:
+        - admin_group not in whoami_output.groups | map(attribute='account_name')
+        - "'SeDebugPrivilege' not in whoami_output.privileges or
+            whoami_output.privileges.SeDebugPrivilege is not search('enabled')"
+
+    - name: Ensure become works if become user defined
+      become: true
+      become_user: "{{ ansible_become_user }}"
+      ansible.windows.win_whoami:
+      when: ansible_become_user is defined

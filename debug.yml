@@ -21,7 +21,11 @@
 
     - name: Display variable names
       debug:
-        msg: "{{ lookup('varnames', '.+').split(',') | sort }}"
+        msg: "{{ lookup('varnames', '.+') | split(',') | sort }}"
+
+    - name: Display variables
+      debug:
+        var: vars
 
     - name: Display facts
       debug:

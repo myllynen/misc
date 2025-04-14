@@ -10,11 +10,17 @@
   tasks:
     - name: Display variable names
       debug:
-        msg: "{{ lookup('varnames', '.+').split(',') | sort }}"
+        msg: "{{ lookup('varnames', '.+') | split(',') | sort }}"
+
+    - name: Display variables
+      debug:
+        var: vars
 
     - name: Display facts
       debug:
         var: ansible_facts
+
+    - meta: end_play
 
     - name: Create list from items
       set_fact:

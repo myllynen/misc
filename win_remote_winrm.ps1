@@ -33,7 +33,7 @@ if (-not $rule) {
     -Name WINRM-HTTP-In-TCP `
     -DisplayName 'Windows Remote Management (HTTP-In)' `
     -Description 'Inbound rule for Windows Remote Management via WS-Management. [TCP 5985]' `
-    -DisplayGroup 'Windows Remote Management'
+    -DisplayGroup 'Windows Remote Management' `
     -Group '@FirewallAPI.dll,-30267' `
     -LocalPort 5985 `
     -Action Allow `
@@ -62,7 +62,7 @@ if ($rule -and ($rule.Enabled -ne $true -or $rule.Action -ne 'Allow')) {
 #    -Name WINRM-HTTPS-In-TCP `
 #    -DisplayName 'Windows Remote Management (HTTPS-In)' `
 #    -Description 'Inbound rule for Windows Remote Management via WS-Management. [TCP 5986]' `
-#    -DisplayGroup 'Windows Remote Management'
+#    -DisplayGroup 'Windows Remote Management' `
 #    -Group '@FirewallAPI.dll,-30267' `
 #    -LocalPort 5986 `
 #    -Action Allow `

@@ -5,6 +5,7 @@
   gather_facts: false
   vars:
     admin_group: Administrators
+    gpo_check: true
 
     #
     # Ansible WinRM configuration
@@ -94,3 +95,33 @@
       become_user: "{{ ansible_become_user }}"
       ansible.windows.win_whoami:
       when: ansible_become_user is defined
+
+    - name: Run Group Policy Result tool
+      check_mode: false
+      ansible.windows.win_command: gpresult.exe /scope user /v
+      register: gpresult_info
+      changed_when: false
+      when: gpo_check | bool
+
+    - name: Display Group Policy Result tool report
+      debug:
+        var: gpresult_info.stdout
+      when: gpo_check | bool
+
+    - name: Run Group Policy Result tool with become
+      become: true
+      become_user: "{{ ansible_become_user }}"
+      check_mode: false
+      ansible.windows.win_command: gpresult.exe /scope user /v
+      register: gpresult_info
+      changed_when: false
+      when:
+        - ansible_become_user is defined
+        - gpo_check | bool
+
+    - name: Display Group Policy Result tool report with become
+      debug:
+        var: gpresult_info.stdout
+      when:
+        - ansible_become_user is defined
+        - gpo_check | bool

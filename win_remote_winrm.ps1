@@ -51,7 +51,9 @@ if ($rule -and ($rule.Enabled -ne $true -or $rule.Action -ne 'Allow')) {
 #          -Provider 'Microsoft Enhanced RSA and AES Cryptographic Provider' `
 #          -KeyLength 4096
 #$cert.FriendlyName = $friendlyName
-#Set-WSManInstance -ResourceURI winrm/config/Listener `
+#$listener = Get-WSManInstance winrm/config/Listener -Enumerate | ? Transport -eq HTTPS
+#$command = if ($listener) { 'Set-WSManInstance' } else { 'New-WSManInstance' }
+#& $command -ResourceURI winrm/config/Listener `
 #  -SelectorSet @{Address='*';Transport='HTTPS'} `
 #  -ValueSet @{CertificateThumbprint=$cert.Thumbprint;Enabled=$true}
 #$rule = Get-NetFirewallRule -Name WINRM-HTTPS-In-TCP -ErrorAction SilentlyContinue

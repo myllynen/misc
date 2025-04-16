@@ -26,7 +26,6 @@ if (-not $rule) {
     -Name OpenSSH-Server-In-TCP `
     -DisplayName 'OpenSSH SSH Server (sshd)' `
     -Description 'Inbound rule for OpenSSH SSH Server (sshd)' `
-    -DisplayGroup 'OpenSSH Server' `
     -Group 'OpenSSH Server' `
     -LocalPort 22 `
     -Action Allow `

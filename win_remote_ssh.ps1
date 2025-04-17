@@ -33,7 +33,7 @@ if (-not $rule) {
     -Protocol TCP `
     -Profile @('Domain', 'Private')
 }
-if ($rule -and ($rule.Enabled -ne $true -or $rule.Action -ne 'Allow')) {
+if ($rule -and ($rule.Enabled -ne 'True' -or $rule.Action -ne 'Allow')) {
   Set-NetFirewallRule -Name OpenSSH-Server-In-TCP -Enabled True -Profile @('Domain', 'Private') -Action Allow
 }
 

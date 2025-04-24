@@ -8,6 +8,6 @@
     output: "{{ message | default('Hello, World!') }}"
   tasks:
     - name: Say something and try to get away with it
-      debug:
+      ansible.builtin.debug:
         msg: "{{ output }}"
       failed_when: fail_one_out_of | random(start=1) != 1

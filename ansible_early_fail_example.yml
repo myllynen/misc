@@ -35,6 +35,7 @@
         cmd: ./long_task
         chdir: /home/admin
       register: bg_job
+      changed_when: true
       async: "{{ task_timeout }}"
       poll: 0
 

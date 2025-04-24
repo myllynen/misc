@@ -26,49 +26,49 @@
   tasks:
     - name: Check target basics
       check_mode: false
-      raw: rpm -q python3 python3-libdnf5 python3-libselinux
+      ansible.builtin.raw: rpm -q python3 python3-libdnf5 python3-libselinux
       register: basics
       failed_when: false
       changed_when: false
 
     - name: Prepare target basics
-      raw: dnf -y install python3 python3-libdnf5 python3-libselinux
+      ansible.builtin.raw: dnf -y install python3 python3-libdnf5 python3-libselinux
       changed_when: true
       when: basics.rc != 0
 
     - name: Create target remote_tmp
-      file:
+      ansible.builtin.file:
         path: "{{ ansible_facts.env.HOME }}/.ansible/tmp"
         state: directory
         mode: '0700'
 
     - name: Detect boot parameters
       check_mode: false
-      command: grep -q TIMEOUT=5 /etc/default/grub
+      ansible.builtin.command: grep -q TIMEOUT=5 /etc/default/grub
       register: adjust_boot_parameters
       failed_when: false
       changed_when: false
 
     - name: Install grubby
-      dnf:
+      ansible.builtin.dnf:
         name: grubby
         state: present
       when: adjust_boot_parameters.rc == 0
 
     - name: Adjust boot timeout
-      replace:
+      ansible.builtin.replace:
         dest: /etc/default/grub
         regexp: '^GRUB_TIMEOUT=.*'
         replace: 'GRUB_TIMEOUT=1'
       when: adjust_boot_parameters.rc == 0
 
     - name: Adjust boot parameters
-      command: grubby --remove-args="rhgb" --args="quiet" --update-kernel=ALL
+      ansible.builtin.command: grubby --remove-args="rhgb" --args="quiet" --update-kernel=ALL
       changed_when: true
       when: adjust_boot_parameters.rc == 0
 
     - name: Detect rescue images
-      find:
+      ansible.builtin.find:
         paths:
           - /boot
           - /boot/loader/entries
@@ -77,25 +77,25 @@
       register: rescue_images
 
     - name: Remove rescue images
-      file:
+      ansible.builtin.file:
         path: "{{ item }}"
         state: absent
       loop: "{{ rescue_images.files | map(attribute='path') }}"
 
     - name: Update GRUB configuration
-      command: grub2-mkconfig -o /boot/grub2/grub.cfg
+      ansible.builtin.command: grub2-mkconfig -o /boot/grub2/grub.cfg
       changed_when: true
       when: adjust_boot_parameters.rc == 0
 
     - name: Detect LUKS configuration
       check_mode: false
-      command: grep -q mapper/luks /etc/fstab
+      ansible.builtin.command: grep -q mapper/luks /etc/fstab
       register: luks_in_use
       failed_when: false
       changed_when: false
 
     - name: Configure console
-      copy:
+      ansible.builtin.copy:
         content: |
           KEYMAP="{{ console_keymap }}"
           FONT="{{ console_font }}"
@@ -103,7 +103,7 @@
         mode: '0644'
 
     - name: Configure locale
-      copy:
+      ansible.builtin.copy:
         content: |
           LANG="{{ system_locale }}"
         dest: /etc/locale.conf
@@ -115,7 +115,7 @@
 
     - name: Check RPM Fusion repository
       # noqa: command-instead-of-module
-      command: >
+      ansible.builtin.command: >
         rpm -q rpmfusion-free-release-{{ ansible_facts.distribution_major_version }} rpmfusion-nonfree-release-{{ ansible_facts.distribution_major_version }}
       register: fusion_enabled
       failed_when: false
@@ -123,7 +123,7 @@
       when: workstation | bool
 
     - name: Enable RPM Fusion repository
-      dnf:
+      ansible.builtin.dnf:
         name:
           - https://download1.rpmfusion.org/free/fedora/rpmfusion-free-release-{{ ansible_facts.distribution_major_version }}.noarch.rpm
           - https://download1.rpmfusion.org/nonfree/fedora/rpmfusion-nonfree-release-{{ ansible_facts.distribution_major_version }}.noarch.rpm
@@ -132,7 +132,7 @@
       when: workstation | bool and fusion_enabled.rc != 0
 
     - name: Remove unneeded firmware packages
-      dnf:
+      ansible.builtin.dnf:
         name:
           - 'a*firmware*'
           - 'i*firmware*'
@@ -146,7 +146,7 @@
       when: ansible_facts.virtualization_role == "guest"
 
     - name: Remove all virtual guest packages
-      dnf:
+      ansible.builtin.dnf:
         name:
           - 'hyperv*'
           - open-vm-tools
@@ -160,7 +160,7 @@
       when: ansible_facts.virtualization_role != "guest"
 
     - name: Remove unhelpful packages on VM
-      dnf:
+      ansible.builtin.dnf:
         name:
           - akmods
           - 'dmraid*'
@@ -173,7 +173,7 @@
       when: ansible_facts.virtualization_role == "guest"
 
     - name: Remove unneeded packages on Azure/Hyper-V
-      dnf:
+      ansible.builtin.dnf:
         name:
           - open-vm-tools
           - qemu-guest-agent
@@ -187,7 +187,7 @@
         - ansible_facts.virtualization_type == "VirtualPC"
 
     - name: Remove unneeded packages on KVM
-      dnf:
+      ansible.builtin.dnf:
         name:
           - 'hyperv*'
           - open-vm-tools
@@ -201,7 +201,7 @@
         - ansible_facts.virtualization_type == "kvm"
 
     - name: Remove unneeded packages on VirtualBox
-      dnf:
+      ansible.builtin.dnf:
         name:
           - 'hyperv*'
           - open-vm-tools
@@ -216,7 +216,7 @@
         - ansible_facts.virtualization_type == "virtualbox"
 
     - name: Remove unneeded packages on VMware
-      dnf:
+      ansible.builtin.dnf:
         name:
           - 'hyperv*'
           - qemu-guest-agent
@@ -231,7 +231,7 @@
         - ansible_facts.virtualization_type == "VMware"
 
     - name: Remove unneeded packages on other VMs
-      dnf:
+      ansible.builtin.dnf:
         name:
           - 'hyperv*'
           - open-vm-tools
@@ -247,7 +247,7 @@
         - ansible_facts.virtualization_type not in ['kvm', 'virtualbox', 'VirtualPC', 'VMware']
 
     - name: Remove unneeded Plymouth packages
-      dnf:
+      ansible.builtin.dnf:
         name:
           - 'plymouth*'
         state: absent
@@ -256,7 +256,7 @@
       when: not luks_in_use.rc == 0
 
     - name: Remove unhelpful packages
-      dnf:
+      ansible.builtin.dnf:
         name:
           - NetworkManager-adsl
           - NetworkManager-openconnect
@@ -303,7 +303,7 @@
         disablerepo: '*'
 
     - name: Install helpful packages (common)
-      dnf:
+      ansible.builtin.dnf:
         name:
           - bash-completion
           - bc
@@ -350,7 +350,7 @@
             - hyperv-daemons
             - WALinuxAgent
           VMware: open-vm-tools
-      dnf:
+      ansible.builtin.dnf:
         name: "{{ agent_packages[ansible_facts.virtualization_type] }}"
         state: present
       when:
@@ -364,7 +364,7 @@
           virtualbox: vboxservice.service
           VirtualPC: waagent.service
           VMware: vmtoolsd.service
-      service:
+      ansible.builtin.service:
         name: "{{ agent_services[ansible_facts.virtualization_type] }}"
         state: started
         enabled: true
@@ -374,12 +374,12 @@
         - ansible_facts.virtualization_type in ['kvm', 'virtualbox', 'VirtualPC', 'VMware']
 
     - name: Install helpful packages (langpacks)
-      dnf:
+      ansible.builtin.dnf:
         name: glibc-langpack-{{ langpacks | join(',glibc-langpack-') }}
         state: present
 
     - name: Install helpful packages (workstation)
-      dnf:
+      ansible.builtin.dnf:
         name:
           - GraphicsMagick
           - dconf-editor
@@ -404,13 +404,13 @@
       when: workstation | bool
 
     - name: Install helpful packages (workstation langpacks)
-      dnf:
+      ansible.builtin.dnf:
         name: langpacks-core-{{ langpacks | join(',langpacks-') }}
         state: present
       when: workstation | bool
 
     - name: Remove unhelpful packages ('all' langpacks)
-      dnf:
+      ansible.builtin.dnf:
         name:
           - gawk-all-langpacks
           - glibc-all-langpacks
@@ -420,25 +420,25 @@
 
     - name: Update all packages
       # noqa: package-latest
-      dnf:
+      ansible.builtin.dnf:
         name: '*'
         state: latest
         update_cache: true
 
     - name: Check current boot parameters
       check_mode: false
-      shell: set -o pipefail ; cat /proc/cmdline | grep -q rhgb
+      ansible.builtin.shell: set -o pipefail ; cat /proc/cmdline | grep -q rhgb
       register: rhgb_used
       failed_when: false
       changed_when: false
 
     - name: Ensure correct boot parameters
-      command: grubby --remove-args="rhgb" --args="quiet" --update-kernel=ALL
+      ansible.builtin.command: grubby --remove-args="rhgb" --args="quiet" --update-kernel=ALL
       changed_when: true
       when: rhgb_used.rc == 0
 
     - name: Disable unhelpful services
-      service:
+      ansible.builtin.service:
         name: "{{ item }}"
         enabled: false
       loop:
@@ -453,7 +453,7 @@
       failed_when: false
 
     - name: Disable unhelpful services on VMs
-      service:
+      ansible.builtin.service:
         name: "{{ item }}"
         enabled: false
       loop:
@@ -464,7 +464,7 @@
       when: ansible_facts.virtualization_role == "guest"
 
     - name: Disable unhelpful network services
-      service:
+      ansible.builtin.service:
         name: "{{ item }}"
         enabled: false
       loop:
@@ -480,7 +480,7 @@
       when: disable_network_services | bool
 
     - name: Enable helpful services
-      service:
+      ansible.builtin.service:
         name: "{{ item }}"
         enabled: true
       loop:
@@ -491,31 +491,31 @@
         - tuned.service
 
     - name: Install SSH daemon
-      dnf:
+      ansible.builtin.dnf:
         name: openssh-server
         state: present
       when: enable_sshd | bool
 
     - name: Enable SSH daemon
-      service:
+      ansible.builtin.service:
         name: sshd
         state: started
         enabled: true
       when: enable_sshd | bool
 
     - name: Change root shell
-      user:
+      ansible.builtin.user:
         name: root
         shell: "{{ root_shell }}"
 
     - name: Disable pulseaudio for root, part I
-      file:
+      ansible.builtin.file:
         path: /root/.config/systemd/user
         state: directory
         mode: '0755'
 
     - name: Disable pulseaudio for root, part II
-      file:
+      ansible.builtin.file:
         state: link
         src: /dev/null
         dest: /root/.config/systemd/user/{{ item }}
@@ -524,7 +524,7 @@
         - pulseaudio.socket
 
     - name: Create user, part I
-      user:
+      ansible.builtin.user:
         name: "{{ user_name }}"
         uid: "{{ user_uid }}"
         group: "{{ user_group }}"
@@ -532,7 +532,7 @@
       when: create_user | bool
 
     - name: Create user, part II
-      copy:
+      ansible.builtin.copy:
         content: |
           [User]
           Language=
@@ -546,7 +546,7 @@
       when: workstation | bool and create_user | bool
 
     - name: Disable tracker for the user, part I
-      file:
+      ansible.builtin.file:
         path: /home/{{ user_name }}/.config/systemd/user
         state: directory
         owner: "{{ user_name }}"
@@ -555,7 +555,7 @@
       when: false and create_user | bool
 
     - name: Disable tracker for the user, part II
-      file:
+      ansible.builtin.file:
         state: link
         src: /dev/null
         dest: /home/{{ user_name }}/.config/systemd/user/{{ item }}
@@ -571,13 +571,13 @@
       when: false and create_user | bool
 
     - name: Disable tracker for the user, part III
-      command: restorecon -Rv "/home/{{ user_name }}/.config/systemd"
+      ansible.builtin.command: restorecon -Rv "/home/{{ user_name }}/.config/systemd"
       register: restorecon
       changed_when: "'Relabeled' in restorecon.stdout"
       when: false and create_user | bool
 
     - name: Configure sudoers
-      lineinfile:
+      ansible.builtin.lineinfile:
         path: /etc/sudoers.d/{{ user_name }}
         line: '{{ user_name }} ALL=(ALL) NOPASSWD: ALL'
         create: true
@@ -586,7 +586,7 @@
       when: create_user | bool
 
     - name: Create Windows partition mount point
-      file:
+      ansible.builtin.file:
         path: /mnt/c
         state: directory
         mode: '0755'
@@ -594,7 +594,7 @@
 
     - name: Check Windows mount point configuration
       check_mode: true
-      lineinfile:
+      ansible.builtin.lineinfile:
         path: /etc/fstab
         regexp: '.* ntfs .*'
         line: ''
@@ -604,13 +604,13 @@
 
     # Needs to be adjusted and enabled manually
     - name: Create Windows mount point fstab entry
-      lineinfile:
+      ansible.builtin.lineinfile:
         path: /etc/fstab
         line: "#/dev/sda5 /mnt/c ntfs noauto,ro,uid={{ user_uid }},nls=utf8,comment=systemd.automount 1 2"
       when: workstation | bool and ntfs_line.msg == "line added"
 
     - name: Clean up, part I
-      file:
+      ansible.builtin.file:
         path: "{{ item }}"
         state: absent
       loop:
@@ -629,7 +629,7 @@
         - /var/tmp/abrt
 
     - name: Clean up, part II
-      find:
+      ansible.builtin.find:
         paths:
           - /tmp
         patterns:
@@ -637,7 +637,7 @@
       register: tmp_files
 
     - name: Clean up, part III
-      file:
+      ansible.builtin.file:
         path: "{{ item }}"
         state: absent
       loop: "{{ tmp_files.files | map(attribute='path') }}"

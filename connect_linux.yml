@@ -7,15 +7,15 @@
     - name: Set remote connection port
       vars:
         conn_port: "{{ 'ansible_' + ansible_connection + '_port' }}"
-      set_fact:
+      ansible.builtin.set_fact:
         remote_port: "{{ lookup('env', 'ANSIBLE_REMOTE_PORT') | default(vars[conn_port], true) | default(ansible_port, true) | default('22', true) }}"
 
     - name: Display connection target
-      debug:
+      ansible.builtin.debug:
         msg: "Attempting to connect to {{ inventory_hostname }}:{{ remote_port }}"
 
     - name: Check host reachable
-      wait_for:
+      ansible.builtin.wait_for:
         host: "{{ inventory_hostname }}"
         port: "{{ remote_port }}"
         search_regex: OpenSSH
@@ -23,11 +23,11 @@
       delegate_to: localhost
 
     - name: Check host access
-      ping:
+      ansible.builtin.ping:
 
     - name: Check user privileges
       become: true
-      command: /usr/bin/whoami
+      ansible.builtin.command: /usr/bin/whoami
       register: whoami_output
       failed_when: whoami_output.stdout != 'root'
       changed_when: false

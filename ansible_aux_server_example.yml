@@ -10,7 +10,7 @@
       - 192.168.122.120
   tasks:
     - name: Check available auxiliary servers
-      ping:
+      ansible.builtin.ping:
       register: ping_results
       ignore_unreachable: true
       loop: "{{ aux_servers }}"
@@ -22,10 +22,10 @@
                         | selectattr('failed', 'defined')
                         | selectattr('failed', 'equalto', false)
                         | map(attribute='item') }}"
-      set_fact:
+      ansible.builtin.set_fact:
         aux_server: "{{ servers_ok | random | default('') }}"
       failed_when: servers_ok | length < 1
 
     - name: Display the selected auxiliary server
-      debug:
+      ansible.builtin.debug:
         var: aux_server

@@ -9,21 +9,22 @@
   gather_facts: true
   tasks:
     - name: Display variable names
-      debug:
+      ansible.builtin.debug:
         msg: "{{ lookup('varnames', '.+') | split(',') | sort }}"
 
     - name: Display variables
-      debug:
+      ansible.builtin.debug:
         var: vars
 
     - name: Display facts
-      debug:
+      ansible.builtin.debug:
         var: ansible_facts
 
-    - meta: end_play
+    - name: End here
+      ansible.builtin.meta: end_play
 
     - name: Create list from items
-      set_fact:
+      ansible.builtin.set_fact:
         a_list: "{{ a_list | default([]) + [item] }}"
       loop:
         - one
@@ -31,25 +32,25 @@
         - three
 
     - name: Display list from items
-      debug:
+      ansible.builtin.debug:
         var: a_list
 
     - name: Create dict from items
-      set_fact:
+      ansible.builtin.set_fact:
         a_dict: "{{ a_dict | default({}) | combine({item: ansible_facts.distribution}) }}"
       loop: "{{ ansible_play_batch + ansible_run_tags }}"
 
     - name: Display dict from items
-      debug:
+      ansible.builtin.debug:
         var: a_dict
 
     - name: Test distribution major version
-      debug:
+      ansible.builtin.debug:
         msg: "{{ ansible_facts.distribution_major_version | int >= 8 is true }}"
       when: ansible_facts.distribution_major_version | int >= 8
 
     - name: Set fact based on condition
-      set_fact:
+      ansible.builtin.set_fact:
         tuned_profile: "{{ 'virtual-guest' if ansible_facts.virtualization_role == 'guest' else 'throughput-performance' }}"
 
     - name: Use distribution specific variable to install packages
@@ -70,14 +71,14 @@
         distro_id: "{{ 'rhel' + ansible_facts.distribution_major_version }}"
         package_set: "{{ 'default' if distro_id not in selinux_package_lists else distro_id }}"
         selinux_packages: "{{ selinux_package_lists[package_set] }}"
-      dnf:
+      ansible.builtin.dnf:
         name: "{{ selinux_packages }}"
         state: present
       when: false
 
     # Example of configuring and re/starting a service below
     - name: Disallow zone drifting
-      replace:
+      ansible.builtin.replace:
         dest: /etc/firewalld/firewalld.conf
         regexp: '^AllowZoneDrifting=yes'
         replace: 'AllowZoneDrifting=no'
@@ -85,20 +86,20 @@
       when: false
 
     - name: Enable firewalld service
-      service:
+      ansible.builtin.service:
         name: firewalld
         enabled: true
       when: false
 
     - name: Start firewalld service
-      service:
+      ansible.builtin.service:
         name: firewalld
         state: started
       register: service_start
       when: false
 
     - name: Reload firewalld to apply configuration changes
-      service:
+      ansible.builtin.service:
         name: firewalld
         state: reloaded
       when:

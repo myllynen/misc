@@ -7,7 +7,7 @@
     ssh_key_type: ed25519
   tasks:
     - name: Gather needed facts
-      setup:
+      ansible.builtin.setup:
         gather_subset:
           - '!all'
           - '!min'
@@ -16,28 +16,28 @@
             ansible_facts.user_id is not defined
 
     - name: Generate user public/private SSH key pair
-      user:
+      ansible.builtin.user:
         name: "{{ ansible_facts.user_id }}"
         state: present
         generate_ssh_key: true
         ssh_key_type: "{{ ssh_key_type }}"
 
     - name: Read user public SSH key
-      slurp:
+      ansible.builtin.slurp:
         src: "{{ ansible_facts.user_dir }}/.ssh/id_{{ ssh_key_type }}.pub"
       register: public_key
 
     - name: Read user private SSH key
-      slurp:
+      ansible.builtin.slurp:
         src: "{{ ansible_facts.user_dir }}/.ssh/id_{{ ssh_key_type }}"
       register: private_key
 
     - name: Set public SSH key
-      set_fact:
+      ansible.builtin.set_fact:
         public_ssh_key: "{{ public_key.content | b64decode }}"
 
     - name: Set private SSH key
-      set_fact:
+      ansible.builtin.set_fact:
         private_ssh_key: "{{ private_key.content | b64decode }}"
 
 - name: Set shared SSH keys
@@ -45,12 +45,12 @@
   gather_facts: false
   tasks:
     - name: Set shared public SSH key
-      set_fact:
+      ansible.builtin.set_fact:
         public_ssh_key: "{{ hostvars[groups.all[0]].public_ssh_key }}"
       when: keys | default(false) != 'unique'
 
     - name: Set shared private SSH key
-      set_fact:
+      ansible.builtin.set_fact:
         private_ssh_key: "{{ hostvars[groups.all[0]].private_ssh_key }}"
       when: keys | default(false) != 'unique'
 
@@ -59,7 +59,7 @@
   gather_facts: false
   tasks:
     - name: Gather needed facts
-      setup:
+      ansible.builtin.setup:
         gather_subset:
           - '!all'
           - '!min'
@@ -67,21 +67,21 @@
       when: ansible_facts.user_dir is not defined
 
     - name: Create user SSH directory
-      file:
+      ansible.builtin.file:
         path: "{{ ansible_facts.user_dir }}/.ssh"
         state: directory
         mode: '0700'
       when: keys | default(false) != 'unique'
 
     - name: Create public SSH key
-      copy:
+      ansible.builtin.copy:
         content: "{{ hostvars[groups.all[0]].public_ssh_key }}"
         dest: "{{ ansible_facts.user_dir }}/.ssh/id_{{ ssh_key_type }}.pub"
         mode: '0644'
       when: keys | default(false) != 'unique'
 
     - name: Create private SSH key
-      copy:
+      ansible.builtin.copy:
         content: "{{ hostvars[groups.all[0]].private_ssh_key }}"
         dest: "{{ ansible_facts.user_dir }}/.ssh/id_{{ ssh_key_type }}"
         mode: '0600'
@@ -92,7 +92,7 @@
   gather_facts: false
   tasks:
     - name: Gather needed facts
-      setup:
+      ansible.builtin.setup:
         gather_subset:
           - '!all'
           - '!min'
@@ -113,7 +113,7 @@
       loop: "{{ ansible_play_batch }}"
 
     - name: Update known_hosts localhost entry
-      lineinfile:
+      ansible.builtin.lineinfile:
         path: "{{ ansible_facts.user_dir }}/.ssh/known_hosts"
         line: "{{ 'localhost' + ',' +
                   '127.0.0.1' + ' ' +
@@ -125,7 +125,7 @@
         - localhost
 
     - name: Update known_hosts FQDN entry
-      lineinfile:
+      ansible.builtin.lineinfile:
         path: "{{ ansible_facts.user_dir }}/.ssh/known_hosts"
         line: "{{ hostvars[item].ansible_facts.fqdn + ',' +
                   hostvars[item].ansible_facts.default_ipv4.address + ' ' +
@@ -136,7 +136,7 @@
       loop: "{{ ansible_play_batch }}"
 
     - name: Update known_hosts short entry
-      lineinfile:
+      ansible.builtin.lineinfile:
         path: "{{ ansible_facts.user_dir }}/.ssh/known_hosts"
         line: "{{ hostvars[item].ansible_facts.hostname + ',' +
                   hostvars[item].ansible_facts.default_ipv4.address + ' ' +

@@ -13,37 +13,37 @@
     display_file: true
   tasks:
     - name: Get date on control node
-      set_fact:
+      ansible.builtin.set_fact:
         timestamp: "{{ lookup('pipe', 'date ' + timestamp_fmt) }}"
       # noqa: run-once[task]
       run_once: true
 
     - name: Set output CSV file name
-      set_fact:
+      ansible.builtin.set_fact:
         output_file: "{{ csv_output_file | replace('TIMESTAMP', timestamp) }}"
       # noqa: run-once[task]
       run_once: true
 
     - name: Get days since Unix epoch
-      set_fact:
+      ansible.builtin.set_fact:
         epoch_days: "{{ (lookup('pipe', 'date +%s') | int / 86400) | int }}"
       # noqa: run-once[task]
       run_once: true
 
     - name: Read passwd database
-      getent:
+      ansible.builtin.getent:
         database: passwd
       register: user_entries
 
     - name: Read shadow database
       become: true
-      getent:
+      ansible.builtin.getent:
         database: shadow
       register: shadow_entries
 
     # Create potentially large data structure before the loop below
     - name: Set combined database
-      set_fact:
+      ansible.builtin.set_fact:
         combined_entries: "{{ user_entries.ansible_facts.getent_passwd |
                               combine(shadow_entries.ansible_facts.getent_shadow,
                                       list_merge='append') }}"
@@ -51,7 +51,7 @@
       run_once: true
 
     - name: Create CSV file and header
-      lineinfile:
+      ansible.builtin.lineinfile:
         path: "{{ output_file }}"
         line: "hostname,username,uid,gid,hashtype,last_pw_change,max_pw_age,account_exp"
         state: present
@@ -81,7 +81,7 @@
                              if account_last_day | int < 99999 else -1 }}"
       no_log: "{{ not log_user_names | bool }}"
       throttle: "{{ '1' if consecutive_entries | bool else '99999' }}"
-      lineinfile:
+      ansible.builtin.lineinfile:
         path: "{{ output_file }}"
         line: "{{ inventory_hostname + ',' +
                   item.key + ',' +
@@ -101,7 +101,7 @@
             not item.value[6]
 
     - name: Read created CSV file
-      slurp:
+      ansible.builtin.slurp:
         src: "{{ output_file }}"
       register: csv_file
       delegate_to: localhost
@@ -110,7 +110,7 @@
       when: display_file | bool
 
     - name: Display CSV file content
-      debug:
+      ansible.builtin.debug:
         msg: "{{ csv_file.content | b64decode }}"
       delegate_to: localhost
       # noqa: run-once[task]

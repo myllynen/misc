@@ -10,9 +10,16 @@ Set-Item -Path WSMan:\localhost\Service\AllowUnencrypted -Value $false
 Set-Item -Path WSMan:\localhost\Service\Auth\Basic -Value $false
 Set-ExecutionPolicy -ExecutionPolicy RemoteSigned
 
-# Allow NTLM also for a non-Administrator in Administrators
-$user = 'winrm'
+# Allow full remote administrative privileges
 Set-ItemProperty -Path HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System -Name LocalAccountTokenFilterPolicy -Value 1
+
+# Remote admin
+$user = 'winrm'
+
+# Allow PSRP (not WinRM) for the user if not in Administrators
+Add-LocalGroupMember -Group 'Remote Management Users' -Member $user
+
+# Allow NTLM authentication for the user even if in Administrators
 $sid = (New-Object -TypeName System.Security.Principal.NTAccount -ArgumentList $user).Translate([System.Security.Principal.SecurityIdentifier])
 $sddl = (Get-Item -Path WSMan:\localhost\Service\RootSDDL).Value
 $sd = New-Object -TypeName System.Security.AccessControl.CommonSecurityDescriptor -ArgumentList $false, $false, $sddl

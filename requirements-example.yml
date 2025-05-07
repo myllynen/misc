@@ -22,6 +22,9 @@ collections:
   - name: ansible.windows
     source: redhat_certified
 
+  - name: azure.azcollection
+    source: redhat_certified
+
   - name: chocolatey.chocolatey
     source: redhat_certified
 
@@ -29,6 +32,9 @@ collections:
     source: redhat_certified
 
   - name: microsoft.ad
+    source: redhat_certified
+
+  - name: redhat.ai
     source: redhat_certified
 
   - name: redhat.rhel_idm
@@ -47,13 +53,22 @@ collections:
   - name: infra.aap_configuration
     source: redhat_validated
 
+  - name: infra.aap_configuration_extended
+    source: redhat_validated
+
   - name: infra.aap_utilities
+    source: redhat_validated
+
+  - name: infra.ai
     source: redhat_validated
 
   - name: infra.ee_utilities
     source: redhat_validated
 
   #- name: infra.leapp
+  #  source: redhat_validated
+
+  #- name: infra.lvm_snapshots
   #  source: redhat_validated
 
   # Ansible Galaxy community collections

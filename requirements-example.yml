@@ -59,8 +59,8 @@ collections:
   - name: infra.aap_utilities
     source: redhat_validated
 
-  - name: infra.ai
-    source: redhat_validated
+#  - name: infra.ai
+#    source: redhat_validated
 
   - name: infra.ee_utilities
     source: redhat_validated

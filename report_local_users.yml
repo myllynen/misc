@@ -33,19 +33,17 @@
     - name: Read passwd database
       ansible.builtin.getent:
         database: passwd
-      register: user_entries
 
     - name: Read shadow database
       become: true
       ansible.builtin.getent:
         database: shadow
-      register: shadow_entries
 
     # Create potentially large data structure before the loop below
     - name: Set combined database
       ansible.builtin.set_fact:
-        combined_entries: "{{ user_entries.ansible_facts.getent_passwd |
-                              combine(shadow_entries.ansible_facts.getent_shadow,
+        combined_entries: "{{ ansible_facts.getent_passwd |
+                              combine(ansible_facts.getent_shadow,
                                       list_merge='append') }}"
       # noqa: run-once[task]
       run_once: true

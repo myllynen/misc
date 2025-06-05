@@ -71,6 +71,9 @@ collections:
   #- name: infra.lvm_snapshots
   #  source: redhat_validated
 
+  #- name: infra.windows_ops
+  #  source: redhat_validated
+
   # Ansible Galaxy community collections
   - name: community.general
     source: ansible_galaxy

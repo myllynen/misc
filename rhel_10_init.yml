@@ -1,0 +1,618 @@
+# Usage:
+# 1) Copy the accompanying ansible.cfg as ~/.ansible.cfg
+# 2) Install Ansible
+# 3) Adjust and run the playbook
+# 4) Set password for the new user and reboot
+---
+- name: Initialize RHEL 10
+  hosts: all
+  become: true
+  gather_facts: true
+  vars:
+    console_keymap: fi
+    console_font: eurlatgr
+    langpacks: ['en', 'fi']
+    system_locale: C.UTF-8
+    system_timezone: Europe/Helsinki
+    root_shell: /bin/zsh
+    create_user: false
+    user_uid: 1000
+    user_name: mm
+    user_group: users
+    user_shell: /bin/zsh
+    workstation: false
+    enable_sshd: true
+    disable_network_services: true
+    use_epel: false
+  tasks:
+    - name: Check target basics
+      check_mode: false
+      ansible.builtin.raw: rpm -q python3 python3-dnf python3-libselinux
+      register: basics
+      failed_when: false
+      changed_when: false
+
+    - name: Prepare target basics
+      ansible.builtin.raw: dnf -y install python3 python3-dnf python3-libselinux
+      changed_when: true
+      when: basics.rc != 0
+
+    - name: Create target remote_tmp
+      ansible.builtin.file:
+        path: "{{ ansible_facts.env.HOME }}/.ansible/tmp"
+        state: directory
+        mode: '0700'
+
+    - name: Detect boot parameters
+      check_mode: false
+      ansible.builtin.command: grep -q TIMEOUT=5 /etc/default/grub
+      register: adjust_boot_parameters
+      failed_when: false
+      changed_when: false
+
+    - name: Install grubby
+      ansible.builtin.dnf:
+        name: grubby
+        state: present
+      when: adjust_boot_parameters.rc == 0
+
+    - name: Adjust boot timeout
+      ansible.builtin.replace:
+        dest: /etc/default/grub
+        regexp: '^GRUB_TIMEOUT=.*'
+        replace: 'GRUB_TIMEOUT=1'
+      when: adjust_boot_parameters.rc == 0
+
+    - name: Adjust boot parameters
+      ansible.builtin.command: grubby --remove-args="rhgb" --args="quiet" --update-kernel=ALL
+      changed_when: true
+      when: adjust_boot_parameters.rc == 0
+
+    - name: Detect rescue images
+      ansible.builtin.find:
+        paths:
+          - /boot
+          - /boot/loader/entries
+        patterns:
+          - '*rescue*'
+      register: rescue_images
+
+    - name: Remove rescue images
+      ansible.builtin.file:
+        path: "{{ item }}"
+        state: absent
+      loop: "{{ rescue_images.files | map(attribute='path') }}"
+
+    - name: Update GRUB configuration
+      ansible.builtin.command: grub2-mkconfig -o /boot/grub2/grub.cfg
+      changed_when: true
+      when: adjust_boot_parameters.rc == 0
+
+    - name: Detect LUKS configuration
+      check_mode: false
+      ansible.builtin.command: grep -q mapper/luks /etc/fstab
+      register: luks_in_use
+      failed_when: false
+      changed_when: false
+
+    - name: Configure console
+      ansible.builtin.copy:
+        content: |
+          KEYMAP="{{ console_keymap }}"
+          FONT="{{ console_font }}"
+        dest: /etc/vconsole.conf
+        mode: '0644'
+
+    - name: Configure locale
+      ansible.builtin.copy:
+        content: |
+          LANG="{{ system_locale }}"
+        dest: /etc/locale.conf
+        mode: '0644'
+
+    - name: Set timezone
+      community.general.timezone:
+        name: "{{ system_timezone }}"
+
+    - name: Check EPEL repository
+      # noqa: command-instead-of-module
+      ansible.builtin.command: rpm -q epel-release-{{ ansible_facts.distribution_major_version }}
+      register: epel_enabled
+      failed_when: false
+      changed_when: false
+      when: use_epel | bool
+
+    - name: Enable EPEL repository
+      ansible.builtin.dnf:
+        name:
+          - https://dl.fedoraproject.org/pub/epel/epel-release-latest-{{ ansible_facts.distribution_major_version }}.noarch.rpm
+        state: present
+        disable_gpg_check: true
+      when: use_epel | bool and epel_enabled.rc != 0
+
+    - name: Check RPM Fusion repository
+      # noqa: command-instead-of-module
+      ansible.builtin.command: >
+        rpm -q rpmfusion-free-release-{{ ansible_facts.distribution_major_version }} rpmfusion-nonfree-release-{{ ansible_facts.distribution_major_version }}
+      register: fusion_enabled
+      failed_when: false
+      changed_when: false
+      when: workstation | bool and use_epel | bool
+
+    - name: Enable RPM Fusion repository
+      ansible.builtin.dnf:
+        name:
+          - https://download1.rpmfusion.org/free/el/rpmfusion-free-release-{{ ansible_facts.distribution_major_version }}.noarch.rpm
+          - https://download1.rpmfusion.org/nonfree/el/rpmfusion-nonfree-release-{{ ansible_facts.distribution_major_version }}.noarch.rpm
+        state: present
+        disable_gpg_check: true
+      when: workstation | bool and use_epel | bool and fusion_enabled.rc != 0
+
+    - name: Remove unneeded firmware packages
+      ansible.builtin.dnf:
+        name:
+          - 'a*firmware*'
+          - 'b*firmware*'
+          - 'i*firmware*'
+          - 'l*firmware*'
+          - 'm*firmware'
+          - 'n*firmware'
+        state: absent
+        cacheonly: true
+        disablerepo: '*'
+      when: ansible_facts.virtualization_role == "guest"
+
+    - name: Remove all virtual guest packages
+      ansible.builtin.dnf:
+        name:
+          - 'hyperv*'
+          - open-vm-tools
+          - qemu-guest-agent
+          - spice-vdagent
+          - WALinuxAgent
+        state: absent
+        cacheonly: true
+        disablerepo: '*'
+      when: ansible_facts.virtualization_role != "guest"
+
+    - name: Remove unhelpful packages on VM
+      ansible.builtin.dnf:
+        name:
+          - akmods
+          - 'dmraid*'
+          - 'libvirt*'
+          - 'pcsc*'
+          - thermald
+        state: absent
+        cacheonly: true
+        disablerepo: '*'
+      when: ansible_facts.virtualization_role == "guest"
+
+    - name: Remove unneeded packages on Azure/Hyper-V
+      ansible.builtin.dnf:
+        name:
+          - open-vm-tools
+          - qemu-guest-agent
+          - spice-vdagent
+        state: absent
+        cacheonly: true
+        disablerepo: '*'
+      when:
+        - ansible_facts.virtualization_role == "guest"
+        - ansible_facts.virtualization_type == "VirtualPC"
+
+    - name: Remove unneeded packages on KVM
+      ansible.builtin.dnf:
+        name:
+          - 'hyperv*'
+          - open-vm-tools
+          - WALinuxAgent
+        state: absent
+        cacheonly: true
+        disablerepo: '*'
+      when:
+        - ansible_facts.virtualization_role == "guest"
+        - ansible_facts.virtualization_type == "kvm"
+
+    - name: Remove unneeded packages on VMware
+      ansible.builtin.dnf:
+        name:
+          - 'hyperv*'
+          - qemu-guest-agent
+          - spice-vdagent
+          - WALinuxAgent
+        state: absent
+        cacheonly: true
+        disablerepo: '*'
+      when:
+        - ansible_facts.virtualization_role == "guest"
+        - ansible_facts.virtualization_type == "VMware"
+
+    - name: Remove unneeded packages on other VMs
+      ansible.builtin.dnf:
+        name:
+          - 'hyperv*'
+          - open-vm-tools
+          - qemu-guest-agent
+          - spice-vdagent
+          - WALinuxAgent
+        state: absent
+        cacheonly: true
+        disablerepo: '*'
+      when:
+        - ansible_facts.virtualization_role == "guest"
+        - ansible_facts.virtualization_type not in ['kvm', 'VirtualPC', 'VMware']
+
+    - name: Remove unneeded Plymouth packages
+      ansible.builtin.dnf:
+        name:
+          - 'plymouth*'
+        state: absent
+        cacheonly: true
+        disablerepo: '*'
+      when: not luks_in_use.rc == 0
+
+    - name: Remove unhelpful packages (common)
+      ansible.builtin.dnf:
+        name:
+          - NetworkManager-adsl
+          - NetworkManager-openconnect
+          - NetworkManager-pptp
+          - NetworkManager-team
+          - NetworkManager-tui
+          - 'PackageKit*'
+          - anaconda
+          - 'b43*'
+          - cifs-utils
+          - cockpit
+          - dracut-config-rescue
+          - dracut-live
+          - evolution
+          - 'foomatic*'
+          - gnome-tour
+          - gnome-user-docs
+          - 'gutenprint*'
+          - '*hangul*'
+          - 'hplip*'
+          - 'java*'
+          - kernel-modules-extra
+          - '*kkc*'
+          - '*libreoffice*'
+          - nfs-utils
+          - orca
+          - pam_krb5
+          - 'perl*'
+          - '*pinyin*'
+          - qgnomeplatform
+          - 'qt*'
+          - realmd
+          - 'sane*'
+          - teamd
+          - trousers
+          - yggdrasil
+          - '*zhuyin*'
+        state: absent
+        autoremove: true
+        cacheonly: true
+        disablerepo: '*'
+
+    - name: Remove unhelpful packages (server)
+      ansible.builtin.dnf:
+        name:
+          - '*fonts*'
+        state: absent
+        cacheonly: true
+        disablerepo: '*'
+      when: not workstation | bool
+
+    - name: Install helpful packages (common)
+      ansible.builtin.dnf:
+        name:
+          - bash-completion
+          - bc
+          - bind-utils
+          #- cloud-init
+          #- cloud-utils-growpart
+          - ethtool
+          - git-core
+          - glibc-minimal-langpack
+          #- gpm
+          #- insights-client
+          #- iotop
+          - irqbalance
+          #- ltrace
+          - man-pages
+          - plocate
+          - nano
+          #- nmap-ncat
+          #- numactl
+          - openssh-clients
+          #- pcp-doc
+          #- pcp-system-tools
+          #- perf
+          - policycoreutils-python-utils
+          - psmisc
+          - setools-console
+          - snapm
+          - sos
+          - strace
+          - tar
+          - tcpdump
+          #- telnet
+          - tmux
+          - tuned
+          - unzip
+          - util-linux-user
+          - yum-utils
+          - zsh
+          - zstd
+        state: present
+
+    - name: Install helpful packages (guest agent)
+      vars:
+        agent_packages:
+          kvm: qemu-guest-agent
+          VirtualPC:
+            - hyperv-daemons
+            - WALinuxAgent
+          VMware: open-vm-tools
+      ansible.builtin.dnf:
+        name: "{{ agent_packages[ansible_facts.virtualization_type] }}"
+        state: present
+      when:
+        - ansible_facts.virtualization_role == "guest"
+        - ansible_facts.virtualization_type in agent_packages
+
+    - name: Enable virtual guest agent service
+      vars:
+        agent_services:
+          kvm: qemu-guest-agent.service
+          VirtualPC: waagent.service
+          VMware: vmtoolsd.service
+      ansible.builtin.service:
+        name: "{{ agent_services[ansible_facts.virtualization_type] }}"
+        state: started
+        enabled: true
+      when:
+        - ansible_facts.virtualization_role == "guest"
+        - ansible_facts.virtualization_type in agent_services
+        - ansible_facts.virtualization_type in ['kvm', 'VirtualPC', 'VMware']
+
+    - name: Install helpful packages (langpacks)
+      ansible.builtin.dnf:
+        name: glibc-langpack-{{ langpacks | join(',glibc-langpack-') }}
+        state: present
+
+    - name: Install helpful packages (common from EPEL)
+      ansible.builtin.dnf:
+        name:
+          - epel-release
+          - keychain
+          - xclip
+        state: present
+      when: use_epel | bool
+
+    - name: Install helpful packages (workstation)
+      ansible.builtin.dnf:
+        name:
+          - dconf-editor
+          - gnome-tweaks
+          - gstreamer1-plugins-good-gtk
+          - patch
+          #- powertop
+          - seahorse
+          - totem
+          - xauth
+          - xorg-x11-fonts-misc
+          - xorriso
+        state: present
+      when: workstation | bool
+
+    - name: Install helpful packages (workstation langpacks)
+      ansible.builtin.dnf:
+        name: langpacks-core-{{ langpacks | join(',langpacks-') }}
+        state: present
+      when: workstation | bool
+
+    - name: Install helpful packages (workstation from EPEL)
+      ansible.builtin.dnf:
+        name:
+          - GraphicsMagick
+          - ffmpeg
+          #- fuse-sshfs
+          - gstreamer1-libav
+          - libavc1394
+          #- ntfsprogs
+          #- vlc
+          - youtube-dl
+        state: present
+      when: workstation | bool and use_epel | bool
+
+    - name: Remove unhelpful packages ('all' langpacks)
+      ansible.builtin.dnf:
+        name:
+          - gawk-all-langpacks
+          - glibc-all-langpacks
+        state: absent
+        cacheonly: true
+        disablerepo: '*'
+
+    - name: Update all packages
+      # noqa: package-latest
+      ansible.builtin.dnf:
+        name: '*'
+        state: latest
+        update_cache: true
+
+    - name: Check current boot parameters
+      check_mode: false
+      ansible.builtin.shell: set -o pipefail ; cat /proc/cmdline | grep -q rhgb
+      register: rhgb_used
+      failed_when: false
+      changed_when: false
+
+    - name: Ensure correct boot parameters
+      ansible.builtin.command: grubby --remove-args="rhgb" --args="quiet" --update-kernel=ALL
+      changed_when: true
+      when: rhgb_used.rc == 0
+
+    - name: Disable unhelpful services
+      ansible.builtin.service:
+        name: "{{ item }}"
+        enabled: false
+      loop:
+        - cups.service
+        - dmraid-activation.service
+        - dnf-makecache.timer
+        - lvm2-monitor.service
+        - mcelog.service
+        - mdmonitor.service
+        - multipathd.service
+        #- pmie.service
+      failed_when: false
+
+    - name: Disable unhelpful services on VMs
+      ansible.builtin.service:
+        name: "{{ item }}"
+        enabled: false
+      loop:
+        - raid-check.timer
+        - switcheroo-control
+        - upower.service
+      failed_when: false
+      when: ansible_facts.virtualization_role == "guest"
+
+    - name: Disable unhelpful network services
+      ansible.builtin.service:
+        name: "{{ item }}"
+        enabled: false
+      loop:
+        - bluetooth.service
+        - iscsi.service
+        - iscsid.socket
+        - iscsiuio.socket
+        - nfs-client.target
+        - nfs-convert.service
+        - remote-fs.target
+      failed_when: false
+      when: disable_network_services | bool
+
+    - name: Enable helpful services
+      ansible.builtin.service:
+        name: "{{ item }}"
+        enabled: true
+      loop:
+        #- gpm.service
+        - irqbalance.service
+        #- pmcd.service
+        #- pmlogger.service
+        - tuned.service
+
+    - name: Install SSH daemon
+      ansible.builtin.dnf:
+        name: openssh-server
+        state: present
+      when: enable_sshd | bool
+
+    - name: Enable SSH daemon
+      ansible.builtin.service:
+        name: sshd
+        state: started
+        enabled: true
+      when: enable_sshd | bool
+
+    - name: Change root shell
+      ansible.builtin.user:
+        name: root
+        shell: "{{ root_shell }}"
+
+    - name: Create user, part I
+      ansible.builtin.user:
+        name: "{{ user_name }}"
+        uid: "{{ user_uid }}"
+        group: "{{ user_group }}"
+        shell: "{{ user_shell }}"
+      when: create_user | bool
+
+    - name: Create user, part II
+      ansible.builtin.copy:
+        content: |
+          [User]
+          Language=
+          XSession=
+          Icon=/home/{{ user_name }}/.face
+          SystemAccount=false
+        dest: /var/lib/AccountsService/users/{{ user_name }}
+        owner: root
+        group: root
+        mode: '0600'
+      when: workstation | bool and create_user | bool
+
+    - name: Disable tracker for the user, part I
+      ansible.builtin.file:
+        path: /home/{{ user_name }}/.config/systemd/user
+        state: directory
+        owner: "{{ user_name }}"
+        group: "{{ user_group }}"
+        mode: '0755'
+      when: false and create_user | bool
+
+    - name: Disable tracker for the user, part II
+      ansible.builtin.file:
+        state: link
+        src: /dev/null
+        dest: /home/{{ user_name }}/.config/systemd/user/{{ item }}
+        owner: "{{ user_name }}"
+        group: "{{ user_group }}"
+      loop:
+        - tracker-extract.service
+        - tracker-miner-apps.service
+        - tracker-miner-fs.service
+        - tracker-miner-rss.service
+        - tracker-store.service
+        - tracker-writeback.service
+      when: false and create_user | bool
+
+    - name: Disable tracker for the user, part III
+      ansible.builtin.command: restorecon -Rv "/home/{{ user_name }}/.config/systemd"
+      register: restorecon
+      changed_when: "'Relabeled' in restorecon.stdout"
+      when: false and create_user | bool
+
+    - name: Configure sudoers
+      ansible.builtin.lineinfile:
+        path: /etc/sudoers.d/{{ user_name }}
+        line: '{{ user_name }} ALL=(ALL) NOPASSWD: ALL'
+        create: true
+        mode: '0440'
+        validate: /usr/sbin/visudo -csf %s
+      when: create_user | bool
+
+    - name: Clean up, part I
+      ansible.builtin.file:
+        path: "{{ item }}"
+        state: absent
+      loop:
+        - /etc/rc.d/init.d/livesys
+        - /root/.config/pulse
+        - /root/.esd_auth
+        - /root/.lesshst
+        - /root/.local/share/ibus-typing-booster
+        - /root/.rnd
+        - /root/.wget-hsts
+        - /root/anaconda-ks.cfg
+        - /root/original-ks.cfg
+
+    - name: Clean up, part II
+      ansible.builtin.find:
+        paths:
+          - /tmp
+        patterns:
+          - 'ks-script*'
+      register: tmp_files
+
+    - name: Clean up, part III
+      ansible.builtin.file:
+        path: "{{ item }}"
+        state: absent
+      loop: "{{ tmp_files.files | map(attribute='path') }}"

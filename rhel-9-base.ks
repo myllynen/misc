@@ -3,12 +3,12 @@
 # Install:
 # virt-install \
 #   --connect qemu:///system --name test --virt-type kvm --arch x86_64 \
-#   --vcpus 2 --cpu host --ram 2048 --os-type linux --os-variant rhel9.0 \
+#   --vcpus 2 --cpu host-model --ram 2048 --os-variant rhel9.5 \
 #   --boot uefi --boot useserial=on \
-#   --boot loader=/usr/share/edk2/ovmf/OVMF_CODE.cc.fd,loader_ro=yes,loader_type=pflash,nvram_template=/usr/share/edk2/ovmf/OVMF_VARS.fd,loader_secure=no \
+#   --boot loader=/usr/share/edk2/ovmf/OVMF_CODE.secboot.fd,loader_ro=yes,loader_secure=yes \
 #   --disk pool=default,format=qcow2,size=8 \
 #   --network network=default --graphics vnc --sound none --noreboot \
-#   --location /VirtualMachines/boot/rhel-baseos-9.0-x86_64-dvd.iso \
+#   --location /VirtualMachines/boot/rhel-9.6-x86_64-dvd.iso \
 #   --initrd-inject /VirtualMachines/boot/ks/rhel-9-base.ks \
 #   --extra-args "inst.ks=file:/rhel-9-base.ks inst.geoloc=0 inst.nosave=all ip=dhcp console=tty0 console=ttyS0,115200 net.ifnames.prefix=net quiet" \
 #   --noautoconsole
@@ -74,6 +74,7 @@ tar
 #vim-enhanced
 yum-utils
 zsh
+zstd
 
 # BIOS/UEFI cross-compatible image packages
 #efibootmgr
@@ -113,7 +114,7 @@ tuned
 #-e2fsprogs
 #-firewalld
 #-lshw
-#-kernel-modules
+#-kernel-modules-extra
 #-kexec-tools
 #-man-db
 #-rootfiles
@@ -237,8 +238,7 @@ truncate -s 0 /etc/machine-id /etc/resolv.conf
 # Clear caches, files, and logs
 /bin/rm -rf /root/* /tmp/* /tmp/.[a-zA-Z]* /var/tmp/*
 /bin/rm -rf /etc/*- /etc/*.bak /etc/*~ /etc/sysconfig/*~
-/bin/rm -rf /var/cache/dnf/* /var/cache/yum/* /var/log/rhsm/*
-/bin/rm -rf /var/lib/dnf/* /var/lib/yum/repos/* /var/lib/yum/yumdb/*
+/bin/rm -rf /var/cache/dnf/* /var/lib/dnf/* /var/log/rhsm/*
 /bin/rm -rf /var/lib/NetworkManager/* /var/lib/unbound/*.key
 /bin/rm -rf /var/log/*debug /var/log/anaconda /var/log/dmesg*
 /bin/rm -rf /var/lib/cloud/* /var/log/cloud-init*.log

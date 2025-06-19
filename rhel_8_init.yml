@@ -71,6 +71,7 @@
 
     - name: Detect rescue images
       ansible.builtin.find:
+        hidden: true
         paths:
           - /boot
           - /boot/loader/entries

@@ -70,6 +70,7 @@
 
     - name: Detect rescue images
       ansible.builtin.find:
+        hidden: true
         paths:
           - /boot
           - /boot/loader/entries
@@ -333,7 +334,7 @@
           - policycoreutils-python-utils
           - psmisc
           - setools-console
-          - snapm
+          #- snapm
           - sos
           - strace
           - tar

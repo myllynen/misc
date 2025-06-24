@@ -145,8 +145,8 @@ if [ "$ipv6" = "no" ]; then
 fi
 
 # ssh/d
-#echo "PermitRootLogin yes" > /etc/ssh/sshd_config.d/90-rootlogin.conf
-#chmod 0600 /etc/ssh/sshd_config.d/90-rootlogin.conf
+#echo "PermitRootLogin yes" > /etc/ssh/sshd_config.d/01-permitrootlogin.conf
+#chmod 0600 /etc/ssh/sshd_config.d/01-permitrootlogin.conf
 mkdir -m 0700 -p /root/.ssh
 #echo "ssh-ed25519 ... id_ed25519.pub" > /root/.ssh/authorized_keys
 #chmod 0600 /root/.ssh/authorized_keys

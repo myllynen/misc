@@ -3,7 +3,7 @@
 # Install:
 # virt-install \
 #   --connect qemu:///system --name test --virt-type kvm --arch x86_64 \
-#   --vcpus 2 --cpu host-model --ram 2048 --os-variant rhel9.5 \
+#   --vcpus 2 --cpu host-model --ram 2048 --os-variant rhel9.6 \
 #   --boot uefi --boot useserial=on \
 #   --boot loader=/usr/share/edk2/ovmf/OVMF_CODE.secboot.fd,loader_ro=yes,loader_secure=yes \
 #   --disk pool=default,format=qcow2,size=8 \

@@ -7,7 +7,8 @@
 ANSIBLE_FLAVOR=ansible-core
 BASE_DIR=$HOME/ansible
 PYTHON_BIN=python3.11
-VERSIONS="2.14 2.16 2.18"
+VERSIONS="2.16 2.18"
+PRE_RELEASES=no
 
 # Main
 mkdir -p $BASE_DIR || exit 2
@@ -24,6 +25,10 @@ for ver in $VERSIONS; do
     exit 1
   fi
 
+  if [ "$PRE_RELEASES" = "yes" ]; then
+    pre_option="--pre"
+  fi
+
   echo Setting up $py_bin venv for $flavor-$ver...
   if [ ! -d $inst_dir ]; then
     mkdir -p $inst_dir || exit 4
@@ -31,7 +36,7 @@ for ver in $VERSIONS; do
   fi
   . $BASE_DIR/$inst_dir/bin/activate
   $py_bin -m pip install --upgrade pip wheel
-  $py_bin -m pip install --upgrade $flavor$ver_limit
+  $py_bin -m pip install --upgrade $pre_option $flavor$ver_limit
   $py_bin -m pip install --upgrade ansible-dev-environment ansible-lint passlib
   $py_bin -m pip install --upgrade pypsrp pywinrm requests-credssp requests-ntlm
   rpm -q gcc krb5-devel ${py_bin}-devel > /dev/null 2>&1 &&

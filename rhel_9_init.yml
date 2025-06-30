@@ -559,7 +559,7 @@
         owner: "{{ user_name }}"
         group: "{{ user_group }}"
         mode: '0755'
-      when: false and create_user | bool
+      when: create_user | bool
 
     - name: Disable tracker for the user, part II
       ansible.builtin.file:
@@ -569,19 +569,19 @@
         owner: "{{ user_name }}"
         group: "{{ user_group }}"
       loop:
-        - tracker-extract.service
-        - tracker-miner-apps.service
-        - tracker-miner-fs.service
-        - tracker-miner-rss.service
-        - tracker-store.service
-        - tracker-writeback.service
-      when: false and create_user | bool
+        - tracker-extract-3.service
+        - tracker-miner-fs-3.service
+        - tracker-miner-fs-control-3.service
+        - tracker-miner-rss-3.service
+        - tracker-writeback-3.service
+        - tracker-xdg-portal-3.service
+      when: create_user | bool
 
     - name: Disable tracker for the user, part III
       ansible.builtin.command: restorecon -Rv "/home/{{ user_name }}/.config/systemd"
       register: restorecon
       changed_when: "'Relabeled' in restorecon.stdout"
-      when: false and create_user | bool
+      when: create_user | bool
 
     - name: Configure sudoers
       ansible.builtin.lineinfile:
@@ -597,7 +597,6 @@
         path: "{{ item }}"
         state: absent
       loop:
-        - /1
         - /etc/rc.d/init.d/livesys
         - /root/.config/pulse
         - /root/.esd_auth

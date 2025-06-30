@@ -156,8 +156,9 @@
           - 'b*firmware*'
           - 'i*firmware*'
           - 'l*firmware*'
-          - 'm*firmware'
-          - 'n*firmware'
+          - 'm*firmware*'
+          - 'n*firmware*'
+          - 'z*firmware*'
         state: absent
         cacheonly: true
         disablerepo: '*'
@@ -277,6 +278,7 @@
           - 'hplip*'
           - 'java*'
           - kernel-modules-extra
+          #- kexec-tools
           - '*kkc*'
           - '*libreoffice*'
           - nfs-utils
@@ -284,6 +286,7 @@
           - pam_krb5
           - 'perl*'
           - '*pinyin*'
+          #- python3-perf
           - qgnomeplatform
           - 'qt*'
           - realmd
@@ -323,7 +326,6 @@
           - irqbalance
           #- ltrace
           - man-pages
-          - plocate
           - nano
           #- nmap-ncat
           #- numactl
@@ -331,6 +333,7 @@
           #- pcp-doc
           #- pcp-system-tools
           #- perf
+          - plocate
           - policycoreutils-python-utils
           - psmisc
           - setools-console
@@ -556,7 +559,7 @@
         owner: "{{ user_name }}"
         group: "{{ user_group }}"
         mode: '0755'
-      when: false and create_user | bool
+      when: create_user | bool
 
     - name: Disable tracker for the user, part II
       ansible.builtin.file:
@@ -566,19 +569,19 @@
         owner: "{{ user_name }}"
         group: "{{ user_group }}"
       loop:
-        - tracker-extract.service
-        - tracker-miner-apps.service
-        - tracker-miner-fs.service
-        - tracker-miner-rss.service
-        - tracker-store.service
-        - tracker-writeback.service
-      when: false and create_user | bool
+        - tracker-extract-3.service
+        - tracker-miner-fs-3.service
+        - tracker-miner-fs-control-3.service
+        - tracker-miner-rss-3.service
+        - tracker-writeback-3.service
+        - tracker-xdg-portal-3.service
+      when: create_user | bool
 
     - name: Disable tracker for the user, part III
       ansible.builtin.command: restorecon -Rv "/home/{{ user_name }}/.config/systemd"
       register: restorecon
       changed_when: "'Relabeled' in restorecon.stdout"
-      when: false and create_user | bool
+      when: create_user | bool
 
     - name: Configure sudoers
       ansible.builtin.lineinfile:

@@ -69,6 +69,7 @@
 
     - name: Detect rescue images
       ansible.builtin.find:
+        hidden: true
         paths:
           - /boot
           - /boot/loader/entries
@@ -135,11 +136,12 @@
       ansible.builtin.dnf:
         name:
           - 'a*firmware*'
+          - 'b*firmware*'
           - 'i*firmware*'
-          - 'lib*firmware*'
-          - linux-firmware
+          - 'l*firmware*'
+          - 'm*firmware*'
           - 'n*firmware*'
-          - 'z*firmware'
+          - 'z*firmware*'
         state: absent
         cacheonly: true
         disablerepo: '*'
@@ -255,7 +257,7 @@
         disablerepo: '*'
       when: not luks_in_use.rc == 0
 
-    - name: Remove unhelpful packages
+    - name: Remove unhelpful packages (common)
       ansible.builtin.dnf:
         name:
           - NetworkManager-adsl
@@ -263,8 +265,7 @@
           - NetworkManager-pptp
           - NetworkManager-team
           - NetworkManager-tui
-          #- 'PackageKit*'
-          - 'abrt*'
+          - 'PackageKit*'
           - anaconda
           - 'b43*'
           - cifs-utils
@@ -296,11 +297,21 @@
           - 'sane*'
           - teamd
           - trousers
+          - yggdrasil
           - '*zhuyin*'
         state: absent
         autoremove: true
         cacheonly: true
         disablerepo: '*'
+
+    - name: Remove unhelpful packages (server)
+      ansible.builtin.dnf:
+        name:
+          - '*fonts*'
+        state: absent
+        cacheonly: true
+        disablerepo: '*'
+      when: not workstation | bool
 
     - name: Install helpful packages (common)
       ansible.builtin.dnf:
@@ -328,6 +339,7 @@
           - policycoreutils-python-utils
           - psmisc
           - setools-console
+          #- snapm
           - strace
           - tar
           - tcpdump
@@ -508,21 +520,6 @@
         name: root
         shell: "{{ root_shell }}"
 
-    - name: Disable pulseaudio for root, part I
-      ansible.builtin.file:
-        path: /root/.config/systemd/user
-        state: directory
-        mode: '0755'
-
-    - name: Disable pulseaudio for root, part II
-      ansible.builtin.file:
-        state: link
-        src: /dev/null
-        dest: /root/.config/systemd/user/{{ item }}
-      loop:
-        - pulseaudio.service
-        - pulseaudio.socket
-
     - name: Create user, part I
       ansible.builtin.user:
         name: "{{ user_name }}"
@@ -552,7 +549,7 @@
         owner: "{{ user_name }}"
         group: "{{ user_group }}"
         mode: '0755'
-      when: false and create_user | bool
+      when: create_user | bool
 
     - name: Disable tracker for the user, part II
       ansible.builtin.file:
@@ -562,19 +559,19 @@
         owner: "{{ user_name }}"
         group: "{{ user_group }}"
       loop:
-        - tracker-extract.service
-        - tracker-miner-apps.service
-        - tracker-miner-fs.service
-        - tracker-miner-rss.service
-        - tracker-store.service
-        - tracker-writeback.service
-      when: false and create_user | bool
+        - tracker-extract-3.service
+        - tracker-miner-fs-3.service
+        - tracker-miner-fs-control-3.service
+        - tracker-miner-rss-3.service
+        - tracker-writeback-3.service
+        - tracker-xdg-portal-3.service
+      when: create_user | bool
 
     - name: Disable tracker for the user, part III
       ansible.builtin.command: restorecon -Rv "/home/{{ user_name }}/.config/systemd"
       register: restorecon
       changed_when: "'Relabeled' in restorecon.stdout"
-      when: false and create_user | bool
+      when: create_user | bool
 
     - name: Configure sudoers
       ansible.builtin.lineinfile:
@@ -614,7 +611,6 @@
         path: "{{ item }}"
         state: absent
       loop:
-        - /1
         - /etc/rc.d/init.d/livesys
         - /root/.config/pulse
         - /root/.esd_auth
@@ -624,9 +620,6 @@
         - /root/.wget-hsts
         - /root/anaconda-ks.cfg
         - /root/original-ks.cfg
-        - /var/lib/abrt
-        - /var/spool/abrt
-        - /var/tmp/abrt
 
     - name: Clean up, part II
       ansible.builtin.find:

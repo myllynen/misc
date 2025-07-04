@@ -79,13 +79,14 @@ zstd
 tuned
 
 -a*firmware*
+-b*firmware*
 -dracut-config-rescue
 -gawk-all-langpacks
 -i*firmware*
 -langpacks-*
--lib*firmware*
--linux-firmware
+-l*firmware*
 -llvm-libs
+-m*firmware*
 -n*firmware*
 -NetworkManager-tui
 -parted
@@ -173,10 +174,10 @@ mkdir -p -m 0700 /var/lib/exec
 echo "%_install_langs en_US" > /etc/rpm/macros.install-langs-conf
 #echo "%_excludedocs 1" > /etc/rpm/macros.excludedocs-conf
 #echo "install_weak_deps=False" >> /etc/dnf/dnf.conf
-#dnf -C -y remove linux-firmware > /dev/null 2>&1 || :
+#dnf -C --disableplugin=product-id,subscription-manager -y remove linux-firmware > /dev/null 2>&1 || :
 
 # Update to latest packages
-#dnf -y update
+#dnf -y upgrade
 
 # Services
 systemctl disable dnf-makecache.timer nis-domainname.service remote-fs.target

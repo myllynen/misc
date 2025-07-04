@@ -141,7 +141,6 @@
           - 'l*firmware*'
           - 'm*firmware*'
           - 'n*firmware*'
-          - 'z*firmware*'
         state: absent
         cacheonly: true
         disablerepo: '*'
@@ -263,7 +262,6 @@
           - NetworkManager-adsl
           - NetworkManager-openconnect
           - NetworkManager-pptp
-          - NetworkManager-team
           - NetworkManager-tui
           - 'PackageKit*'
           - anaconda
@@ -295,7 +293,6 @@
           #- 'qt*'
           - realmd
           - 'sane*'
-          - teamd
           - trousers
           - yggdrasil
           - '*zhuyin*'
@@ -347,7 +344,6 @@
           - tmux
           - tuned
           - unzip
-          - util-linux-user
           - yum-utils
           - zsh
           - zstd

@@ -1,0 +1,26 @@
+---
+ignore: |
+  /.git/
+  /.github/
+
+extends: default
+
+rules:
+  #document-start: disable
+  comments-indentation: disable
+  comments:
+    require-starting-space: false
+    min-spaces-from-content: 1
+  float-values:
+    forbid-scientific-notation: true
+    require-numeral-before-decimal: true
+  indentation:
+    spaces: 2
+    check-multi-line-strings: false
+  key-duplicates:
+    forbid-duplicated-merge-keys: true
+  line-length:
+    max: 160
+    level: warning
+  truthy:
+    level: error

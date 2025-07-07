@@ -314,6 +314,7 @@
           - bind-utils
           #- cloud-init
           #- cloud-utils-growpart
+          - dnf-plugins-core
           - ethtool
           - git-core
           - glibc-minimal-langpack
@@ -343,7 +344,6 @@
           - tmux
           - tuned
           - unzip
-          - yum-utils
           - zsh
           - zstd
         state: present

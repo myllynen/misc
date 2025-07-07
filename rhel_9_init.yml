@@ -303,6 +303,7 @@
           - bind-utils
           #- cloud-init
           #- cloud-utils-growpart
+          - dnf-plugins-core
           - ethtool
           - git-core
           - glibc-minimal-langpack
@@ -332,7 +333,6 @@
           - tuned
           - unzip
           - util-linux-user
-          - yum-utils
           - zsh
           - zstd
         state: present

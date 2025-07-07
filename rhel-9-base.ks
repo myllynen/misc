@@ -56,6 +56,7 @@ bash-completion
 bind-utils
 #cloud-init
 #cloud-utils-growpart
+dnf-plugins-core
 glibc-langpack-en
 glibc-minimal-langpack
 #insights-client
@@ -72,7 +73,6 @@ setools-console
 tar
 #unzip
 #vim-enhanced
-yum-utils
 zsh
 zstd
 

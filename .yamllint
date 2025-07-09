@@ -6,11 +6,13 @@ ignore: |
 extends: default
 
 rules:
-  #document-start: disable
+  braces:
+    max-spaces-inside: 1
   comments-indentation: disable
   comments:
     require-starting-space: false
     min-spaces-from-content: 1
+  document-start: disable
   float-values:
     forbid-scientific-notation: true
     require-numeral-before-decimal: true
@@ -22,5 +24,8 @@ rules:
   line-length:
     max: 160
     level: warning
+  octal-values:
+    forbid-explicit-octal: true
+    forbid-implicit-octal: true
   truthy:
     level: error

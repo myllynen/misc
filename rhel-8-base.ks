@@ -21,7 +21,7 @@ zerombr
 clearpart --all --initlabel --disklabel gpt
 bootloader --timeout 1 --append "console=tty0 console=ttyS0,115200 net.ifnames.prefix=net quiet"
 part biosboot  --fstype biosboot --size 1
-part /boot/efi --fstype efi      --size 63
+part /boot/efi --fstype efi      --size 127
 part /boot     --fstype xfs      --size 1024
 #part swap      --fstype swap     --size 1024
 part /         --fstype xfs      --size 1024 --grow

@@ -50,6 +50,18 @@
     #ansible_become_user: Administrator
 
   tasks:
+    - name: Display Ansible configuration variables
+      ansible.builtin.debug:
+        msg: >-
+          {{ hostvars[inventory_hostname]
+             | dict2items
+             | selectattr('key', 'match', '^ansible_')
+             | rejectattr('key', 'equalto', 'ansible_facts')
+             | sort(attribute='key')
+             | items2dict
+          }}
+      run_once: true
+
     - name: Set remote connection port
       vars:
         conn_port: "{{ 'ansible_' + ansible_connection + '_port' }}"
@@ -57,8 +69,11 @@
         remote_port: "{{ lookup('env', 'ANSIBLE_REMOTE_PORT') | default(vars[conn_port], true) | default(ansible_port, true) | default('22', true) }}"
 
     - name: Display connection target
+      vars:
+        conn_user: "{{ 'ansible_' + ansible_connection + '_user' }}"
+        remo_user: "{{ vars[conn_user] | default(ansible_user) | default(lookup('env', 'USER')) }}"
       ansible.builtin.debug:
-        msg: "Attempting to connect to {{ inventory_hostname }}:{{ remote_port }}"
+        msg: "Attempting to connect as {{ remote_user }} to {{ inventory_hostname }}:{{ remote_port }}"
 
     - name: Check host reachable
       vars:

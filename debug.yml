@@ -4,7 +4,7 @@
   become: false
   gather_facts: true
   tasks:
-    - name: Display Ansible configuration details
+    - name: Display Ansible configuration basics
       ansible.builtin.debug:
         msg: |
           ansible_version: {{ ansible_version }}

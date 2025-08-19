@@ -8,6 +8,25 @@
   become: false
   gather_facts: true
   tasks:
+    - name: Display effective remote user
+      vars:
+        conn_user: "{{ 'ansible_' + ansible_connection + '_user' }}"
+        remo_user: "{{ vars[conn_user] | default(ansible_user) | default(lookup('env', 'USER')) }}"
+      ansible.builtin.debug:
+        msg: "Remote user is {{ remo_user }}"
+
+    - name: Display Ansible configuration variables
+      ansible.builtin.debug:
+        msg: >-
+          {{ hostvars[inventory_hostname]
+             | dict2items
+             | selectattr('key', 'match', '^ansible_')
+             | rejectattr('key', 'equalto', 'ansible_facts')
+             | sort(attribute='key')
+             | items2dict
+          }}
+      run_once: true
+
     - name: Display variable names
       ansible.builtin.debug:
         msg: "{{ lookup('varnames', '.+') | split(',') | sort }}"

@@ -18,7 +18,8 @@
         updated: "{{ true if ansible_play_batch.index(inventory_hostname) is even else false }}"
       ansible.builtin.set_stats:
         data:
-          host_data: "{{ host_data | default({}) | combine({inventory_hostname: {'updated': updated, 'running': true}}) }}"
+          host_data: "{{ host_data | default({})
+                         | combine({inventory_hostname: {'updated': updated, 'running': true}}) }}"
       when: tower_job_id is defined
 
     - name: Set workflow data, part II
@@ -27,7 +28,8 @@
         rebooted: "{{ false if ansible_play_batch.index(inventory_hostname) is even else true }}"
       ansible.builtin.set_stats:
         data:
-          host_data: "{{ host_data | default({}) | combine({inventory_hostname: {'rebooted': rebooted}}) }}"
+          host_data: "{{ host_data | default({})
+                         | combine({inventory_hostname: {'rebooted': rebooted}}) }}"
       when: tower_job_id is defined
 
     - name: Set playbook data, part I
@@ -35,7 +37,8 @@
         # Add some difference in data just to show data is indeed per-host
         updated: "{{ true if ansible_play_batch.index(inventory_hostname) is even else false }}"
       ansible.builtin.set_fact:
-        host_data: "{{ host_data | default({}) | combine({inventory_hostname: {'updated': updated, 'running': true}}, recursive=true) }}"
+        host_data: "{{ host_data | default({})
+                       | combine({inventory_hostname: {'updated': updated, 'running': true}}, recursive=true) }}"
       when: tower_job_id is not defined
 
     - name: Set playbook data, part II
@@ -43,12 +46,13 @@
         # Add some difference in data just to show data is indeed per-host
         rebooted: "{{ false if ansible_play_batch.index(inventory_hostname) is even else true }}"
       ansible.builtin.set_fact:
-        host_data: "{{ host_data | default({}) | combine({inventory_hostname: {'rebooted': rebooted}}, recursive=true) }}"
+        host_data: "{{ host_data | default({})
+                       | combine({inventory_hostname: {'rebooted': rebooted}}, recursive=true) }}"
       when: tower_job_id is not defined
 
     - name: Display data per-host variable
       ansible.builtin.debug:
         var: host_data[inventory_hostname]['rebooted']
         #var: hostvars[inventory_hostname]['host_data'][inventory_hostname]['rebooted']
-      run_once: true
+      #run_once: true
       when: tower_job_id is not defined

@@ -19,7 +19,8 @@
       ansible.builtin.set_stats:
         data:
           host_data: "{{ host_data | default({})
-                         | combine({inventory_hostname: {'updated': updated, 'running': true}}) }}"
+                         | combine({inventory_hostname: {'running': true,
+                                                         'updated': updated}}) }}"
       when: tower_job_id is defined
 
     - name: Set workflow data, part II
@@ -38,7 +39,8 @@
         updated: "{{ true if ansible_play_batch.index(inventory_hostname) is even else false }}"
       ansible.builtin.set_fact:
         host_data: "{{ host_data | default({})
-                       | combine({inventory_hostname: {'updated': updated, 'running': true}},
+                       | combine({inventory_hostname: {'running': true,
+                                                       'updated': updated}},
                                  recursive=true) }}"
       when: tower_job_id is not defined
 

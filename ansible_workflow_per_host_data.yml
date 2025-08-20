@@ -1,0 +1,25 @@
+# https://docs.ansible.com/ansible/latest/collections/ansible/builtin/set_stats_module.html
+# A later job template (playbook) can access the below set workflow data like this:
+#    - name: Display workflow data per host variable
+#      ansible.builtin.debug:
+#        var: wf_data[inventory_hostname]['rebooted']
+#      run_once: true
+---
+- name: Set per-host workflow data
+  hosts: all
+  become: false
+  gather_facts: false
+  tasks:
+   - name: Set worflow data, part I
+      vars:
+        updated: "{{ true if ansible_play_batch.index(inventory_hostname) is even else false }}"
+      ansible.builtin.set_stats:
+        data:
+          wf_data: "{{ wf_data | default({}) | combine({inventory_hostname: {'updated': updated, 'running': true}}) }}"
+
+    - name: Set worflow data, part II
+      vars:
+        rebooted: "{{ false if ansible_play_batch.index(inventory_hostname) is even else true }}"
+      ansible.builtin.set_stats:
+        data:
+          wf_data: "{{ wf_data | default({}) | combine({inventory_hostname: {'rebooted': rebooted}}) }}"

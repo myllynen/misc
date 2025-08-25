@@ -19,17 +19,30 @@
         var: groups
       run_once: true
 
-    - name: Display variable names
-      ansible.builtin.debug:
-        msg: "{{ lookup('varnames', '.+') | split(',') | sort }}"
-
-    - name: Display variables
-      ansible.builtin.debug:
-        var: vars
-
     - name: Display facts
       ansible.builtin.debug:
         var: ansible_facts
+
+    - name: Display variable names
+      ansible.builtin.debug:
+        msg: "{{ lookup('varnames', '.+', wantlist=true)
+                 | reject('in', ['ansible_facts', 'hostvars', 'play_hosts', 'vars'])
+                 | sort }}"
+
+    - name: Set variable names to display
+      ansible.builtin.set_fact:
+        var_names: "{{ lookup('varnames', '.+', wantlist=true)
+                       | reject('in', ['ansible_facts', 'hostvars', 'play_hosts', 'vars'])
+                       | sort }}"
+
+    - name: Display variables
+      vars:
+        var_values: |
+          {% for key in var_names %}
+          {{ key }}: {{ lookup('vars', key) }}
+          {% endfor %}
+      ansible.builtin.debug:
+        msg: "{{ var_values | from_yaml }}"
 
     - name: Display environment variables
       ansible.builtin.debug:

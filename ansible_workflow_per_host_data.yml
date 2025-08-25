@@ -1,7 +1,10 @@
+# https://access.redhat.com/solutions/3425201
 # https://docs.ansible.com/ansible/latest/collections/ansible/builtin/set_fact_module.html
 # https://docs.ansible.com/ansible/latest/collections/ansible/builtin/set_stats_module.html
+# https://docs.redhat.com/en/documentation/red_hat_ansible_automation_platform/2.5/html/using_automation_execution/controller-workflows#controller-workflow-extra-variables
 #
-# Later the below set data can be accessed like this:
+# Later the below set data can be accessed in a similar manner
+# either in AAP workflows or ansible-core playbooks / roles
 #    - name: Display per-host variable
 #      ansible.builtin.debug:
 #        var: host_data[inventory_hostname]['rebooted']
@@ -33,7 +36,7 @@
                          | combine({inventory_hostname: {'rebooted': rebooted}}) }}"
       when: tower_job_id is defined
 
-    - name: Set playbook data, part I
+    - name: Set playbook/role data, part I
       vars:
         # Add some difference in data just to show data is indeed per-host
         updated: "{{ true if ansible_play_batch.index(inventory_hostname) is even else false }}"
@@ -44,7 +47,7 @@
                                  recursive=true) }}"
       when: tower_job_id is not defined
 
-    - name: Set playbook data, part II
+    - name: Set playbook/role data, part II
       vars:
         # Add some difference in data just to show data is indeed per-host
         rebooted: "{{ false if ansible_play_batch.index(inventory_hostname) is even else true }}"

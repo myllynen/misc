@@ -26,13 +26,13 @@
   tasks:
     - name: Check target basics
       check_mode: false
-      ansible.builtin.raw: rpm -q python3 python3-libdnf5 python3-libselinux
+      ansible.builtin.raw: rpm -q python3 python3-libdnf5 python3-libselinux python3-rpm
       register: basics
       failed_when: false
       changed_when: false
 
     - name: Prepare target basics
-      ansible.builtin.raw: dnf -y install python3 python3-libdnf5 python3-libselinux
+      ansible.builtin.raw: dnf -y install python3 python3-libdnf5 python3-libselinux python3-rpm
       changed_when: true
       when: basics.rc != 0
 

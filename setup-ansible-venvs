@@ -26,7 +26,7 @@ for ver in $VERSIONS; do
   fi
 
   if [ "$PRE_RELEASES" = "yes" ]; then
-    pre_option="--pre"
+    pre_opt="--pre"
   fi
 
   echo Setting up $py_bin venv for $flavor-$ver...
@@ -36,9 +36,8 @@ for ver in $VERSIONS; do
   fi
   . $BASE_DIR/$inst_dir/bin/activate
   $py_bin -m pip install --upgrade pip wheel
-  $py_bin -m pip install --upgrade $pre_option $flavor$ver_limit
-  $py_bin -m pip install --upgrade ansible-dev-environment ansible-lint passlib
-  $py_bin -m pip install --upgrade pypsrp pywinrm requests-credssp requests-ntlm
+  $py_bin -m pip install --upgrade $pre_opt $flavor$ver_limit ansible-dev-environment ansible-lint
+  $py_bin -m pip install --upgrade passlib pypsrp pywinrm requests-credssp requests-ntlm
   rpm -q gcc krb5-devel ${py_bin}-devel > /dev/null 2>&1 &&
     $py_bin -m pip install --upgrade pykerberos
   deactivate

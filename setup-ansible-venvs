@@ -6,8 +6,9 @@
 # Config
 ANSIBLE_FLAVOR=ansible-core
 BASE_DIR=$HOME/ansible
-PYTHON_BIN=python3.11
-VERSIONS="2.16 2.18 2.19"
+PYTHON_BIN_OLD=python3.11
+PYTHON_BIN_NEW=python3.12
+VERSIONS="2.16 2.18 2.19 2.20"
 PRE_RELEASES=no
 
 # Main
@@ -16,9 +17,14 @@ cd $BASE_DIR || exit 3
 for ver in $VERSIONS; do
   inst_dir=ansible-$ver
   flavor=$ANSIBLE_FLAVOR
-  py_bin=$PYTHON_BIN
 
   ver_limit="==$ver.*"
+
+  if [ "$ver" = "2.20" -o "$ver" = "2.21" -o "$ver" = "2.22" ]; then
+    py_bin=$PYTHON_BIN_NEW
+  else
+    py_bin=$PYTHON_BIN_OLD
+  fi
 
   if ! command -v $py_bin > /dev/null 2>&1 ; then
     echo "Python executable $py_bin not found!" 1>&2

@@ -78,7 +78,7 @@
         var_values: |
           {% for key in config_reader_parameters %}
           {% set val = lookup('ansible.builtin.vars', key, default='__unset__') %}
-           {% if val != '__unset__' %}
+          {% if val != '__unset__' %}
           {{ key }}: {{ lookup('ansible.builtin.vars', key) }}
           {% endif %}
           {% endfor %}

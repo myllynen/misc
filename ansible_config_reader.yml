@@ -1,0 +1,86 @@
+---
+# Aggregates configuration partials for any known parameter keys
+#
+# Sources are defined by config_basedir and config_content;
+# extra parameters for include_vars may also be utilized.
+#
+# Suffixes for known parameters must be unique and distinct:
+# foo_x and foo_y are valid, but foo_x and foo_x_y conflict.
+#
+# Example of valid configuration partials naming in files:
+#
+# service_http_base
+# service_http_security
+# service_http_site_x
+#
+# The final service_http aggregate will include all their content.
+#
+# Only lists and dicts will be aggregated, other data types should
+# be set directly in configuration, for them the last definition wins
+# so file naming can be used to control priorities for settings.
+#
+- name: Generic configuration reader
+  hosts: localhost
+  connection: local
+  become: false
+  gather_facts: false
+  vars:
+    # Top level config dir
+    config_basedir: config.git
+    # Config files or directories to read
+    #config_content: prod
+    config_content: test
+    #config_content:
+    #  - test/packages.yml
+    #  - test/policies.yml
+    #  - test/services.yml
+
+    # List of known parameters
+    config_reader_parameters:
+      # Lists
+      - packages_install
+      - packages_remove
+      # Dicts
+      - services_httpd
+      - services_crond
+
+  tasks:
+    - name: Read configuration
+      no_log: "{{ config_reader_secure_logging | default(false) }}"
+      vars:
+        list_input: "{{ false if config_content is string else true }}"
+        content_list: "{{ config_content if list_input else [config_content] }}"
+        dir_input: "{{ false if item.endswith('yml') else true }}"
+      ansible.builtin.include_vars:
+        dir: "{{ (config_basedir + '/' + item) if dir_input else omit }}"
+        depth: "{{ congig_depth if config_depth is defined and dir_input else omit }}"
+        files_matching: "{{ config_matching if config_matching is defined and dir_input else omit }}"
+        ignore_files: "{{ config_ignore if config_ignore is defined and dir_input else omit }}"
+        ignore_unknown_extensions: "{{ true if dir_input else omit }}"
+        file: "{{ (config_basedir + '/' + item) if not dir_input else omit }}"
+      loop: "{{ content_list }}"
+
+    - name: Combine configuration
+      vars:
+        is_dict: "{{ true if lookup('ansible.builtin.vars', item) is mapping else false }}"
+        this_var: "{{ item | regex_replace('^(' + config_reader_parameters | join('|') + ')_.*', '\\1') | string }}"
+      ansible.builtin.set_fact:
+        "{{ this_var }}": "{{
+            lookup('ansible.builtin.vars', this_var, default={}) | combine(lookup('ansible.builtin.vars', item),
+                                                                           list_merge='append_rp', recursive=true)
+            if is_dict else
+            lookup('ansible.builtin.vars', this_var, default=[]) + lookup('ansible.builtin.vars', item)
+          }}"
+      loop: "{{ query('ansible.builtin.varnames', '^(' + config_reader_parameters | join('|') + ')_.*') }}"
+
+    - name: Display configuration
+      vars:
+        var_values: |
+          {% for key in config_reader_parameters %}
+          {% set val = lookup('ansible.builtin.vars', key, default='__unset__') %}
+           {% if val != '__unset__' %}
+          {{ key }}: {{ lookup('ansible.builtin.vars', key) }}
+          {% endif %}
+          {% endfor %}
+      ansible.builtin.debug:
+        msg: "{{ var_values | from_yaml | to_nice_yaml(indent=2) }}"

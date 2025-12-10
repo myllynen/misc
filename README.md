@@ -13,32 +13,18 @@ Nothing but random stuff here.
   * Basic steps to setup local (test) Git repo infra
 * [ansible.cfg](ansible.cfg)
   * Ansible configuration file with most relevant settings
-* [cross_node_ssh.yml](cross_node_ssh.yml)
-  * Ansible playbook to configure cross-node SSH key authentication
 * [fedora_init.yml](fedora_init.yml)
   * Ansible playbook to initialize a Fedora system after installation
-* [qcow2-to-box](qcow2-to-box)
-  * Simple script to create Vagrant boxes from Qcow2 images
-* [report_local_users.yml](report_local_users.yml)
-  * Ansible playbook to report local users from systems
-* [rhel-8-base.ks](rhel-8-base.ks)
-  * RHEL 8 base installation kickstart example (see below)
-* [rhel-9-base.ks](rhel-8-base.ks)
-  * RHEL 9 base installation kickstart example (see below)
 * [rhel-10-base.ks](rhel-10-base.ks)
   * RHEL 10 base installation kickstart example (see below)
-* [rhel_8_init.yml](rhel_8_init.yml)
-  * Ansible playbook to initialize a RHEL 8 system after installation
-* [rhel_9_init.yml](rhel_9_init.yml)
-  * Ansible playbook to initialize a RHEL 9 system after installation
 * [rhel_10_init.yml](rhel_10_init.yml)
   * Ansible playbook to initialize a RHEL 10 system after installation
 * [setup-ansible-gpg-keyring](setup-ansible-gpg-keyring)
   * Script to set up Ansible GPG keyring for RH collection signatures
 * [setup-ansible-venvs](setup-ansible-venvs)
   * Script to set up Ansible/Python venvs for many Ansible versions
-* [vagrant.ks](vagrant.ks)
-  * Kickstart snippet to make Fedora/RHEL installation Vagrant-ready
+
+And many others, see the directory list for full content listing.
 
 ## RHEL 8 Footprint Comparison
 

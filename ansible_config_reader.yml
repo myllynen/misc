@@ -63,7 +63,7 @@
     - name: Combine configuration
       vars:
         is_dict: "{{ true if lookup('ansible.builtin.vars', item) is mapping else false }}"
-        this_var: "{{ item | regex_replace('^(' + config_reader_parameters | join('|') + ')_.*', '\\1') | string }}"
+        this_var: "{{ item | regex_replace('^(' + config_reader_parameters | join('|') + ')_.*', '\\1') }}"
       ansible.builtin.set_fact:
         "{{ this_var }}": "{{
             lookup('ansible.builtin.vars', this_var, default={}) | combine(lookup('ansible.builtin.vars', item),

@@ -1,23 +1,22 @@
 ---
-# Aggregates configuration partials for any known parameter keys
+# Combine configuration partials for given parameter keys
 #
-# Sources are defined by config_basedir and config_content;
-# extra parameters for include_vars may also be utilized.
+# List of source files and/or directories are defined by
+# config_basedir and config_content; optional extra
+# parameters for include_vars may also be used.
 #
-# Suffixes for known parameters must be unique and distinct:
-# foo_x and foo_y are valid, but foo_x and foo_x_y conflict.
+# Example valid configuration partial names defined in files:
 #
-# Example of valid configuration partials naming in files:
+#   - service_http_base
+#   - service_http_security
+#   - service_http_site_x
 #
-# service_http_base
-# service_http_security
-# service_http_site_x
+# The final service_http will combine all their content.
 #
-# The final service_http aggregate will include all their content.
-#
-# Only lists and dicts will be aggregated, other data types should
-# be set directly in configuration, for them the last definition wins
-# so file naming can be used to control priorities for settings.
+# Only lists and dicts will be combined; other data types should
+# be set directly in the configuration. For non-list/dict values,
+# the last definition wins, so file naming can be used to
+# prioritize settings.
 #
 - name: Generic configuration reader
   hosts: localhost
@@ -62,15 +61,14 @@
 
     - name: Combine configuration
       vars:
-        is_dict: "{{ true if lookup('ansible.builtin.vars', item) is mapping else false }}"
-        this_var: "{{ item | regex_replace('^(' + config_reader_parameters | join('|') + ')_.*', '\\1') }}"
+        var_name: "{{ item | regex_replace('^(' + config_reader_parameters | join('|') + ')_.*', '\\1') }}"
+        curr_val: "{{ lookup('ansible.builtin.vars', item) }}"
+        is_dict: "{{ true if curr_val is mapping else false }}"
+        prev_val: "{{ lookup('ansible.builtin.vars', var_name, default={} if is_dict else []) }}"
       ansible.builtin.set_fact:
-        "{{ this_var }}": "{{
-            lookup('ansible.builtin.vars', this_var, default={}) | combine(lookup('ansible.builtin.vars', item),
-                                                                           list_merge='append_rp', recursive=true)
-            if is_dict else
-            lookup('ansible.builtin.vars', this_var, default=[]) + lookup('ansible.builtin.vars', item)
-          }}"
+        "{{ var_name }}": "{{ prev_val | combine(curr_val, list_merge='append_rp', recursive=true)
+                              if is_dict else
+                              prev_val + curr_val }}"
       loop: "{{ query('ansible.builtin.varnames', '^(' + config_reader_parameters | join('|') + ')_.*') }}"
 
     - name: Display configuration

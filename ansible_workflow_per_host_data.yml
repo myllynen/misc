@@ -1,3 +1,4 @@
+---
 # https://access.redhat.com/solutions/3425201
 # https://docs.ansible.com/ansible/latest/collections/ansible/builtin/set_fact_module.html
 # https://docs.ansible.com/ansible/latest/collections/ansible/builtin/set_stats_module.html
@@ -9,7 +10,7 @@
 #      ansible.builtin.debug:
 #        var: host_data[inventory_hostname]['rebooted']
 #      run_once: true
----
+#
 - name: Set per-host data for playbook/role and workflow
   hosts: all
   become: false

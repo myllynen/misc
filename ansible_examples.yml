@@ -1,7 +1,8 @@
-# https://docs.ansible.com/ansible/latest/user_guide/playbooks_filters.html
-# https://jinja.palletsprojects.com/en/3.0.x/templates/#list-of-builtin-filters
-# https://docs.ansible.com/ansible/latest/user_guide/complex_data_manipulation.html
 ---
+# https://docs.ansible.com/ansible/latest/user_guide/playbooks_filters.html
+# https://jinja.palletsprojects.com/en/latest/templates/#list-of-builtin-filters
+# https://docs.ansible.com/ansible/latest/user_guide/complex_data_manipulation.html
+#
 - name: Miscellaneous Ansible examples
   hosts: localhost
   connection: local
@@ -11,7 +12,8 @@
     - name: Display effective remote user
       vars:
         conn_user: "{{ 'ansible_' + ansible_connection + '_user' }}"
-        remo_user: "{{ vars[conn_user] | default(ansible_user) | default(lookup('env', 'USER')) }}"
+        remo_user: "{{ vars[conn_user] | default(ansible_user)
+                       | default(lookup('ansible.builtin.env', 'USER')) }}"
       ansible.builtin.debug:
         msg: "Remote user is {{ remo_user }}"
 
@@ -33,13 +35,13 @@
 
     - name: Display variable names
       ansible.builtin.debug:
-        msg: "{{ lookup('varnames', '.+', wantlist=true)
+        msg: "{{ lookup('ansible.builtin.varnames', '.+', wantlist=true)
                  | reject('in', ['ansible_facts', 'hostvars', 'play_hosts', 'vars'])
                  | sort }}"
 
     - name: Set variable names to display
       ansible.builtin.set_fact:
-        var_names: "{{ lookup('varnames', '.+', wantlist=true)
+        var_names: "{{ lookup('ansible.builtin.varnames', '.+', wantlist=true)
                        | reject('in', ['ansible_facts', 'hostvars', 'play_hosts', 'vars'])
                        | sort }}"
 
@@ -47,7 +49,7 @@
       vars:
         var_values: |
           {% for key in var_names %}
-          {{ key }}: {{ lookup('vars', key) }}
+          {{ key }}: {{ lookup('ansible.builtin.vars', key) }}
           {% endfor %}
       ansible.builtin.debug:
         msg: "{{ var_values | from_yaml }}"

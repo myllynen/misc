@@ -25,13 +25,13 @@
 
     - name: Display variable names
       ansible.builtin.debug:
-        msg: "{{ lookup('varnames', '.+', wantlist=true)
+        msg: "{{ lookup('ansible.builtin.varnames', '.+', wantlist=true)
                  | reject('in', ['ansible_facts', 'hostvars', 'play_hosts', 'vars'])
                  | sort }}"
 
     - name: Set variable names to display
       ansible.builtin.set_fact:
-        var_names: "{{ lookup('varnames', '.+', wantlist=true)
+        var_names: "{{ lookup('ansible.builtin.varnames', '.+', wantlist=true)
                        | reject('in', ['ansible_facts', 'hostvars', 'play_hosts', 'vars'])
                        | sort }}"
 
@@ -39,16 +39,17 @@
       vars:
         var_values: |
           {% for key in var_names %}
-          {{ key }}: {{ lookup('vars', key) }}
+          {{ key }}: {{ lookup('ansible.builtin.vars', key) }}
           {% endfor %}
       ansible.builtin.debug:
         msg: "{{ var_values | from_yaml }}"
+        #msg: "{{ var_values | from_yaml | to_nice_yaml(indent=2) }}"
 
     - name: Display environment variables
       ansible.builtin.debug:
         msg: |
-          MY_VAR1: {{ lookup('ansible.builtin.env', 'MY_VAR1') | default('unset') }}
-          MY_VAR2: {{ lookup('ansible.builtin.env', 'MY_VAR2') | default('unset') }}
+          MY_VAR1: {{ lookup('ansible.builtin.env', 'MY_VAR1', default='unset') }}
+          MY_VAR2: {{ lookup('ansible.builtin.env', 'MY_VAR2', default='unset') }}
           MY_VAR3: {{ MY_VAR3 | default('unset') }}
           MY_VAR4: {{ MY_VAR4 | default('unset') }}
 

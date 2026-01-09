@@ -1,0 +1,49 @@
+#!/usr/bin/env python3
+
+import sys
+import shlex
+import os.path
+import subprocess
+
+filelist = set()
+for path in (sys.argv[1:] or [os.path.curdir]):
+    if os.path.isfile(path) or os.path.islink(path):
+        filelist.add(os.path.relpath(path))
+    elif os.path.isdir(path):
+        for root, subdirs, files in os.walk(path):
+            if '.git' in subdirs:
+                subdirs.remove('.git')
+            for file in files:
+                filelist.add(os.path.relpath(os.path.join(root, file)))
+
+gitdif = subprocess.Popen(shlex.split('git diff --name-status'),
+                          stdout=subprocess.PIPE)
+gitobj = subprocess.Popen(shlex.split('git log --no-merges --raw --pretty=%at'),
+                          stdout=subprocess.PIPE)
+
+mtime = 0
+changed = []
+for line in gitdif.stdout:
+    if line.decode('UTF-8').startswith('M'):
+        changed.append(line.decode('UTF-8').split()[1])
+
+for line in gitobj.stdout:
+    line = line.decode('UTF-8')
+    line = line.strip()
+    if not line:
+      continue
+
+    if line.startswith(':'):
+        file = line.split('\t')[-1]
+        if file in filelist:
+            filelist.remove(file)
+            if file not in changed:
+                try:
+                    os.utime(file, (mtime, mtime))
+                except Exception:
+                    pass
+    else:
+        mtime = int(line)
+
+    if not filelist:
+        break

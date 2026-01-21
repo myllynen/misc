@@ -10,6 +10,9 @@ collections:
   - name: ansible.hub
     source: redhat_certified
 
+  - name: ansible.mcp
+    source: redhat_certified
+
   - name: ansible.platform
     source: redhat_certified
 
@@ -34,7 +37,7 @@ collections:
   - name: microsoft.ad
     source: redhat_certified
 
-  - name: redhat.ai
+  - name: microsoft.mecm
     source: redhat_certified
 
   - name: redhat.rhel_idm
@@ -50,6 +53,9 @@ collections:
     source: redhat_certified
 
   # Red Hat validated collections
+  - name: ansible.mcp_builder
+    source: redhat_validated
+
   - name: infra.aap_configuration
     source: redhat_validated
 
@@ -74,12 +80,15 @@ collections:
   #- name: infra.windows_ops
   #  source: redhat_validated
 
-  # Ansible Galaxy community collections
-  - name: community.general
-    source: ansible_galaxy
+  #- name: infra.mecm_ops
+  #  source: redhat_validated
 
-  - name: community.windows
-    source: ansible_galaxy
-
-  - name: containers.podman
-    source: ansible_galaxy
+#  # Ansible Galaxy community collections
+#  - name: community.general
+#    source: ansible_galaxy
+#
+#  - name: community.windows
+#    source: ansible_galaxy
+#
+#  - name: containers.podman
+#    source: ansible_galaxy

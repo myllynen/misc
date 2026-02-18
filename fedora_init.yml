@@ -26,13 +26,13 @@
   tasks:
     - name: Check target basics
       check_mode: false
-      ansible.builtin.raw: rpm -q python3 python3-libdnf5 python3-libselinux python3-rpm
+      ansible.builtin.raw: rpm -q python3 python3-libdnf python3-libdnf5 python3-libselinux python3-rpm
       register: basics
       failed_when: false
       changed_when: false
 
     - name: Prepare target basics
-      ansible.builtin.raw: dnf -y install python3 python3-libdnf5 python3-libselinux python3-rpm
+      ansible.builtin.raw: dnf5 -y install python3 python3-libdnf python3-libdnf5 python3-libselinux python3-rpm
       changed_when: true
       when: basics.rc != 0
 
@@ -135,15 +135,13 @@
     - name: Remove unneeded firmware packages
       ansible.builtin.dnf:
         name:
-          - 'a*firmware*'
-          - 'b*firmware*'
-          - 'i*firmware*'
-          - 'l*firmware*'
-          - 'm*firmware*'
-          - 'n*firmware*'
+          - '*firmware*'
+        exclude:
+          - '*kernel*'
         state: absent
         cacheonly: true
         disablerepo: '*'
+        allowerasing: true
       when: ansible_facts.virtualization_role == "guest"
 
     - name: Remove all virtual guest packages
@@ -171,6 +169,7 @@
         state: absent
         cacheonly: true
         disablerepo: '*'
+        allowerasing: true
       when: ansible_facts.virtualization_role == "guest"
 
     - name: Remove unneeded packages on Azure/Hyper-V
@@ -300,6 +299,7 @@
         autoremove: true
         cacheonly: true
         disablerepo: '*'
+        allowerasing: true
 
     - name: Remove unhelpful packages (server)
       ansible.builtin.dnf:
@@ -308,6 +308,7 @@
         state: absent
         cacheonly: true
         disablerepo: '*'
+        allowerasing: true
       when: not workstation | bool
 
     - name: Install helpful packages (common)

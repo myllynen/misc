@@ -1,17 +1,20 @@
 ---
-- name: Debug playbook example
+- name: Ansible debug playbook
   hosts: all
   become: false
-  gather_facts: true
+  gather_facts: false
   tasks:
-    - name: Display Ansible configuration basics
+    - name: Display Ansible runtime essentials
+      vars:
+        output:
+          ansible_version: "{{ ansible_version }}"
+          ansible_config_file: "{{ ansible_config_file }}"
+          ansible_inventory_sources: "{{ ansible_inventory_sources }}"
+          ansible_playbook_python: "{{ ansible_playbook_python }}"
+          ansible_play_hosts_all: "{{ ansible_play_hosts_all }}"
+          ansible_play_batch: "{{ ansible_play_batch }}"
       ansible.builtin.debug:
-        msg: |
-          ansible_version: {{ ansible_version }}
-          ansible_config_file: {{ ansible_config_file }}
-          ansible_inventory_sources: {{ ansible_inventory_sources }}
-          ansible_play_hosts_all: {{ ansible_play_hosts_all }}
-          ansible_play_batch: {{ ansible_play_batch }}
+        msg: "{{ output }}"
       run_once: true
 
     - name: Display Ansible host groups
@@ -19,23 +22,17 @@
         var: groups
       run_once: true
 
-    - name: Display facts
-      ansible.builtin.debug:
-        var: ansible_facts
-
-    - name: Display variable names
-      ansible.builtin.debug:
-        msg: "{{ lookup('ansible.builtin.varnames', '.+', wantlist=true)
-                 | reject('in', ['ansible_facts', 'hostvars', 'play_hosts', 'vars'])
-                 | sort }}"
-
     - name: Set variable names to display
       ansible.builtin.set_fact:
         var_names: "{{ lookup('ansible.builtin.varnames', '.+', wantlist=true)
                        | reject('in', ['ansible_facts', 'hostvars', 'play_hosts', 'vars'])
                        | sort }}"
 
-    - name: Display variables
+    - name: Display variable names
+      ansible.builtin.debug:
+        msg: "{{ var_names }}"
+
+    - name: Display variable values
       vars:
         var_values: |
           {% for key in var_names %}
@@ -43,15 +40,18 @@
           {% endfor %}
       ansible.builtin.debug:
         msg: "{{ var_values | from_yaml }}"
-        #msg: "{{ var_values | from_yaml | to_nice_yaml(indent=2) }}"
 
-    - name: Display environment variables
+    - name: Read Ansible changed configuration
+      ansible.builtin.shell: ansible-config dump --changed-only --f display --t all | grep -v token
+      register: changed_config
+      changed_when: false
+      delegate_to: localhost
+      run_once: true
+
+    - name: Display Ansible changed configuration
       ansible.builtin.debug:
-        msg: |
-          MY_VAR1: {{ lookup('ansible.builtin.env', 'MY_VAR1', default='unset') }}
-          MY_VAR2: {{ lookup('ansible.builtin.env', 'MY_VAR2', default='unset') }}
-          MY_VAR3: {{ MY_VAR3 | default('unset') }}
-          MY_VAR4: {{ MY_VAR4 | default('unset') }}
+        msg: "{{ changed_config.stdout_lines }}"
+      run_once: true
 
     - name: Read list of installed Ansible collections
       ansible.builtin.command: ansible-galaxy collection list
@@ -62,6 +62,52 @@
 
     - name: Display list of installed Ansible collections
       ansible.builtin.debug:
-        var: collection_list.stdout
+        msg: "{{ collection_list.stdout_lines }}"
+      run_once: true
+
+    - name: Read local environment variables
+      ansible.builtin.command: env
+      register: local_env
+      changed_when: false
       delegate_to: localhost
       run_once: true
+
+    - name: Display local environment variables
+      ansible.builtin.debug:
+        msg: "{{ local_env.stdout_lines }}"
+      run_once: true
+
+    - name: Clear facts
+      ansible.builtin.meta: clear_facts
+
+    - name: Display connection parameters
+      vars:
+        conn_port: "{{ 'ansible_' + ansible_connection + '_port' }}"
+        remo_port: "{{ lookup('vars', conn_port, default='')
+                       | default(ansible_port, true)
+                       | default('22', true) }}"
+        conn_user: "{{ 'ansible_' + ansible_connection + '_user' }}"
+        remo_user: "{{ lookup('vars', conn_user, default='')
+                       | default(ansible_user, true)
+                       | default(lookup('env', 'USER'), true) }}"
+      ansible.builtin.debug:
+        msg: "Attempting to connect as {{ remo_user }} to {{ inventory_hostname }}:{{ remo_port }}"
+
+    - name: Gather POSIX facts
+      #become: true
+      ansible.builtin.setup:
+      ignore_errors: true
+      ignore_unreachable: true
+
+    - name: Gather Windows facts
+      #become: true
+      vars:
+        ansible_shell_type: powershell
+      ansible.builtin.setup:
+      ignore_errors: true
+      ignore_unreachable: true
+      when: ansible_facts | length == 0
+
+    - name: Display facts
+      ansible.builtin.debug:
+        var: ansible_facts

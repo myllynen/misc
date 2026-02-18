@@ -25,7 +25,7 @@
           host_data: "{{ host_data | default({})
                          | combine({inventory_hostname: {'running': true,
                                                          'updated': updated}}) }}"
-      when: tower_job_id is defined
+      when: awx_job_id is defined
 
     - name: Set workflow data, part II
       vars:
@@ -35,7 +35,7 @@
         data:
           host_data: "{{ host_data | default({})
                          | combine({inventory_hostname: {'rebooted': rebooted}}) }}"
-      when: tower_job_id is defined
+      when: awx_job_id is defined
 
     - name: Set playbook/role data, part I
       vars:
@@ -46,7 +46,7 @@
                        | combine({inventory_hostname: {'running': true,
                                                        'updated': updated}},
                                  recursive=true) }}"
-      when: tower_job_id is not defined
+      when: awx_job_id is not defined
 
     - name: Set playbook/role data, part II
       vars:
@@ -56,11 +56,11 @@
         host_data: "{{ host_data | default({})
                        | combine({inventory_hostname: {'rebooted': rebooted}},
                                  recursive=true) }}"
-      when: tower_job_id is not defined
+      when: awx_job_id is not defined
 
     - name: Display data per-host variable
       ansible.builtin.debug:
         var: host_data[inventory_hostname]['rebooted']
         #var: hostvars[inventory_hostname]['host_data'][inventory_hostname]['rebooted']
       #run_once: true
-      when: tower_job_id is not defined
+      when: awx_job_id is not defined

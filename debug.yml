@@ -42,7 +42,10 @@
         msg: "{{ var_values | from_yaml }}"
 
     - name: Read Ansible changed configuration
-      ansible.builtin.shell: ansible-config dump --changed-only --f display --t all | grep -v token
+      ansible.builtin.shell: >
+        ANSIBLE_FORCE_COLOR=false
+        ansible-config dump --changed-only --f display --t all
+        | grep -Ev 'token|password|client_secret'
       register: changed_config
       changed_when: false
       delegate_to: localhost

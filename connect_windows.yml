@@ -11,7 +11,6 @@
     # Ansible WinRM configuration
     #
     #ansible_connection: winrm
-    #ansible_pipelining: true
     #ansible_winrm_port: 5985
     #ansible_winrm_scheme: http
     #ansible_winrm_transport: ntlm
@@ -25,7 +24,6 @@
     # Ansible psrp configuration
     #
     ansible_connection: psrp
-    ansible_pipelining: true
     ansible_psrp_port: 5985
     ansible_psrp_protocol: http
     ansible_psrp_auth: ntlm
@@ -50,30 +48,35 @@
     #ansible_become_user: Administrator
 
   tasks:
-    - name: Display Ansible configuration variables
+    - name: Display Ansible runtime essentials
+      vars:
+        output:
+          ansible_version: "{{ ansible_version }}"
+          ansible_config_file: "{{ ansible_config_file }}"
+          ansible_inventory_sources: "{{ ansible_inventory_sources }}"
+          ansible_playbook_python: "{{ ansible_playbook_python }}"
+          ansible_play_hosts_all: "{{ ansible_play_hosts_all }}"
+          ansible_play_batch: "{{ ansible_play_batch }}"
       ansible.builtin.debug:
-        msg: >-
-          {{ hostvars[inventory_hostname]
-             | dict2items
-             | selectattr('key', 'match', '^ansible_')
-             | rejectattr('key', 'equalto', 'ansible_facts')
-             | sort(attribute='key')
-             | items2dict
-          }}
+        msg: "{{ output }}"
       run_once: true
 
     - name: Set remote connection port
       vars:
         conn_port: "{{ 'ansible_' + ansible_connection + '_port' }}"
       ansible.builtin.set_fact:
-        remote_port: "{{ lookup('env', 'ANSIBLE_REMOTE_PORT') | default(vars[conn_port], true) | default(ansible_port, true) | default('22', true) }}"
+        remo_port: "{{ lookup('vars', conn_port, default='')
+                       | default(ansible_port, true)
+                       | default('22', true) }}"
 
-    - name: Display connection target
+    - name: Display connection parameters
       vars:
         conn_user: "{{ 'ansible_' + ansible_connection + '_user' }}"
-        remo_user: "{{ vars[conn_user] | default(ansible_user) | default(lookup('env', 'USER')) }}"
+        remo_user: "{{ lookup('vars', conn_user, default='')
+                       | default(ansible_user, true)
+                       | default(lookup('env', 'USER'), true) }}"
       ansible.builtin.debug:
-        msg: "Attempting to connect as {{ remote_user }} to {{ inventory_hostname }}:{{ remote_port }}"
+        msg: "Attempting to connect as {{ remo_user }} to {{ inventory_hostname }}:{{ remo_port }}"
 
     - name: Check host reachable
       vars:
@@ -81,7 +84,7 @@
         ansible_shell_type: sh
       ansible.builtin.wait_for:
         host: "{{ inventory_hostname }}"
-        port: "{{ remote_port }}"
+        port: "{{ remo_port }}"
         timeout: 10
       delegate_to: localhost
 
@@ -92,18 +95,20 @@
       ansible.windows.win_whoami:
       register: whoami_output
 
-    - name: Fail if user is not in group {{ admin_group }}
-      ansible.builtin.fail:
-        msg: "User is not in the group {{ admin_group }}."
-      when: admin_group not in whoami_output.groups | map(attribute='account_name')
+    - name: Verify user is in group {{ admin_group }}
+      ansible.builtin.assert:
+        that:
+          - admin_group in whoami_output.groups | map(attribute='account_name')
+        quiet: true
+        fail_msg: "User is not in the group {{ admin_group }}."
 
-    - name: Fail if non-admin user does not have privilege SeDebugPrivilege
-      ansible.builtin.fail:
-        msg: "User does not have the privilege SeDebugPrivilege."
-      when:
-        - admin_group not in whoami_output.groups | map(attribute='account_name')
-        - "'SeDebugPrivilege' not in whoami_output.privileges or
-            whoami_output.privileges.SeDebugPrivilege is not search('enabled')"
+    - name: Verify user has privilege SeDebugPrivilege
+      ansible.builtin.assert:
+        that:
+          - "'SeDebugPrivilege' in whoami_output.privileges or
+              whoami_output.privileges.SeDebugPrivilege is search('enabled')"
+        quiet: true
+        fail_msg: "User does not have the privilege SeDebugPrivilege."
 
     - name: Ensure become works if become user defined
       become: true
@@ -120,7 +125,7 @@
 
     - name: Display Group Policy Result tool report
       ansible.builtin.debug:
-        var: gpresult_info.stdout
+        msg: "{{ gpresult_info.stdout_lines }}"
       when: gpo_check | bool
 
     - name: Run Group Policy Result tool with become
@@ -136,7 +141,7 @@
 
     - name: Display Group Policy Result tool report with become
       ansible.builtin.debug:
-        var: gpresult_info.stdout
+        msg: "{{ gpresult_info.stdout_lines }}"
       when:
         - ansible_become_user is defined
         - gpo_check | bool

@@ -43,6 +43,7 @@
 
     - name: Read Ansible changed configuration
       ansible.builtin.shell: >
+        set -o pipefail &&
         ANSIBLE_FORCE_COLOR=false
         ansible-config dump --changed-only --f display --t all
         | grep -Ev 'token|password|client_secret'
@@ -99,6 +100,7 @@
     - name: Gather POSIX facts
       #become: true
       ansible.builtin.setup:
+      # noqa: ignore-errors
       ignore_errors: true
       ignore_unreachable: true
 
@@ -107,6 +109,7 @@
       vars:
         ansible_shell_type: powershell
       ansible.builtin.setup:
+      # noqa: ignore-errors
       ignore_errors: true
       ignore_unreachable: true
       when: ansible_facts | length == 0

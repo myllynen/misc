@@ -57,6 +57,7 @@ bind-utils
 dnf-plugins-core
 glibc-langpack-en
 glibc-minimal-langpack
+grubby
 #insights-client
 man-pages
 nano
@@ -79,7 +80,6 @@ zsh
 #grub2-efi-x64
 #grub2-pc
 #-mdadm
-##parted
 #shim-x64
 
 # For security profile
@@ -96,7 +96,6 @@ tuned
 -lib*firmware*
 -NetworkManager-team
 -NetworkManager-tui
--parted
 -plymouth
 -rhc*
 -sqlite
@@ -119,6 +118,8 @@ tuned
 %end
 
 %post
+# GRUB / boot parameters
+grubby --remove-args="rhgb resume" --update-kernel=ALL
 # GRUB / console
 #sed -i -e 's,GRUB_TERMINAL.*,GRUB_TERMINAL="serial console",' /etc/default/grub
 #sed -i -e '/GRUB_SERIAL_COMMAND/d' -e '$ i GRUB_SERIAL_COMMAND="serial --speed=115200"' /etc/default/grub

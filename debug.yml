@@ -4,6 +4,22 @@
   become: false
   gather_facts: false
   tasks:
+    - name: Read execution environment basics
+      ansible.builtin.shell: >
+        . /etc/os-release &&
+        printf "Running in $NAME $VERSION based EE\n$DESCRIPTION\n"
+      register: ee_info
+      changed_when: false
+      delegate_to: localhost
+      run_once: true
+      when: awx_execution_node is defined
+
+    - name: Display execution environment basics
+      ansible.builtin.debug:
+        msg: "{{ ee_info.stdout_lines }}"
+      run_once: true
+      when: awx_execution_node is defined
+
     - name: Display Ansible runtime essentials
       vars:
         output:

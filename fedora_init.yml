@@ -276,7 +276,7 @@
           - 'gutenprint*'
           - '*hangul*'
           - 'hplip*'
-          - 'java*'
+          - 'java-*'
           - kernel-modules-extra
           - kexec-tools
           - '*kkc*'
@@ -406,8 +406,8 @@
           #- vlc
           - xauth
           - xclip
-          - xorg-x11-fonts-misc
-          - xorriso
+          #- xorg-x11-fonts-misc
+          #- xorriso
           - youtube-dl
         state: present
       when: workstation | bool
@@ -477,7 +477,7 @@
         name: "{{ item }}"
         enabled: false
       loop:
-        - bluetooth.service
+        #- bluetooth.service
         - iscsi.service
         - iscsid.socket
         - iscsiuio.socket

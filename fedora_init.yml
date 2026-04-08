@@ -526,20 +526,29 @@
       when: create_user | bool
 
     - name: Create user, part II
+      ansible.builtin.file:
+        path: /var/lib/AccountsService/users
+        state: directory
+        owner: root
+        group: root
+        mode: '0700'
+      when: create_user | bool and workstation | bool
+
+    - name: Create user, part III
       ansible.builtin.copy:
         content: |
           [User]
           Language=
-          XSession=
+          Session=
           Icon=/home/{{ user_name }}/.face
           SystemAccount=false
         dest: /var/lib/AccountsService/users/{{ user_name }}
         owner: root
         group: root
         mode: '0600'
-      when: workstation | bool and create_user | bool
+      when: create_user | bool and workstation | bool
 
-    - name: Disable tracker for the user, part I
+    - name: Disable user tracking, part I
       ansible.builtin.file:
         path: /home/{{ user_name }}/.config/systemd/user
         state: directory
@@ -548,7 +557,7 @@
         mode: '0755'
       when: create_user | bool
 
-    - name: Disable tracker for the user, part II
+    - name: Disable user tracking, part II
       ansible.builtin.file:
         state: link
         src: /dev/null
@@ -556,15 +565,10 @@
         owner: "{{ user_name }}"
         group: "{{ user_group }}"
       loop:
-        - tracker-extract-3.service
-        - tracker-miner-fs-3.service
-        - tracker-miner-fs-control-3.service
-        - tracker-miner-rss-3.service
-        - tracker-writeback-3.service
-        - tracker-xdg-portal-3.service
+        - localsearch-3.service
       when: create_user | bool
 
-    - name: Disable tracker for the user, part III
+    - name: Disable user tracking, part III
       ansible.builtin.command: restorecon -Rv "/home/{{ user_name }}/.config/systemd"
       register: restorecon
       changed_when: "'Relabeled' in restorecon.stdout"

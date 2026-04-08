@@ -14,5 +14,5 @@
         body:
           client_id: cloud-services
           grant_type: refresh_token
-          refresh_token: "{{ token }}"
+          refresh_token: "{{ lookup('env', 'GENERIC_API_TOKEN') | default(token) }}"
       changed_when: true

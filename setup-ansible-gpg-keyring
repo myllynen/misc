@@ -6,17 +6,18 @@
 # https://access.redhat.com/security/team/key
 
 # Config
-ANS_DIR=./.ansible
-GPG_DIR=$ANS_DIR/gnupg
+BASE_PATH=$HOME/.ansible
+export GNUPGHOME=$BASE_PATH/gnupg
 
 # Setup Ansible GPG keyring with Red Hat public collections key
-curl -sO https://access.redhat.com/security/data/8a828aad.txt
-mkdir -m 0700 -p $GPG_DIR
+curl -sLO https://access.redhat.com/security/data/8a828aad.txt
+mkdir -m 0700 -p $GNUPGHOME
 # NB. It's safe to ignore the "invalid armor header" warning
-gpg --homedir $GPG_DIR --import ./8a828aad.txt
-rm -rf $GPG_DIR/private-keys-v1.d $GPG_DIR/pubring.kbx~
+gpg --import ./8a828aad.txt 2>&1 | grep -v "invalid armor header"
+rm -rf $GNUPGHOME/private-keys-v1.d $GNUPGHOME/pubring.kbx~
 rm -f ./8a828aad.txt
 
-echo "Now set 'gpg_keyring = $GPG_DIR/pubring.kbx' in the [galaxy] section of ansible.cfg."
-echo "Optionally, export GNUPGHOME=$GPG_DIR before running ansible-galaxy collection,"
+echo
+echo "Now set 'gpg_keyring = $GNUPGHOME/pubring.kbx' in the [galaxy] section of ansible.cfg."
+echo "Optionally, export GNUPGHOME=$BASE_PATH/gnupg before running ansible-galaxy collection,"
 echo "this would ensure that ~/.gnupg will not be used in any way with ansible-galaxy."

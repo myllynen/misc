@@ -6,9 +6,9 @@
 # Config
 ANSIBLE_FLAVOR=ansible-core
 BASE_DIR=$HOME/ansible
-PYTHON_BIN_OLD=python3.11
-PYTHON_BIN_NEW=python3.12
-VERSIONS="2.16 2.18 2.19 2.20"
+PYTHON_BIN_OLD=python3.12
+PYTHON_BIN_NEW=python3.14
+VERSIONS="2.18 2.20 2.21"
 PRE_RELEASES=no
 
 # Main
@@ -44,7 +44,7 @@ for ver in $VERSIONS; do
   $py_bin -m pip install --upgrade pip wheel
   $py_bin -m pip install --upgrade $pre_opt $flavor$ver_limit ansible-dev-environment ansible-lint
   $py_bin -m pip install --upgrade passlib pypsrp pywinrm requests-credssp requests-ntlm
-  rpm -q gcc krb5-devel ${py_bin}-devel > /dev/null 2>&1 &&
+  rpm -q --whatprovides gcc krb5-devel ${py_bin}-devel > /dev/null 2>&1 &&
     $py_bin -m pip install --upgrade pykerberos
   deactivate
 done

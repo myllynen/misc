@@ -404,8 +404,8 @@
           - seahorse
           - totem
           #- vlc
-          - xauth
-          - xclip
+          - wl-clipboard
+          #- xauth
           #- xorg-x11-fonts-misc
           #- xorriso
           - youtube-dl

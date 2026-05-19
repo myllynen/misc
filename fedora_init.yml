@@ -38,7 +38,7 @@
 
     - name: Create target remote_tmp
       ansible.builtin.file:
-        path: "{{ ansible_facts.env.HOME }}/.ansible/tmp"
+        path: "{{ lookup('config', 'remote_tmp', plugin_type='shell', plugin_name='sh') }}"
         state: directory
         mode: '0700'
 

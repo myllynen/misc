@@ -44,9 +44,11 @@
       - bash-completion
       - bind-utils
       - curl
+      - dnf-plugins-core
       - firewalld
       - git-core
       - man-pages
+      - mokutil
       - nano
       - openssh-clients
       - podman
@@ -54,7 +56,6 @@
       - rsync
       - sos
       - tar
-      - tpm2-tools
       - zstd
     packages_install_weak_deps: true
     packages_install_display_results: true

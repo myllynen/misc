@@ -300,6 +300,7 @@
     - name: Remove unhelpful packages (server)
       ansible.builtin.dnf:
         name:
+          - bluez
           - '*fonts*'
         state: absent
         cacheonly: true
@@ -324,6 +325,7 @@
           - irqbalance
           #- ltrace
           - man-pages
+          - mokutil
           - nano
           #- nmap-ncat
           #- numactl
@@ -334,13 +336,11 @@
           - plocate
           - policycoreutils-python-utils
           - psmisc
-          - setools-console
           #- snapm
           - sos
           - strace
           - tar
           - tcpdump
-          #- telnet
           - tmux
           - tuned
           - unzip
@@ -424,7 +424,6 @@
           - libavc1394
           #- ntfsprogs
           #- vlc
-          - youtube-dl
         state: present
       when: workstation | bool and use_epel | bool
 

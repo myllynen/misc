@@ -349,6 +349,7 @@
           - irqbalance
           - ltrace
           - man-pages
+          - mokutil
           - mlocate
           - nano
           - nmap-ncat
@@ -359,11 +360,9 @@
           #- perf
           - policycoreutils-python-utils
           - psmisc
-          - setools-console
           - strace
           - tar
           - tcpdump
-          - telnet
           - tmux
           - tuned
           - unzip
@@ -448,7 +447,6 @@
           - ntfsprogs
           - vlc
           - x264
-          - youtube-dl
         state: present
       when: workstation | bool and use_epel | bool
 

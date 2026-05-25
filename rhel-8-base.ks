@@ -60,6 +60,7 @@ glibc-minimal-langpack
 grubby
 #insights-client
 man-pages
+mokutil
 nano
 NetworkManager-config-server
 policycoreutils-python-utils
@@ -67,7 +68,6 @@ prefixdevname
 psmisc
 python3
 python3-libselinux
-setools-console
 #sos
 tar
 #unzip

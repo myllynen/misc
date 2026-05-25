@@ -24,18 +24,6 @@
     enable_sshd: true
     disable_network_services: true
   tasks:
-    - name: Check target basics
-      check_mode: false
-      ansible.builtin.raw: rpm -q python3 python3-libdnf python3-libdnf5 python3-libselinux python3-rpm
-      register: basics
-      failed_when: false
-      changed_when: false
-
-    - name: Prepare target basics
-      ansible.builtin.raw: dnf5 -y install python3 python3-libdnf python3-libdnf5 python3-libselinux python3-rpm
-      changed_when: true
-      when: basics.rc != 0
-
     - name: Create target remote_tmp
       ansible.builtin.file:
         path: "{{ lookup('config', 'remote_tmp', plugin_type='shell', plugin_name='sh') }}"
@@ -50,7 +38,7 @@
       changed_when: false
 
     - name: Install grubby
-      ansible.builtin.dnf:
+      ansible.builtin.dnf5:
         name: grubby
         state: present
       when: adjust_boot_parameters.rc == 0
@@ -124,7 +112,7 @@
       when: workstation | bool
 
     - name: Enable RPM Fusion repository
-      ansible.builtin.dnf:
+      ansible.builtin.dnf5:
         name:
           - https://download1.rpmfusion.org/free/fedora/rpmfusion-free-release-{{ ansible_facts.distribution_major_version }}.noarch.rpm
           - https://download1.rpmfusion.org/nonfree/fedora/rpmfusion-nonfree-release-{{ ansible_facts.distribution_major_version }}.noarch.rpm
@@ -133,7 +121,7 @@
       when: workstation | bool and fusion_enabled.rc != 0
 
     - name: Remove unneeded firmware packages
-      ansible.builtin.dnf:
+      ansible.builtin.dnf5:
         name:
           - '*firmware*'
         exclude:
@@ -145,7 +133,7 @@
       when: ansible_facts.virtualization_role == "guest"
 
     - name: Remove all virtual guest packages
-      ansible.builtin.dnf:
+      ansible.builtin.dnf5:
         name:
           - 'hyperv*'
           - open-vm-tools
@@ -159,7 +147,7 @@
       when: ansible_facts.virtualization_role != "guest"
 
     - name: Remove unhelpful packages on VM
-      ansible.builtin.dnf:
+      ansible.builtin.dnf5:
         name:
           - akmods
           - 'dmraid*'
@@ -173,7 +161,7 @@
       when: ansible_facts.virtualization_role == "guest"
 
     - name: Remove unneeded packages on Azure/Hyper-V
-      ansible.builtin.dnf:
+      ansible.builtin.dnf5:
         name:
           - open-vm-tools
           - qemu-guest-agent
@@ -187,7 +175,7 @@
         - ansible_facts.virtualization_type == "VirtualPC"
 
     - name: Remove unneeded packages on KVM
-      ansible.builtin.dnf:
+      ansible.builtin.dnf5:
         name:
           - 'hyperv*'
           - open-vm-tools
@@ -201,7 +189,7 @@
         - ansible_facts.virtualization_type == "kvm"
 
     - name: Remove unneeded packages on VirtualBox
-      ansible.builtin.dnf:
+      ansible.builtin.dnf5:
         name:
           - 'hyperv*'
           - open-vm-tools
@@ -216,7 +204,7 @@
         - ansible_facts.virtualization_type == "virtualbox"
 
     - name: Remove unneeded packages on VMware
-      ansible.builtin.dnf:
+      ansible.builtin.dnf5:
         name:
           - 'hyperv*'
           - qemu-guest-agent
@@ -231,7 +219,7 @@
         - ansible_facts.virtualization_type == "VMware"
 
     - name: Remove unneeded packages on other VMs
-      ansible.builtin.dnf:
+      ansible.builtin.dnf5:
         name:
           - 'hyperv*'
           - open-vm-tools
@@ -247,7 +235,7 @@
         - ansible_facts.virtualization_type not in ['kvm', 'virtualbox', 'VirtualPC', 'VMware']
 
     - name: Remove unneeded Plymouth packages
-      ansible.builtin.dnf:
+      ansible.builtin.dnf5:
         name:
           - 'plymouth*'
         state: absent
@@ -256,7 +244,7 @@
       when: not luks_in_use.rc == 0
 
     - name: Remove unhelpful packages (common)
-      ansible.builtin.dnf:
+      ansible.builtin.dnf5:
         name:
           - NetworkManager-adsl
           - NetworkManager-openconnect
@@ -287,7 +275,7 @@
           - pam_krb5
           #- 'perl*'
           - '*pinyin*'
-          #- python3-perf
+          - python3-perf
           - qgnomeplatform
           #- 'qt*'
           - realmd
@@ -295,6 +283,8 @@
           - trousers
           - yggdrasil
           - '*zhuyin*'
+        exclude:
+          - '*-srpm-macros'
         state: absent
         autoremove: true
         cacheonly: true
@@ -302,9 +292,12 @@
         allowerasing: true
 
     - name: Remove unhelpful packages (server)
-      ansible.builtin.dnf:
+      ansible.builtin.dnf5:
         name:
+          - bluez
           - '*fonts*'
+        exclude:
+          - '*-srpm-macros'
         state: absent
         cacheonly: true
         disablerepo: '*'
@@ -312,12 +305,11 @@
       when: not workstation | bool
 
     - name: Install helpful packages (common)
-      ansible.builtin.dnf:
+      ansible.builtin.dnf5:
         name:
           - bash-completion
           - bc
           - bind-utils
-          - dnf-plugins-core
           - ethtool
           - git-core
           - glibc-minimal-langpack
@@ -327,6 +319,7 @@
           - keychain
           #- ltrace
           - man-pages
+          - mokutil
           - nano
           #- nmap-ncat
           #- numactl
@@ -337,12 +330,10 @@
           - plocate
           - policycoreutils-python-utils
           - psmisc
-          - setools-console
           #- snapm
           - strace
           - tar
           - tcpdump
-          #- telnet
           - tmux
           - tuned
           - unzip
@@ -359,7 +350,7 @@
             - hyperv-daemons
             - WALinuxAgent
           VMware: open-vm-tools
-      ansible.builtin.dnf:
+      ansible.builtin.dnf5:
         name: "{{ agent_packages[ansible_facts.virtualization_type] }}"
         state: present
       when:
@@ -383,12 +374,12 @@
         - ansible_facts.virtualization_type in ['kvm', 'virtualbox', 'VirtualPC', 'VMware']
 
     - name: Install helpful packages (langpacks)
-      ansible.builtin.dnf:
+      ansible.builtin.dnf5:
         name: glibc-langpack-{{ langpacks | join(',glibc-langpack-') }}
         state: present
 
     - name: Install helpful packages (workstation)
-      ansible.builtin.dnf:
+      ansible.builtin.dnf5:
         name:
           - GraphicsMagick
           - dconf-editor
@@ -408,18 +399,17 @@
           #- xauth
           #- xorg-x11-fonts-misc
           #- xorriso
-          - youtube-dl
         state: present
       when: workstation | bool
 
     - name: Install helpful packages (workstation langpacks)
-      ansible.builtin.dnf:
+      ansible.builtin.dnf5:
         name: langpacks-core-{{ langpacks | join(',langpacks-') }}
         state: present
       when: workstation | bool
 
     - name: Remove unhelpful packages ('all' langpacks)
-      ansible.builtin.dnf:
+      ansible.builtin.dnf5:
         name:
           - gawk-all-langpacks
           - glibc-all-langpacks
@@ -429,7 +419,7 @@
 
     - name: Update all packages
       # noqa: package-latest
-      ansible.builtin.dnf:
+      ansible.builtin.dnf5:
         name: '*'
         state: latest
         update_cache: true
@@ -500,7 +490,7 @@
         - tuned.service
 
     - name: Install SSH daemon
-      ansible.builtin.dnf:
+      ansible.builtin.dnf5:
         name: openssh-server
         state: present
       when: enable_sshd | bool

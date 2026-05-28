@@ -1,0 +1,22 @@
+#!/usr/bin/env python3
+
+import os
+import sys
+
+for target in (sys.argv[1:] or [os.path.curdir]):
+    for root, dirs, files in os.walk(target, topdown=False):
+        if '.git' in root.split(os.sep):
+            continue
+
+        paths = [os.path.join(root, x) for x in dirs + files if x != '.git']
+
+        try:
+            latest_mtime = max(
+                (os.path.getmtime(p) for p in paths if os.path.exists(p)),
+                default=None
+            )
+            if latest_mtime is not None:
+                os.utime(root, (latest_mtime, latest_mtime))
+
+        except Exception:
+            pass

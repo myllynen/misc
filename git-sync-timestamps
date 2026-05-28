@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 
+import os
 import sys
 import shlex
-import os.path
 import subprocess
 
 filelist = set()
@@ -53,12 +53,16 @@ gitobj.wait()
 for root, dirs, files in os.walk(os.path.curdir, topdown=False):
     if '.git' in root.split(os.sep):
         continue
-    items = [os.path.join(root, name) for name in files + dirs if name != '.git']
-    if not items:
-        continue
+
+    paths = [os.path.join(root, x) for x in dirs + files if x != '.git']
 
     try:
-        latest = max(os.path.getmtime(obj) for obj in items)
-        os.utime(root, (latest, latest))
+        latest_mtime = max(
+            (os.path.getmtime(p) for p in paths if os.path.exists(p)),
+            default=None
+        )
+        if latest_mtime is not None:
+            os.utime(root, (latest_mtime, latest_mtime))
+
     except Exception:
         pass

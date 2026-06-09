@@ -29,6 +29,7 @@
     ansible_psrp_auth: ntlm
     ansible_psrp_message_encryption: always
     ansible_psrp_cert_validation: ignore
+    ansible_psrp_no_profile: true
 
     ansible_psrp_user: Administrator
     ansible_winrm_password: Foobar_12

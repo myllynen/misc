@@ -13,8 +13,9 @@ export GNUPGHOME=$BASE_PATH/gnupg
 curl -sLO https://access.redhat.com/security/data/8a828aad.txt
 mkdir -m 0700 -p $GNUPGHOME
 # NB. It's safe to ignore the "invalid armor header" warning
-gpg --import ./8a828aad.txt 2>&1 | grep -v "invalid armor header"
-rm -rf $GNUPGHOME/private-keys-v1.d $GNUPGHOME/pubring.kbx~
+gpg --no-autostart --import-options import-show --import ./8a828aad.txt 2>&1 \
+  | grep -v -e "invalid armor header" -e "no gpg-agent"
+rm -f $GNUPGHOME/pubring.kbx~
 rm -f ./8a828aad.txt
 
 echo

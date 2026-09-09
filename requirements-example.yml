@@ -71,19 +71,19 @@ collections:
   - name: infra.ee_utilities
     source: redhat_validated
 
-  #- name: infra.leapp
-  #  source: redhat_validated
+#  - name: infra.leapp
+#    source: redhat_validated
 
-  #- name: infra.lvm_snapshots
-  #  source: redhat_validated
+#  - name: infra.lvm_snapshots
+#    source: redhat_validated
 
-  #- name: infra.windows_ops
-  #  source: redhat_validated
+#  - name: infra.windows_ops
+#    source: redhat_validated
 
-  #- name: infra.mecm_ops
-  #  source: redhat_validated
+#  - name: infra.mecm_ops
+#    source: redhat_validated
 
-#  # Ansible Galaxy community collections
+  # Ansible Galaxy community collections
 #  - name: community.general
 #    source: ansible_galaxy
 #

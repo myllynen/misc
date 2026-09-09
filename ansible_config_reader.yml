@@ -27,12 +27,12 @@
     # Top level config dir
     config_basedir: config.git
     # Config files or directories to read
-    #config_content: prod
+    # config_content: prod
     config_content: test
-    #config_content:
-    #  - test/packages.yml
-    #  - test/policies.yml
-    #  - test/services.yml
+    # config_content:
+    #   - test/packages.yml
+    #   - test/policies.yml
+    #   - test/services.yml
 
     # List of known parameters
     config_reader_parameters:

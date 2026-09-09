@@ -20,11 +20,11 @@
         authorized_keys:
           - ssh-ed25519 ... id_ed25519.pub
     accounts_local_password_encrypted: false
-    #accounts_local_users_groups:
-    #  - name: admin
-    #    groups:
-    #      - sshadmin
-    #    append: false
+#    accounts_local_users_groups:
+#      - name: admin
+#        groups:
+#          - sshadmin
+#        append: false
     boot_parameters_enable:
       - quiet
     boot_parameters_disable:
@@ -67,9 +67,9 @@
       - telnet-server
       - bluez
       - flashrom
-      #- '*fonts*'
+      # - '*fonts*'
       - gawk-all-langpacks
-      #- gcc*
+      # - gcc*
       - geolite*
       - initscripts-rename-device
       - i*-firmware
@@ -77,15 +77,15 @@
       - kernel-tools*
       - NetworkManager-team
       - NetworkManager-tui
-      #- python3-perf
-      #- sssd*
-      #- libsss*
+      # - python3-perf
+      # - sssd*
+      # - libsss*
     packages_remove_autoremove: false
     packages_remove_display_results: true
     service_state_enable:
       - firewalld.service
-    #sshd_options:
-    #  AllowGroups: sshadmin
+#    sshd_options:
+#      AllowGroups: sshadmin
     system_hostname: "{{ ansible_facts.fqdn | lower }}"
     system_locale: auto
     system_update_reboot_policy: when_updated

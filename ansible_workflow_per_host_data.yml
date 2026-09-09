@@ -61,6 +61,6 @@
     - name: Display data per-host variable
       ansible.builtin.debug:
         var: host_data[inventory_hostname]['rebooted']
-        #var: hostvars[inventory_hostname]['host_data'][inventory_hostname]['rebooted']
-      #run_once: true
+        # var: hostvars[inventory_hostname]['host_data'][inventory_hostname]['rebooted']
+      # run_once: true
       when: awx_job_id is not defined

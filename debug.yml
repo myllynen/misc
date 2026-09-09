@@ -114,14 +114,14 @@
         msg: "Attempting to connect as {{ remo_user }} to {{ inventory_hostname }}:{{ remo_port }}"
 
     - name: Gather POSIX facts
-      #become: true
+      # become: true
       ansible.builtin.setup:
       # noqa: ignore-errors
       ignore_errors: true
       ignore_unreachable: true
 
     - name: Gather Windows facts
-      #become: true
+      # become: true
       vars:
         ansible_shell_type: powershell
       ansible.builtin.setup:

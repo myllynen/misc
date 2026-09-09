@@ -276,7 +276,7 @@
           - 'hplip*'
           - 'java*'
           - kernel-modules-extra
-          #- kexec-tools
+          # - kexec-tools
           - '*kkc*'
           - '*libreoffice*'
           - nfs-utils
@@ -284,7 +284,7 @@
           - pam_krb5
           - 'perl*'
           - '*pinyin*'
-          #- python3-perf
+          # - python3-perf
           - qgnomeplatform
           - 'qt*'
           - realmd
@@ -313,30 +313,30 @@
           - bash-completion
           - bc
           - bind-utils
-          #- cloud-init
-          #- cloud-utils-growpart
+          # - cloud-init
+          # - cloud-utils-growpart
           - dnf-plugins-core
           - ethtool
           - git-core
           - glibc-minimal-langpack
-          #- gpm
-          #- insights-client
-          #- iotop
+          # - gpm
+          # - insights-client
+          # - iotop
           - irqbalance
-          #- ltrace
+          # - ltrace
           - man-pages
           - mokutil
           - nano
-          #- nmap-ncat
-          #- numactl
+          # - nmap-ncat
+          # - numactl
           - openssh-clients
-          #- pcp-doc
-          #- pcp-system-tools
-          #- perf
+          # - pcp-doc
+          # - pcp-system-tools
+          # - perf
           - plocate
           - policycoreutils-python-utils
           - psmisc
-          #- snapm
+          # - snapm
           - sos
           - strace
           - tar
@@ -399,7 +399,7 @@
           - gnome-tweaks
           - gstreamer1-plugins-good-gtk
           - patch
-          #- powertop
+          # - powertop
           - seahorse
           - totem
           - xauth
@@ -419,11 +419,11 @@
         name:
           - GraphicsMagick
           - ffmpeg
-          #- fuse-sshfs
+          # - fuse-sshfs
           - gstreamer1-libav
           - libavc1394
-          #- ntfsprogs
-          #- vlc
+          # - ntfsprogs
+          # - vlc
         state: present
       when: workstation | bool and use_epel | bool
 
@@ -467,7 +467,7 @@
         - mcelog.service
         - mdmonitor.service
         - multipathd.service
-        #- pmie.service
+        # - pmie.service
       failed_when: false
 
     - name: Disable unhelpful services on VMs
@@ -501,10 +501,10 @@
         name: "{{ item }}"
         enabled: true
       loop:
-        #- gpm.service
+        # - gpm.service
         - irqbalance.service
-        #- pmcd.service
-        #- pmlogger.service
+        # - pmcd.service
+        # - pmlogger.service
         - tuned.service
 
     - name: Install SSH daemon

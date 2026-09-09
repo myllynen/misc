@@ -10,15 +10,15 @@
     #
     # Ansible WinRM configuration
     #
-    #ansible_connection: winrm
-    #ansible_winrm_port: 5985
-    #ansible_winrm_scheme: http
-    #ansible_winrm_transport: ntlm
-    #ansible_winrm_message_encryption: always
-    #ansible_winrm_server_cert_validation: ignore
-
-    #ansible_winrm_user: Administrator
-    #ansible_winrm_password: Foobar_12
+#    ansible_connection: winrm
+#    ansible_winrm_port: 5985
+#    ansible_winrm_scheme: http
+#    ansible_winrm_transport: ntlm
+#    ansible_winrm_message_encryption: always
+#    ansible_winrm_server_cert_validation: ignore
+#
+#    ansible_winrm_user: Administrator
+#    ansible_winrm_password: Foobar_12
 
     #
     # Ansible psrp configuration
@@ -37,16 +37,16 @@
     #
     # Ansible Windows/SSH configuration
     #
-    #ansible_user: Administrator
-    #ansible_password: Foobar_12
-    #ansible_shell_type: powershell
-    #ansible_ssh_common_args: -o GSSAPIDelegateCredentials=yes
+#    ansible_user: Administrator
+#    ansible_password: Foobar_12
+#    ansible_shell_type: powershell
+#    ansible_ssh_common_args: -o GSSAPIDelegateCredentials=yes
 
     #
     # Common Windows connection parameters
     #
     ansible_become_method: runas
-    #ansible_become_user: Administrator
+    # ansible_become_user: Administrator
 
   tasks:
     - name: Display Ansible runtime essentials

@@ -3,11 +3,11 @@
   hosts: all
   order: sorted
   gather_facts: false
-  #max_fail_percentage: 0
+  # max_fail_percentage: 0
   vars:
     csv_output_file: '/tmp/local-users-TIMESTAMP.csv'
     timestamp_fmt: '+%Y-%m-%d-%H-%M-%S'
-    #timestamp_fmt: '+%Y-%m-%d'
+    # timestamp_fmt: '+%Y-%m-%d'
     consecutive_entries: true
     log_user_names: true
     display_file: true

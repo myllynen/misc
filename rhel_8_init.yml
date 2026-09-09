@@ -322,7 +322,7 @@
           - orca
           - ostree
           - pam_krb5
-          #- 'perl*'
+          # - 'perl*'
           - perl-Mozilla-CA
           - '*pinyin*'
           - realmd
@@ -357,7 +357,7 @@
           - openssh-clients
           - pcp-doc
           - pcp-system-tools
-          #- perf
+          # - perf
           - policycoreutils-python-utils
           - psmisc
           - strace

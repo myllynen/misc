@@ -151,7 +151,7 @@
         name:
           - akmods
           - 'dmraid*'
-          #- 'libvirt*'
+          # - 'libvirt*'
           - 'pcsc*'
           - thermald
         state: absent
@@ -273,11 +273,11 @@
           - nfs-utils
           - orca
           - pam_krb5
-          #- 'perl*'
+          # - 'perl*'
           - '*pinyin*'
           - python3-perf
           - qgnomeplatform
-          #- 'qt*'
+          # - 'qt*'
           - realmd
           - 'sane*'
           - trousers
@@ -313,24 +313,24 @@
           - ethtool
           - git-core
           - glibc-minimal-langpack
-          #- gpm
-          #- iotop
+          # - gpm
+          # - iotop
           - irqbalance
           - keychain
-          #- ltrace
+          # - ltrace
           - man-pages
           - mokutil
           - nano
-          #- nmap-ncat
-          #- numactl
+          # - nmap-ncat
+          # - numactl
           - openssh-clients
-          #- pcp-doc
-          #- pcp-system-tools
-          #- perf
+          # - pcp-doc
+          # - pcp-system-tools
+          # - perf
           - plocate
           - policycoreutils-python-utils
           - psmisc
-          #- snapm
+          # - snapm
           - strace
           - tar
           - tcpdump
@@ -384,21 +384,21 @@
           - GraphicsMagick
           - dconf-editor
           - ffmpeg
-          #- fuse-sshfs
+          # - fuse-sshfs
           - gnome-tweaks
           - gstreamer1-libav
           - gstreamer1-plugins-good-gtk
           - libavc1394
           - ntfsprogs
           - patch
-          #- powertop
+          # - powertop
           - seahorse
           - totem
-          #- vlc
+          # - vlc
           - wl-clipboard
-          #- xauth
-          #- xorg-x11-fonts-misc
-          #- xorriso
+          # - xauth
+          # - xorg-x11-fonts-misc
+          # - xorriso
         state: present
       when: workstation | bool
 
@@ -448,7 +448,7 @@
         - mcelog.service
         - mdmonitor.service
         - multipathd.service
-        #- pmie.service
+        # - pmie.service
       failed_when: false
 
     - name: Disable unhelpful services on VMs
@@ -467,7 +467,7 @@
         name: "{{ item }}"
         enabled: false
       loop:
-        #- bluetooth.service
+        # - bluetooth.service
         - iscsi.service
         - iscsid.socket
         - iscsiuio.socket
@@ -483,10 +483,10 @@
         name: "{{ item }}"
         enabled: true
       loop:
-        #- gpm.service
+        # - gpm.service
         - irqbalance.service
-        #- pmcd.service
-        #- pmlogger.service
+        # - pmcd.service
+        # - pmlogger.service
         - tuned.service
 
     - name: Install SSH daemon

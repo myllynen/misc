@@ -12,13 +12,13 @@
       changed_when: false
       delegate_to: localhost
       run_once: true
-      when: awx_execution_node is defined
+      when: tower_job_id is defined
 
     - name: Display execution environment basics
       ansible.builtin.debug:
         msg: "{{ ee_info.stdout_lines }}"
       run_once: true
-      when: awx_execution_node is defined
+      when: tower_job_id is defined
 
     - name: Display Ansible runtime essentials
       vars:

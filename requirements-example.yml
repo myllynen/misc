@@ -40,6 +40,9 @@ collections:
   - name: microsoft.mecm
     source: redhat_certified
 
+  - name: redhat.openshift
+    source: redhat_certified
+
   - name: redhat.rhel_idm
     source: redhat_certified
 

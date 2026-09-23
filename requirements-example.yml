@@ -37,6 +37,9 @@ collections:
   - name: microsoft.ad
     source: redhat_certified
 
+  - name: microsoft.iis
+    source: redhat_certified
+
   - name: microsoft.mecm
     source: redhat_certified
 

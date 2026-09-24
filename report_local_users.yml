@@ -86,17 +86,15 @@
                   item.value[1] + ',' +
                   item.value[2] + ',' +
                   hash_type + ',' +
-                  password_age + ',' +
-                  password_expires + ',' +
-                  account_expires }}"
+                  password_age | string + ',' +
+                  password_expires | string + ',' +
+                  account_expires | string }}"
         state: present
         insertafter: EOF
       delegate_to: localhost
-      loop: "{{ combined_entries | dict2items }}"
+      loop: "{{ combined_entries | dict2items | selectattr('value.6', 'match', '\\$|^$') }}"
       loop_control:
         label: "{{ item.key }}"
-      when: item.value[6].startswith('$') or
-            not item.value[6]
 
     - name: Read created CSV file
       ansible.builtin.slurp:

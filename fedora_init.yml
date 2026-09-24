@@ -404,7 +404,7 @@
 
     - name: Install helpful packages (workstation langpacks)
       ansible.builtin.dnf5:
-        name: langpacks-core-{{ langpacks | join(',langpacks-') }}
+        name: langpacks-core-{{ langpacks | join(',langpacks-core-') }}
         state: present
       when: workstation | bool
 

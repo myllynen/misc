@@ -52,7 +52,7 @@
         dir_input: "{{ false if item.endswith('yml') else true }}"
       ansible.builtin.include_vars:
         dir: "{{ (config_basedir + '/' + item) if dir_input else omit }}"
-        depth: "{{ congig_depth if config_depth is defined and dir_input else omit }}"
+        depth: "{{ config_depth if config_depth is defined and dir_input else omit }}"
         files_matching: "{{ config_matching if config_matching is defined and dir_input else omit }}"
         ignore_files: "{{ config_ignore if config_ignore is defined and dir_input else omit }}"
         ignore_unknown_extensions: "{{ true if dir_input else omit }}"

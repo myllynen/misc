@@ -94,7 +94,7 @@
 
     - name: Update GRUB configuration
       vars:
-        boot_config: "{{ '/boot/efi/EFI/{{ ansible_facts.distribution | lower }}/grub.cfg' if efi_grub.stat.exists else '/boot/grub2/grub.cfg' }}"
+        boot_config: "{{ '/boot/efi/EFI/' + (ansible_facts.distribution | lower) + '/grub.cfg' if efi_grub.stat.exists else '/boot/grub2/grub.cfg' }}"
       ansible.builtin.command: grub2-mkconfig -o {{ boot_config }}
       changed_when: true
       when: adjust_boot_parameters.rc == 0
@@ -194,7 +194,7 @@
           - 'a*firmware*'
           - 'i*firmware*'
           - 'lib*firmware*'
-          - 'n*firmware'
+          - 'n*firmware*'
         state: absent
         cacheonly: true
         disablerepo: '*'

@@ -185,7 +185,7 @@ echo "%_install_langs en_US" > /etc/rpm/macros.install-langs-conf
 systemctl disable dnf-makecache.timer nis-domainname.service remote-fs.target
 
 # Watchdog
-#mkdir -p -m 0644 /etc/systemd/system.conf.d
+#mkdir -p -m 0755 /etc/systemd/system.conf.d
 #printf '[Manager]\nRuntimeWatchdogSec=60s\n' > /etc/systemd/system.conf.d/50-watchdog.conf
 
 # cloud-init

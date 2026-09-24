@@ -155,7 +155,7 @@
           - 'a*firmware*'
           - 'i*firmware*'
           - 'lib*firmware*'
-          - 'n*firmware'
+          - 'n*firmware*'
         state: absent
         cacheonly: true
         disablerepo: '*'

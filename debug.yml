@@ -111,7 +111,7 @@
                        | default(ansible_user, true)
                        | default(lookup('env', 'USER'), true) }}"
       ansible.builtin.debug:
-        msg: "Attempting to connect as {{ remo_user }} to {{ inventory_hostname }}:{{ remo_port }}"
+        msg: "Attempting to connect as {{ remo_user }} to {{ ansible_host }}:{{ remo_port }}"
 
     - name: Gather POSIX facts
       # become: true

@@ -4,10 +4,12 @@
   become: false
   gather_facts: false
   vars:
-    fail_one_out_of: 3
-    output: "{{ message | default('Hello, World!') }}"
+    fail_one_out_of: 5
+
+    output: "{{ message | default('Hello, world!') }}"
+
   tasks:
     - name: Say something and try to get away with it
       ansible.builtin.debug:
         msg: "{{ output }}"
-      failed_when: fail_one_out_of | random(start=1) != 1
+      failed_when: (fail_one_out_of + 1) | random(start=1) == 1

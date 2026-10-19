@@ -10,9 +10,9 @@
 # for early failures and in case the tasks continue running normally
 # we then wait for them to complete with the usual polling mechanism.
 #
-# There seems to be no mechanism as of Ansible 2.17 to monitor tasks
-# for both failures and successful completion and immediately break
-# out of the loop in case of a task failure.
+# Before Ansible 2.18 and break_when to break out from loops required
+# lookup('pipe', 'sleep ' ~ loop_pause) | default(true, true) or such
+# tricks as when condition.
 #
 - name: Run long tasks and monitor them for early failures
   hosts: all
@@ -43,19 +43,19 @@
       vars:
         host_count: "{{ ansible_play_hosts | length }}"
         task_failed: "{{ task_status.rc | default(0) == 1 }}"
-        loop_pause: "{{ 0 if task_failed else check_interval }}"
       ansible.builtin.async_status:
         jid: "{{ hostvars[groups.all[item % (host_count | int)]].bg_job.ansible_job_id }}"
       register: task_status
+      changed_when: false
       failed_when:
         - task_failed
         - host_fail_on_task_fail
-      loop: "{{ range(0, (early_period / check_interval + 0.5) | int) }}"
+      loop: "{{ range(0, (early_period / check_interval + 0.5) | int) | list }}"
+      loop_control:
+        break_when: task_failed
+        pause: "{{ check_interval }}"
       delegate_to: "{{ groups.all[item % (host_count | int)] }}"
       run_once: true
-      when:
-        - not task_failed
-        - lookup('pipe', 'sleep ' + loop_pause) | default(true, true)
 
     # This must be customized and tested to avoid collateral damage
     - name: Terminate remaining processes after a task failure
@@ -72,8 +72,9 @@
           ansible.builtin.async_status:
             jid: "{{ bg_job.ansible_job_id }}"
           register: wait_status
-          until: wait_status.finished
-          retries: "{{ task_timeout - early_period }}"
+          changed_when: false
+          until: wait_status.finished != 0
+          retries: "{{ ((task_timeout - early_period) / check_interval) | int }}"
           delay: "{{ check_interval }}"
           when: 1 not in task_status.results | map(attribute='rc', default=0)
 

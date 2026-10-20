@@ -5,6 +5,7 @@
   gather_facts: false
   vars:
     fail_one_out_of: 5
+    run_on_all_hosts: true
 
     output: "{{ message | default('Hello, world!') }}"
 
@@ -13,3 +14,4 @@
       ansible.builtin.debug:
         msg: "{{ output }}"
       failed_when: fail_one_out_of | random == 0
+      run_once: "{{ run_on_all_hosts | bool }}"

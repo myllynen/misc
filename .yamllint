@@ -1,0 +1,34 @@
+---
+ignore: |
+  /.git/
+  /.github/
+  /changelogs/
+
+extends: default
+
+rules:
+  braces:
+    max-spaces-inside: 1
+  comments-indentation: disable
+  comments:
+    # require-starting-space: false
+    min-spaces-from-content: 1
+  document-start: disable
+  float-values:
+    forbid-scientific-notation: true
+    require-numeral-before-decimal: true
+  indentation:
+    spaces: 2
+    level: error
+    indent-sequences: true
+    check-multi-line-strings: false
+  key-duplicates:
+    forbid-duplicated-merge-keys: true
+  line-length:
+    max: 160
+    level: warning
+  octal-values:
+    forbid-explicit-octal: true
+    forbid-implicit-octal: true
+  truthy:
+    level: error

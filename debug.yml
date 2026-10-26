@@ -102,6 +102,7 @@
 
     - name: Display connection parameters
       vars:
+        remo_host: "{{ ansible_host | default(inventory_hostname) }}"
         conn_port: "{{ 'ansible_' + ansible_connection + '_port' }}"
         remo_port: "{{ lookup('vars', conn_port, default='')
                        | default(ansible_port, true)
@@ -111,7 +112,7 @@
                        | default(ansible_user, true)
                        | default(lookup('env', 'USER'), true) }}"
       ansible.builtin.debug:
-        msg: "Attempting to connect as {{ remo_user }} to {{ ansible_host }}:{{ remo_port }}"
+        msg: "Attempting to connect as {{ remo_user }} to {{ remo_host }}:{{ remo_port }}"
 
     - name: Gather POSIX facts
       # become: true

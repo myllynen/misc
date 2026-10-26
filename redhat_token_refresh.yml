@@ -1,6 +1,6 @@
 ---
 - name: Refresh Red Hat Hybrid Cloud Console authentication token
-  hosts: localhost
+  hosts: all
   connection: local
   become: false
   gather_facts: false

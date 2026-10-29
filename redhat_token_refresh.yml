@@ -7,6 +7,10 @@
   tasks:
     - name: Refresh Red Hat token
       no_log: true
+      vars:
+        refresh_token: "{{ lookup('env', 'GENERIC_API_TOKEN')
+                           | default(aap_redhat_hub_token, true)
+                           | default(token, true) }}"
       ansible.builtin.uri:
         url: https://sso.redhat.com/auth/realms/redhat-external/protocol/openid-connect/token
         method: POST
@@ -14,5 +18,5 @@
         body:
           client_id: cloud-services
           grant_type: refresh_token
-          refresh_token: "{{ lookup('env', 'GENERIC_API_TOKEN') | default(token) }}"
+          refresh_token: "{{ refresh_token }}"
       changed_when: true

@@ -43,8 +43,14 @@ collections:
   - name: microsoft.mecm
     source: redhat_certified
 
+#  - name: redhat.leapp
+#    source: redhat_certified
+
   - name: redhat.openshift
     source: redhat_certified
+
+#  - name: redhat.rhel_hardening_roles
+#    source: redhat_certified
 
   - name: redhat.rhel_idm
     source: redhat_certified
@@ -76,9 +82,6 @@ collections:
 
   - name: infra.ee_utilities
     source: redhat_validated
-
-#  - name: infra.leapp
-#    source: redhat_validated
 
 #  - name: infra.lvm_snapshots
 #    source: redhat_validated

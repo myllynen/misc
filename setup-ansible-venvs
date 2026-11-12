@@ -8,7 +8,7 @@ ANSIBLE_FLAVOR=ansible-core
 BASE_DIR=$HOME/ansible
 PYTHON_BIN_OLD=python3.12
 PYTHON_BIN_NEW=python3.14
-VERSIONS="2.16 2.18 2.19 2.20 2.21"
+VERSIONS="2.16 2.18 2.20 2.21 2.22"
 PRE_RELEASES=no
 
 # Main
@@ -20,7 +20,7 @@ for ver in $VERSIONS; do
 
   ver_limit="==$ver.*"
 
-  if [ "$ver" = "2.20" -o "$ver" = "2.21" -o "$ver" = "2.22" ]; then
+  if [ "$ver" = "2.20" -o "$ver" = "2.21" -o "$ver" = "2.22" -o "$ver" = "2.23" ]; then
     py_bin=$PYTHON_BIN_NEW
   else
     py_bin=$PYTHON_BIN_OLD
